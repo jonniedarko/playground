@@ -154,11 +154,15 @@ export function renderMarkdown(source, options = {}) {
         i += 1
       }
       const align = (n) => (aligns[n] ? ' style="text-align:' + aligns[n] + '"' : '')
-      const head = header.map((cell, n) => '<th' + align(n) + '>' + inline(cell) + '</th>').join('')
       const body = rows
         .map((row) => '<tr>' + row.map((cell, n) => '<td' + align(n) + '>' + inline(cell) + '</td>').join('') + '</tr>')
         .join('')
-      out.push('<div class="table-wrap"><table><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>')
+      // `| | |` is the idiomatic way to write a headerless lookup table. Emitting a
+      // <thead> of empty cells for it just draws an empty strip, so drop it.
+      const head = header.every((cell) => cell === '')
+        ? ''
+        : '<thead><tr>' + header.map((cell, n) => '<th' + align(n) + '>' + inline(cell) + '</th>').join('') + '</tr></thead>'
+      out.push('<div class="table-wrap"><table>' + head + '<tbody>' + body + '</tbody></table></div>')
       continue
     }
 

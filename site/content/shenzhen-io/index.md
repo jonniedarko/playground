@@ -25,11 +25,14 @@ The printed binder is divided into five tabbed sections:
 
 ## Where to start
 
-If you are looking at the language for the first time, read
-[Program structure](/shenzhen-io/language-reference/program-structure/) and then
-[Registers](/shenzhen-io/language-reference/registers/). If you are
-mid-puzzle and need a specific instruction, the
+**New to it?** Read the [quick start](/shenzhen-io/quick-start/). It is one page:
+six facts, the two pin types, and three programs you can type straight in.
+
+**Mid-puzzle and need one instruction?** The
 [reference card](/shenzhen-io/reference-card/) is the fastest lookup.
+
+**Want the full detail?** Start at
+[Program structure](/shenzhen-io/language-reference/program-structure/).
 
 > [!NOTE]
 > Everything here describes the fictional MCxxxx family from the game
