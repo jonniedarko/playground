@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>MC4000 - Field Notes</title>
+<meta name="description" content="High performance microcontroller: 9 lines of program memory, one register, four pins." />
+<meta name="color-scheme" content="light dark" />
+<meta name="theme-color" content="#f7f7f5" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)" />
+<meta property="og:title" content="MC4000 - Field Notes" />
+<meta property="og:description" content="High performance microcontroller: 9 lines of program memory, one register, four pins." />
+<meta property="og:type" content="article" />
+<link rel="icon" href="/playground/assets/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="/playground/assets/style.css" />
+<script>
+  // Apply the stored theme before first paint so the page never flashes the wrong one.
+  try {
+    var t = localStorage.getItem('theme')
+    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t
+  } catch (e) {}
+  window.__BASE__ = "/playground/"
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <button class="icon-btn menu-btn" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="/playground/">
+    <span class="brand-mark" aria-hidden="true">FN</span>
+    <span class="brand-text">Field Notes</span>
+  </a>
+  <div class="topbar-actions">
+    <button class="icon-btn search-btn" type="button" aria-label="Search" data-open-search>
+      <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <button class="icon-btn theme-btn" type="button" aria-label="Toggle colour theme" data-toggle-theme>
+      <svg class="icon-sun" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="4" fill="currentColor"/><path d="M10 1v2M10 17v2M1 10h2M17 10h2M3.6 3.6l1.4 1.4M15 15l1.4 1.4M16.4 3.6L15 5M5 15l-1.4 1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <svg class="icon-moon" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M16 12.5A7 7 0 0 1 7.5 4a7 7 0 1 0 8.5 8.5z" fill="currentColor"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="shell">
+  <div class="scrim" data-close-nav hidden></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+      <button class="search-field" type="button" data-open-search>
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Search docs</span>
+        <kbd>/</kbd>
+      </button>
+      <nav class="sidebar-nav" aria-label="Documentation"><ul class="nav-list nav-depth-0"><li class="nav-group is-open"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/"><span class="nav-icon" aria-hidden="true">🔌</span>SHENZHEN I/O</a><button class="nav-toggle" type="button" aria-expanded="true" aria-label="Toggle SHENZHEN I/O section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-1"><li><a class="nav-link" href="/playground/shenzhen-io/reference-card/"><span class="nav-icon" aria-hidden="true">🗂️</span>Reference card</a></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/language-reference/"><span class="nav-icon" aria-hidden="true">📘</span>Language reference</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Language reference section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/program-structure/">Program structure</a></li><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/registers/">Registers</a></li><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/basic-instructions/">Basic instructions</a></li><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/arithmetic-instructions/">Arithmetic instructions</a></li><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/test-instructions/">Test instructions</a></li></ul></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/application-notes/"><span class="nav-icon" aria-hidden="true">📐</span>Application notes</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Application notes section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/application-notes/an268-interfaces/">AN268: Two interfaces, limitless possibilities</a></li><li><a class="nav-link" href="/playground/shenzhen-io/application-notes/an393-sleep/">AN393: Make sure to get enough sleep</a></li><li><a class="nav-link" href="/playground/shenzhen-io/application-notes/an650-light-controller/">AN650: Touch-activated light controller</a></li></ul></li><li class="nav-group is-open"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/parts/"><span class="nav-icon" aria-hidden="true">🧩</span>Parts datasheets</a><button class="nav-toggle" type="button" aria-expanded="true" aria-label="Toggle Parts datasheets section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link is-current" href="/playground/shenzhen-io/parts/mc4000/" aria-current="page">MC4000</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/mc6000/">MC6000</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/mc4010/">MC4010</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/dx300/">DX300</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/memory/">Memory - 100P-14 and 200P-14</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/logic-gates/">LC70Gxx logic gates</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/clock/">DT2415 incremental clock</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/radio/">C2S-RF901 radio</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/fm-blaster/">FM Blaster sound module</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/displays-and-inputs/">Displays and inputs</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/specialist-parts/">Specialist parts</a></li></ul></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/supplemental/"><span class="nav-icon" aria-hidden="true">📎</span>Supplemental data</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Supplemental data section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/supplemental/signal-specs/">Signal and formula specs</a></li><li><a class="nav-link" href="/playground/shenzhen-io/supplemental/tv-keywords/">TV spoiler keyword list</a></li><li><a class="nav-link" href="/playground/shenzhen-io/supplemental/lookup-tables/">Product lookup tables</a></li></ul></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/story/"><span class="nav-icon" aria-hidden="true">✉️</span>Story documents</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Story documents section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/story/emails/">The recruiter emails</a></li><li><a class="nav-link" href="/playground/shenzhen-io/story/visa-application/">Visa application form</a></li></ul></li></ul></li></ul></nav>
+    </div>
+  </aside>
+
+  <main class="content" id="main">
+    <article class="doc">
+      <nav class="breadcrumbs" aria-label="Breadcrumb"><ol><li><a href="/playground/">Home</a></li><li><a href="/playground/shenzhen-io/">SHENZHEN I/O</a></li><li><a href="/playground/shenzhen-io/parts/">Parts datasheets</a></li><li aria-current="page">MC4000</li></ol></nav>
+      <header class="doc-head"><h1>MC4000</h1><p class="lede">High performance microcontroller: 9 lines of program memory, one register, four pins.</p></header><nav class="toc" aria-label="On this page"><details open><summary>On this page</summary><ul><li class="toc-h2"><a href="#description">Description</a></li><li class="toc-h2"><a href="#features">Features</a></li><li class="toc-h2"><a href="#pin-configuration">Pin configuration</a></li><li class="toc-h2"><a href="#registers">Registers</a></li><li class="toc-h2"><a href="#mc4000x-variant">MC4000X variant</a></li></ul></details></nav><p><em>诚尚Micro - document CSM_TD_1000198</em></p>
+<h2 id="description">Description<a class="anchor" href="#description" aria-label="Link to this section">#</a></h2>
+<p>A reduced-functionality microcontroller to help lower BOM costs, the MC4000 is a flexible and versatile alternative to its larger cousin, the <a href="/playground/shenzhen-io/parts/mc6000/">MC6000</a>. Don&#39;t let its diminutive size fool you, however: the MC4000 can easily hold its own with its generous nine lines of program memory, one general-purpose register, and four I/O pins.</p>
+<h2 id="features">Features<a class="anchor" href="#features" aria-label="Link to this section">#</a></h2>
+<ul><li><strong>(9)</strong> lines of program memory</li><li><strong>(1)</strong> general-purpose register</li><li><strong>(2)</strong> XBus pins</li><li><strong>(2)</strong> simple I/O pins</li></ul>
+<h2 id="pin-configuration">Pin configuration<a class="anchor" href="#pin-configuration" aria-label="Link to this section">#</a></h2>
+<div class="pinout" role="img" aria-label="MC4000 pin layout. Left side, top to bottom: x0 XBus, p0 simple I/O. Right side, top to bottom: p1 simple I/O, x1 XBus.">
+<div class="pinout-col"><span class="pin pin-x">x0</span><span class="pin pin-s">p0</span></div>
+<div class="pinout-chip"><span class="pinout-name">MC4000</span></div>
+<div class="pinout-col"><span class="pin pin-s">p1</span><span class="pin pin-x">x1</span></div>
+</div>
+<div class="table-wrap"><table><thead><tr><th>Pin</th><th>Type</th></tr></thead><tbody><tr><td><code>x0</code>, <code>x1</code></td><td>XBus</td></tr><tr><td><code>p0</code>, <code>p1</code></td><td>Simple I/O</td></tr></tbody></table></div>
+<h2 id="registers">Registers<a class="anchor" href="#registers" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Register</th><th>Purpose</th></tr></thead><tbody><tr><td><code>acc</code></td><td>General purpose accumulator; is the target of all arithmetic instructions</td></tr></tbody></table></div>
+<blockquote class="callout callout-note"><p class="callout-title">Note</p><p>At any given time, a simple I/O pin is either in input mode or output mode. Writing a value to a pin register will put the corresponding pin into output mode with the specified output value. Reading a value from a pin register will put the corresponding pin into input mode, clearing any previously set output value.</p></blockquote>
+<h2 id="mc4000x-variant">MC4000X variant<a class="anchor" href="#mc4000x-variant" aria-label="Link to this section">#</a></h2>
+<p>As a result of customer feedback, an XBus-only variant is available under the <strong>MC4000X</strong> part number. It carries the same nine lines of program memory and single register, but all four pins are XBus (<code>x0</code>-<code>x3</code>) with no simple I/O.</p>
+<p>Refer to the <a href="/playground/shenzhen-io/language-reference/">MCxxxx language reference</a> for information about programming the MC4000.</p>
+      <nav class="pager" aria-label="Pagination"><a class="pager-link pager-prev" href="/playground/shenzhen-io/parts/"><span class="pager-label">Previous</span><span class="pager-title">Parts datasheets</span></a><a class="pager-link pager-next" href="/playground/shenzhen-io/parts/mc6000/"><span class="pager-label">Next</span><span class="pager-title">MC6000</span></a></nav>
+    </article>
+    <footer class="site-footer">
+      <p>Field Notes - built as a static site. Source notes are kept as Markdown.</p>
+    </footer>
+  </main>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-head">
+      <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input type="search" class="search-input" placeholder="Search all notes" aria-label="Search query" autocomplete="off" />
+      <button class="icon-btn" type="button" data-close-search aria-label="Close search">Esc</button>
+    </div>
+    <div class="search-results" role="listbox" aria-label="Search results"></div>
+  </div>
+</div>
+
+<script src="/playground/assets/app.js" defer></script>
+</body>
+</html>

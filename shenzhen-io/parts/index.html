@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Parts datasheets - Field Notes</title>
+<meta name="description" content="One page per component - microcontrollers, memory, logic, displays, sensors and everything else you can place on a board." />
+<meta name="color-scheme" content="light dark" />
+<meta name="theme-color" content="#f7f7f5" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)" />
+<meta property="og:title" content="Parts datasheets - Field Notes" />
+<meta property="og:description" content="One page per component - microcontrollers, memory, logic, displays, sensors and everything else you can place on a board." />
+<meta property="og:type" content="article" />
+<link rel="icon" href="/playground/assets/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="/playground/assets/style.css" />
+<script>
+  // Apply the stored theme before first paint so the page never flashes the wrong one.
+  try {
+    var t = localStorage.getItem('theme')
+    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t
+  } catch (e) {}
+  window.__BASE__ = "/playground/"
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <button class="icon-btn menu-btn" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="/playground/">
+    <span class="brand-mark" aria-hidden="true">FN</span>
+    <span class="brand-text">Field Notes</span>
+  </a>
+  <div class="topbar-actions">
+    <button class="icon-btn search-btn" type="button" aria-label="Search" data-open-search>
+      <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <button class="icon-btn theme-btn" type="button" aria-label="Toggle colour theme" data-toggle-theme>
+      <svg class="icon-sun" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="4" fill="currentColor"/><path d="M10 1v2M10 17v2M1 10h2M17 10h2M3.6 3.6l1.4 1.4M15 15l1.4 1.4M16.4 3.6L15 5M5 15l-1.4 1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <svg class="icon-moon" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M16 12.5A7 7 0 0 1 7.5 4a7 7 0 1 0 8.5 8.5z" fill="currentColor"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="shell">
+  <div class="scrim" data-close-nav hidden></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+      <button class="search-field" type="button" data-open-search>
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Search docs</span>
+        <kbd>/</kbd>
+      </button>
+      <nav class="sidebar-nav" aria-label="Documentation"><ul class="nav-list nav-depth-0"><li class="nav-group is-open"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/"><span class="nav-icon" aria-hidden="true">🔌</span>SHENZHEN I/O</a><button class="nav-toggle" type="button" aria-expanded="true" aria-label="Toggle SHENZHEN I/O section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-1"><li><a class="nav-link" href="/playground/shenzhen-io/reference-card/"><span class="nav-icon" aria-hidden="true">🗂️</span>Reference card</a></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/language-reference/"><span class="nav-icon" aria-hidden="true">📘</span>Language reference</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Language reference section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/program-structure/">Program structure</a></li><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/registers/">Registers</a></li><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/basic-instructions/">Basic instructions</a></li><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/arithmetic-instructions/">Arithmetic instructions</a></li><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/test-instructions/">Test instructions</a></li></ul></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/application-notes/"><span class="nav-icon" aria-hidden="true">📐</span>Application notes</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Application notes section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/application-notes/an268-interfaces/">AN268: Two interfaces, limitless possibilities</a></li><li><a class="nav-link" href="/playground/shenzhen-io/application-notes/an393-sleep/">AN393: Make sure to get enough sleep</a></li><li><a class="nav-link" href="/playground/shenzhen-io/application-notes/an650-light-controller/">AN650: Touch-activated light controller</a></li></ul></li><li class="nav-group is-open"><div class="nav-group-head"><a class="nav-link is-current" href="/playground/shenzhen-io/parts/" aria-current="page"><span class="nav-icon" aria-hidden="true">🧩</span>Parts datasheets</a><button class="nav-toggle" type="button" aria-expanded="true" aria-label="Toggle Parts datasheets section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/parts/mc4000/">MC4000</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/mc6000/">MC6000</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/mc4010/">MC4010</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/dx300/">DX300</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/memory/">Memory - 100P-14 and 200P-14</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/logic-gates/">LC70Gxx logic gates</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/clock/">DT2415 incremental clock</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/radio/">C2S-RF901 radio</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/fm-blaster/">FM Blaster sound module</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/displays-and-inputs/">Displays and inputs</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/specialist-parts/">Specialist parts</a></li></ul></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/supplemental/"><span class="nav-icon" aria-hidden="true">📎</span>Supplemental data</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Supplemental data section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/supplemental/signal-specs/">Signal and formula specs</a></li><li><a class="nav-link" href="/playground/shenzhen-io/supplemental/tv-keywords/">TV spoiler keyword list</a></li><li><a class="nav-link" href="/playground/shenzhen-io/supplemental/lookup-tables/">Product lookup tables</a></li></ul></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/story/"><span class="nav-icon" aria-hidden="true">✉️</span>Story documents</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Story documents section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/story/emails/">The recruiter emails</a></li><li><a class="nav-link" href="/playground/shenzhen-io/story/visa-application/">Visa application form</a></li></ul></li></ul></li></ul></nav>
+    </div>
+  </aside>
+
+  <main class="content" id="main">
+    <article class="doc">
+      <nav class="breadcrumbs" aria-label="Breadcrumb"><ol><li><a href="/playground/">Home</a></li><li><a href="/playground/shenzhen-io/">SHENZHEN I/O</a></li><li aria-current="page">Parts datasheets</li></ol></nav>
+      <header class="doc-head"><h1>Parts datasheets</h1><p class="lede">One page per component - microcontrollers, memory, logic, displays, sensors and everything else you can place on a board.</p></header><nav class="toc" aria-label="On this page"><details open><summary>On this page</summary><ul><li class="toc-h2"><a href="#quick-index">Quick index</a></li><li class="toc-h2"><a href="#in-this-section">In this section</a></li></ul></details></nav><p>Every part you can place on a circuit board has a datasheet in the binder. The pages below group them by what they do.</p>
+<h2 id="quick-index">Quick index<a class="anchor" href="#quick-index" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Part</th><th>Vendor</th><th>What it is</th></tr></thead><tbody><tr><td><a href="/playground/shenzhen-io/parts/mc4000/">MC4000 / MC4000X</a></td><td>诚尚Micro</td><td>9-line microcontroller, one register</td></tr><tr><td><a href="/playground/shenzhen-io/parts/mc6000/">MC6000</a></td><td>诚尚Micro</td><td>14-line microcontroller, two registers</td></tr><tr><td><a href="/playground/shenzhen-io/parts/mc4010/">MC4010</a></td><td>诚尚Micro</td><td>Math co-processor</td></tr><tr><td><a href="/playground/shenzhen-io/parts/dx300/">DX300</a></td><td>诚尚Micro</td><td>Digital I/O expander</td></tr><tr><td><a href="/playground/shenzhen-io/parts/memory/">100P-14 / 200P-14</a></td><td>Pingda</td><td>RAM and ROM, 14 cells</td></tr><tr><td><a href="/playground/shenzhen-io/parts/logic-gates/">LC70Gxx</a></td><td>The Logic Company</td><td>Inverter, AND, OR, XOR</td></tr><tr><td><a href="/playground/shenzhen-io/parts/clock/">DT2415</a></td><td>Denver Timekeeping</td><td>Incremental real-time clock</td></tr><tr><td><a href="/playground/shenzhen-io/parts/radio/">C2S-RF901</a></td><td>Chennai Comms</td><td>Wireless XBus transceiver</td></tr><tr><td><a href="/playground/shenzhen-io/parts/fm-blaster/">FM Blaster</a></td><td>FM/iX</td><td>FM tone generator</td></tr><tr><td><a href="/playground/shenzhen-io/parts/displays-and-inputs/">N4PB-8000, LX700, LX910C</a></td><td>PartsPlus+</td><td>Buttons and displays</td></tr><tr><td><a href="/playground/shenzhen-io/parts/specialist-parts/">D80C010-F, KUJI-EK1, PGA33X6, NLP2</a></td><td>Various</td><td>Specialist and one-off parts</td></tr></tbody></table></div>
+<h2 id="in-this-section">In this section<a class="anchor" href="#in-this-section" aria-label="Link to this section">#</a></h2><div class="card-grid"><a class="card" href="/playground/shenzhen-io/parts/mc4000/"><span class="card-title">MC4000</span><span class="card-desc">High performance microcontroller: 9 lines of program memory, one register, four pins.</span></a><a class="card" href="/playground/shenzhen-io/parts/mc6000/"><span class="card-title">MC6000</span><span class="card-desc">The flagship microcontroller: 14 lines of program memory, two registers, six pins.</span></a><a class="card" href="/playground/shenzhen-io/parts/mc4010/"><span class="card-title">MC4010</span><span class="card-desc">Math co-processor - write a command sequence to any pin, read the result back.</span></a><a class="card" href="/playground/shenzhen-io/parts/dx300/"><span class="card-title">DX300</span><span class="card-desc">Digital I/O expander - trade one XBus value for three simple I/O lines.</span></a><a class="card" href="/playground/shenzhen-io/parts/memory/"><span class="card-title">Memory - 100P-14 and 200P-14</span><span class="card-desc">Pingda RAM and ROM - fourteen cells, two auto-incrementing pointers.</span></a><a class="card" href="/playground/shenzhen-io/parts/logic-gates/"><span class="card-title">LC70Gxx logic gates</span><span class="card-desc">The Logic Company&#39;s inverter, AND, OR and XOR gates for simple I/O.</span></a><a class="card" href="/playground/shenzhen-io/parts/clock/"><span class="card-title">DT2415 incremental clock</span><span class="card-desc">Denver Timekeeping&#39;s real-time clock - emits the number of 15-minute increments since midnight.</span></a><a class="card" href="/playground/shenzhen-io/parts/radio/"><span class="card-title">C2S-RF901 radio</span><span class="card-desc">Chennai Comms wireless transceiver with a non-blocking receive buffer.</span></a><a class="card" href="/playground/shenzhen-io/parts/fm-blaster/"><span class="card-title">FM Blaster sound module</span><span class="card-desc">FM/iX tone generator - one voice, ten preset instruments, MIDI-style note numbers.</span></a><a class="card" href="/playground/shenzhen-io/parts/displays-and-inputs/"><span class="card-title">Displays and inputs</span><span class="card-desc">The PartsPlus+ catalogue page - N4PB-8000 buttons, LX700 numeric display and LX910C custom LCD.</span></a><a class="card" href="/playground/shenzhen-io/parts/specialist-parts/"><span class="card-title">Specialist parts</span><span class="card-desc">The one-off components - D80C010-F security chip, KUJI-EK1 oracle engine, PGA33X6 logic array and Raven NLP2.</span></a></div>
+      <nav class="pager" aria-label="Pagination"><a class="pager-link pager-prev" href="/playground/shenzhen-io/application-notes/an650-light-controller/"><span class="pager-label">Previous</span><span class="pager-title">AN650: Touch-activated light controller</span></a><a class="pager-link pager-next" href="/playground/shenzhen-io/parts/mc4000/"><span class="pager-label">Next</span><span class="pager-title">MC4000</span></a></nav>
+    </article>
+    <footer class="site-footer">
+      <p>Field Notes - built as a static site. Source notes are kept as Markdown.</p>
+    </footer>
+  </main>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-head">
+      <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input type="search" class="search-input" placeholder="Search all notes" aria-label="Search query" autocomplete="off" />
+      <button class="icon-btn" type="button" data-close-search aria-label="Close search">Esc</button>
+    </div>
+    <div class="search-results" role="listbox" aria-label="Search results"></div>
+  </div>
+</div>
+
+<script src="/playground/assets/app.js" defer></script>
+</body>
+</html>

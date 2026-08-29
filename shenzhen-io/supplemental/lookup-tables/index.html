@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Product lookup tables - Field Notes</title>
+<meta name="description" content="The iNK colour space, the assembled meat primer, the cocktail list and the neural lattice substrates." />
+<meta name="color-scheme" content="light dark" />
+<meta name="theme-color" content="#f7f7f5" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)" />
+<meta property="og:title" content="Product lookup tables - Field Notes" />
+<meta property="og:description" content="The iNK colour space, the assembled meat primer, the cocktail list and the neural lattice substrates." />
+<meta property="og:type" content="article" />
+<link rel="icon" href="/playground/assets/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="/playground/assets/style.css" />
+<script>
+  // Apply the stored theme before first paint so the page never flashes the wrong one.
+  try {
+    var t = localStorage.getItem('theme')
+    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t
+  } catch (e) {}
+  window.__BASE__ = "/playground/"
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <button class="icon-btn menu-btn" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="/playground/">
+    <span class="brand-mark" aria-hidden="true">FN</span>
+    <span class="brand-text">Field Notes</span>
+  </a>
+  <div class="topbar-actions">
+    <button class="icon-btn search-btn" type="button" aria-label="Search" data-open-search>
+      <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <button class="icon-btn theme-btn" type="button" aria-label="Toggle colour theme" data-toggle-theme>
+      <svg class="icon-sun" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="4" fill="currentColor"/><path d="M10 1v2M10 17v2M1 10h2M17 10h2M3.6 3.6l1.4 1.4M15 15l1.4 1.4M16.4 3.6L15 5M5 15l-1.4 1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <svg class="icon-moon" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M16 12.5A7 7 0 0 1 7.5 4a7 7 0 1 0 8.5 8.5z" fill="currentColor"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="shell">
+  <div class="scrim" data-close-nav hidden></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+      <button class="search-field" type="button" data-open-search>
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Search docs</span>
+        <kbd>/</kbd>
+      </button>
+      <nav class="sidebar-nav" aria-label="Documentation"><ul class="nav-list nav-depth-0"><li class="nav-group is-open"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/"><span class="nav-icon" aria-hidden="true">🔌</span>SHENZHEN I/O</a><button class="nav-toggle" type="button" aria-expanded="true" aria-label="Toggle SHENZHEN I/O section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-1"><li><a class="nav-link" href="/playground/shenzhen-io/reference-card/"><span class="nav-icon" aria-hidden="true">🗂️</span>Reference card</a></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/language-reference/"><span class="nav-icon" aria-hidden="true">📘</span>Language reference</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Language reference section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/program-structure/">Program structure</a></li><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/registers/">Registers</a></li><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/basic-instructions/">Basic instructions</a></li><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/arithmetic-instructions/">Arithmetic instructions</a></li><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/test-instructions/">Test instructions</a></li></ul></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/application-notes/"><span class="nav-icon" aria-hidden="true">📐</span>Application notes</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Application notes section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/application-notes/an268-interfaces/">AN268: Two interfaces, limitless possibilities</a></li><li><a class="nav-link" href="/playground/shenzhen-io/application-notes/an393-sleep/">AN393: Make sure to get enough sleep</a></li><li><a class="nav-link" href="/playground/shenzhen-io/application-notes/an650-light-controller/">AN650: Touch-activated light controller</a></li></ul></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/parts/"><span class="nav-icon" aria-hidden="true">🧩</span>Parts datasheets</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Parts datasheets section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/parts/mc4000/">MC4000</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/mc6000/">MC6000</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/mc4010/">MC4010</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/dx300/">DX300</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/memory/">Memory - 100P-14 and 200P-14</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/logic-gates/">LC70Gxx logic gates</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/clock/">DT2415 incremental clock</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/radio/">C2S-RF901 radio</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/fm-blaster/">FM Blaster sound module</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/displays-and-inputs/">Displays and inputs</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/specialist-parts/">Specialist parts</a></li></ul></li><li class="nav-group is-open"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/supplemental/"><span class="nav-icon" aria-hidden="true">📎</span>Supplemental data</a><button class="nav-toggle" type="button" aria-expanded="true" aria-label="Toggle Supplemental data section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/supplemental/signal-specs/">Signal and formula specs</a></li><li><a class="nav-link" href="/playground/shenzhen-io/supplemental/tv-keywords/">TV spoiler keyword list</a></li><li><a class="nav-link is-current" href="/playground/shenzhen-io/supplemental/lookup-tables/" aria-current="page">Product lookup tables</a></li></ul></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/story/"><span class="nav-icon" aria-hidden="true">✉️</span>Story documents</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Story documents section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/story/emails/">The recruiter emails</a></li><li><a class="nav-link" href="/playground/shenzhen-io/story/visa-application/">Visa application form</a></li></ul></li></ul></li></ul></nav>
+    </div>
+  </aside>
+
+  <main class="content" id="main">
+    <article class="doc">
+      <nav class="breadcrumbs" aria-label="Breadcrumb"><ol><li><a href="/playground/">Home</a></li><li><a href="/playground/shenzhen-io/">SHENZHEN I/O</a></li><li><a href="/playground/shenzhen-io/supplemental/">Supplemental data</a></li><li aria-current="page">Product lookup tables</li></ol></nav>
+      <header class="doc-head"><h1>Product lookup tables</h1><p class="lede">The iNK colour space, the assembled meat primer, the cocktail list and the neural lattice substrates.</p></header><nav class="toc" aria-label="On this page"><details open><summary>On this page</summary><ul><li class="toc-h2"><a href="#ink-smartdye-colour-classification">iNK SmartDye colour classification</a></li><li class="toc-h2"><a href="#the-assembled-meat-primer">The Assembled Meat Primer</a></li><li class="toc-h2"><a href="#the-elegant-bachelor-cocktail-recipes">The Elegant Bachelor - cocktail recipes</a></li><li class="toc-h2"><a href="#neural-processing-lattice">Neural processing lattice</a></li></ul></details></nav><p>Four documents that are, functionally, lookup tables.</p>
+<h2 id="ink-smartdye-colour-classification">iNK SmartDye colour classification<a class="anchor" href="#ink-smartdye-colour-classification" aria-label="Link to this section">#</a></h2>
+<p><em>Confidential information. Do not redistribute without authorization.</em></p>
+<p>Incoming light is classified by wavelength into a value band, and each band maps to a SmartDye colour.</p>
+<div class="table-wrap"><table><thead><tr><th>Light colour</th><th>Wavelength</th><th>Min value</th><th>Max value</th><th>SmartDye colour</th></tr></thead><tbody><tr><td>Red</td><td>620-750 nm</td><td>20</td><td>39</td><td><code>.blood</code></td></tr><tr><td>Orange</td><td>590-620 nm</td><td>40</td><td>49</td><td>Deep Nacho</td></tr><tr><td>Yellow</td><td>570-590 nm</td><td>50</td><td>59</td><td>Chartreuse Abuse</td></tr><tr><td>Green</td><td>495-570 nm</td><td>60</td><td>69</td><td>Ballistic Viridian</td></tr><tr><td>Blue</td><td>450-495 nm</td><td>70</td><td>79</td><td>Cool Dad®</td></tr><tr><td>Violet</td><td>380-450 nm</td><td>80</td><td>89</td><td>HyPURPLE</td></tr></tbody></table></div>
+<p>Each dye also has a position in the two-axis SmartDye colour space:</p>
+<div class="table-wrap"><table><thead><tr><th>Colour</th><th>k-axis</th><th>n-axis</th></tr></thead><tbody><tr><td>Chartreuse Abuse</td><td>5</td><td>5</td></tr><tr><td>Deep Nacho</td><td>50</td><td>5</td></tr><tr><td><code>.blood</code></td><td>95</td><td>5</td></tr><tr><td>Ballistic Viridian</td><td>5</td><td>60</td></tr><tr><td>Neutral</td><td>50</td><td>50</td></tr><tr><td>Cool Dad®</td><td>15</td><td>80</td></tr><tr><td>HyPURPLE</td><td>75</td><td>85</td></tr></tbody></table></div>
+<h2 id="the-assembled-meat-primer">The Assembled Meat Primer<a class="anchor" href="#the-assembled-meat-primer" aria-label="Link to this section">#</a></h2>
+<p>Three sample specifications for the meat assembler. Each pattern is a set of valve timings across <code>valve-0</code>, <code>valve-1</code> and <code>valve-2</code>, mixing lean (95% lean, 5% fat) and fat (20% lean, 80% fat).</p>
+<div class="table-wrap"><table><thead><tr><th>Pattern</th><th>Description</th><th>Calories</th><th>Fat (g)</th><th>Carbs (g)</th><th>Protein (g)</th></tr></thead><tbody><tr><td>Cutlet-style</td><td>A traditional cutlet with fat around the edges that will crisp nicely when broiled</td><td>217</td><td>16</td><td>0</td><td>19</td></tr><tr><td>Steak-style</td><td>A lean &quot;steak&quot; inspired by the fine marbling of high-grade beef</td><td>176</td><td>4</td><td>0</td><td>34</td></tr><tr><td>Bacon-style</td><td>Rashers of good streaky bacon</td><td>227</td><td>18</td><td>0</td><td>16</td></tr></tbody></table></div>
+<p>Serving size 100 grams. The valve first/last positions are given as a diagram in the original and are best read in-game.</p>
+<h2 id="the-elegant-bachelor-cocktail-recipes">The Elegant Bachelor - cocktail recipes<a class="anchor" href="#the-elegant-bachelor-cocktail-recipes" aria-label="Link to this section">#</a></h2>
+<p>Six ingredients: vodka, gin and dry vermouth; sweetened lemon, lime and cranberry mixes.</p>
+<div class="table-wrap"><table><thead><tr><th>Drink</th><th>Recipe</th></tr></thead><tbody><tr><td>Vodka Shot</td><td>1.5 oz vodka</td></tr><tr><td>Lemon Drop</td><td>3 oz vodka, 1 oz lemon mix</td></tr><tr><td>Cosmopolitan</td><td>2 oz vodka, 1 oz lime mix, 1 oz cranberry mix</td></tr><tr><td>Cape Cod</td><td>2 oz vodka, 2 oz cranberry mix</td></tr><tr><td>Vodka Martini</td><td>3 oz vodka, 1 oz dry vermouth</td></tr><tr><td>Gimlet</td><td>3 oz gin, 1 oz lime mix</td></tr><tr><td>Gin Martini</td><td>3 oz gin, 1 oz dry vermouth</td></tr></tbody></table></div>
+<h2 id="neural-processing-lattice">Neural processing lattice<a class="anchor" href="#neural-processing-lattice" aria-label="Link to this section">#</a></h2>
+<p><em>SuemuraLab Biological Sciences Building.</em></p>
+<p>The cell-based &quot;printer&quot; assembles scaffolds in 6 x 6 chunks, from bottom to top, using three substrates: a-MSH (<code>a</code>), b-P2 (<code>b</code>) and y(HG) (<code>y</code>). A dash means no deposit.</p>
+<p>The master scaffold layer templates, indexed 0 to 8, each describing one row of six cells:</p>
+<div class="table-wrap"><table><thead><tr><th>Template</th><th>Row</th></tr></thead><tbody><tr><td>0</td><td><code>- - - - - -</code></td></tr><tr><td>1</td><td><code>a a a a a a</code></td></tr><tr><td>2</td><td><code>b b b b b b</code></td></tr><tr><td>3</td><td><code>a b a b a b</code></td></tr><tr><td>4</td><td><code>y a a y a y</code></td></tr><tr><td>5</td><td><code>- a a - a -</code></td></tr><tr><td>6</td><td><code>y - - y - y</code></td></tr><tr><td>7</td><td><code>- a - - - -</code></td></tr><tr><td>8</td><td><code>- - - - b -</code></td></tr></tbody></table></div>
+<p>A pattern is six template indices, applied bottom row first. For example the pattern <code>1, 4, 6, 6, 0, 0</code> produces, reading top row down:</p>
+<div class="code-block" data-lang="text"><button class="copy-btn" type="button" data-copy>Copy</button><pre><code class="language-text">- - - - - -
+- - - - - -
+y - - y - y
+y - - y - y
+y a a y a y
+a a a a a a</code></pre></div>
+<p>and the pattern <code>2, 1, 2, 4, 7, 7</code>:</p>
+<div class="code-block" data-lang="text"><button class="copy-btn" type="button" data-copy>Copy</button><pre><code class="language-text">- a - - - -
+- a - - - -
+y a a y a y
+b b b b b b
+a a a a a a
+b b b b b b</code></pre></div>
+      <nav class="pager" aria-label="Pagination"><a class="pager-link pager-prev" href="/playground/shenzhen-io/supplemental/tv-keywords/"><span class="pager-label">Previous</span><span class="pager-title">TV spoiler keyword list</span></a><a class="pager-link pager-next" href="/playground/shenzhen-io/story/"><span class="pager-label">Next</span><span class="pager-title">Story documents</span></a></nav>
+    </article>
+    <footer class="site-footer">
+      <p>Field Notes - built as a static site. Source notes are kept as Markdown.</p>
+    </footer>
+  </main>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-head">
+      <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input type="search" class="search-input" placeholder="Search all notes" aria-label="Search query" autocomplete="off" />
+      <button class="icon-btn" type="button" data-close-search aria-label="Close search">Esc</button>
+    </div>
+    <div class="search-results" role="listbox" aria-label="Search results"></div>
+  </div>
+</div>
+
+<script src="/playground/assets/app.js" defer></script>
+</body>
+</html>
