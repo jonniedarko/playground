@@ -507,6 +507,11 @@ th {
 
 tbody tr:last-child td { border-bottom: 0; }
 
+/* Keep short code tokens whole inside tables - a wrapped `mov 100 p1` reads as
+   two things. The table scrolls in its own container if that makes it wide. */
+th code,
+td code { white-space: nowrap; }
+
 /* ------------------------------------------------------------- callouts */
 
 .callout {

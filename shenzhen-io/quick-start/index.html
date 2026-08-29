@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Quick start - Field Notes</title>
+<meta name="description" content="The whole system in one page - six facts, the two pin types, and three programs you can type in and watch run." />
+<meta name="color-scheme" content="light dark" />
+<meta name="theme-color" content="#f7f7f5" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)" />
+<meta property="og:title" content="Quick start - Field Notes" />
+<meta property="og:description" content="The whole system in one page - six facts, the two pin types, and three programs you can type in and watch run." />
+<meta property="og:type" content="article" />
+<link rel="icon" href="/playground/assets/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="/playground/assets/style.css" />
+<script>
+  // Apply the stored theme before first paint so the page never flashes the wrong one.
+  try {
+    var t = localStorage.getItem('theme')
+    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t
+  } catch (e) {}
+  window.__BASE__ = "/playground/"
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <button class="icon-btn menu-btn" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="/playground/">
+    <span class="brand-mark" aria-hidden="true">FN</span>
+    <span class="brand-text">Field Notes</span>
+  </a>
+  <div class="topbar-actions">
+    <button class="icon-btn search-btn" type="button" aria-label="Search" data-open-search>
+      <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <button class="icon-btn theme-btn" type="button" aria-label="Toggle colour theme" data-toggle-theme>
+      <svg class="icon-sun" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="4" fill="currentColor"/><path d="M10 1v2M10 17v2M1 10h2M17 10h2M3.6 3.6l1.4 1.4M15 15l1.4 1.4M16.4 3.6L15 5M5 15l-1.4 1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <svg class="icon-moon" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M16 12.5A7 7 0 0 1 7.5 4a7 7 0 1 0 8.5 8.5z" fill="currentColor"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="shell">
+  <div class="scrim" data-close-nav hidden></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+      <button class="search-field" type="button" data-open-search>
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Search docs</span>
+        <kbd>/</kbd>
+      </button>
+      <nav class="sidebar-nav" aria-label="Documentation"><ul class="nav-list nav-depth-0"><li class="nav-group is-open"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/"><span class="nav-icon" aria-hidden="true">🔌</span>SHENZHEN I/O</a><button class="nav-toggle" type="button" aria-expanded="true" aria-label="Toggle SHENZHEN I/O section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-1"><li><a class="nav-link is-current" href="/playground/shenzhen-io/quick-start/" aria-current="page"><span class="nav-icon" aria-hidden="true">🚀</span>Quick start</a></li><li><a class="nav-link" href="/playground/shenzhen-io/reference-card/"><span class="nav-icon" aria-hidden="true">🗂️</span>Reference card</a></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/language-reference/"><span class="nav-icon" aria-hidden="true">📘</span>Language reference</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Language reference section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/program-structure/">Program structure</a></li><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/registers/">Registers</a></li><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/basic-instructions/">Basic instructions</a></li><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/arithmetic-instructions/">Arithmetic instructions</a></li><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/test-instructions/">Test instructions</a></li></ul></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/application-notes/"><span class="nav-icon" aria-hidden="true">📐</span>Application notes</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Application notes section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/application-notes/an268-interfaces/">AN268: Two interfaces, limitless possibilities</a></li><li><a class="nav-link" href="/playground/shenzhen-io/application-notes/an393-sleep/">AN393: Make sure to get enough sleep</a></li><li><a class="nav-link" href="/playground/shenzhen-io/application-notes/an650-light-controller/">AN650: Touch-activated light controller</a></li></ul></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/parts/"><span class="nav-icon" aria-hidden="true">🧩</span>Parts datasheets</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Parts datasheets section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/parts/mc4000/">MC4000</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/mc6000/">MC6000</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/mc4010/">MC4010</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/dx300/">DX300</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/memory/">Memory - 100P-14 and 200P-14</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/logic-gates/">LC70Gxx logic gates</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/clock/">DT2415 incremental clock</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/radio/">C2S-RF901 radio</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/fm-blaster/">FM Blaster sound module</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/displays-and-inputs/">Displays and inputs</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/specialist-parts/">Specialist parts</a></li></ul></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/supplemental/"><span class="nav-icon" aria-hidden="true">📎</span>Supplemental data</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Supplemental data section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/supplemental/signal-specs/">Signal and formula specs</a></li><li><a class="nav-link" href="/playground/shenzhen-io/supplemental/tv-keywords/">TV spoiler keyword list</a></li><li><a class="nav-link" href="/playground/shenzhen-io/supplemental/lookup-tables/">Product lookup tables</a></li></ul></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/story/"><span class="nav-icon" aria-hidden="true">✉️</span>Story documents</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Story documents section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/story/emails/">The recruiter emails</a></li><li><a class="nav-link" href="/playground/shenzhen-io/story/visa-application/">Visa application form</a></li></ul></li></ul></li></ul></nav>
+    </div>
+  </aside>
+
+  <main class="content" id="main">
+    <article class="doc">
+      <nav class="breadcrumbs" aria-label="Breadcrumb"><ol><li><a href="/playground/">Home</a></li><li><a href="/playground/shenzhen-io/">SHENZHEN I/O</a></li><li aria-current="page">Quick start</li></ol></nav>
+      <header class="doc-head"><h1>Quick start</h1><p class="lede">The whole system in one page - six facts, the two pin types, and three programs you can type in and watch run.</p></header><nav class="toc" aria-label="On this page"><details open><summary>On this page</summary><ul><li class="toc-h2"><a href="#the-four-concepts">The four concepts</a></li><li class="toc-h3"><a href="#1-acc-is-the-only-scratchpad">1. acc is the only scratchpad</a></li><li class="toc-h3"><a href="#2-time-units-are-the-clock">2. Time units are the clock</a></li><li class="toc-h3"><a href="#3-power-is-instructions-run">3. Power is instructions run</a></li><li class="toc-h3"><a href="#4-everything-is-a-pin">4. Everything is a pin</a></li><li class="toc-h2"><a href="#the-two-interfaces">The two interfaces</a></li><li class="toc-h3"><a href="#simple-io-a-level">Simple I/O: a level</a></li><li class="toc-h3"><a href="#xbus-a-handshake">XBus: a handshake</a></li><li class="toc-h2"><a href="#example-1-blink-an-output">Example 1: blink an output</a></li><li class="toc-h2"><a href="#example-2-react-to-an-input">Example 2: react to an input</a></li><li class="toc-h2"><a href="#example-3-two-chips-over-xbus">Example 3: two chips over XBus</a></li><li class="toc-h2"><a href="#stuck">Stuck?</a></li><li class="toc-h2"><a href="#cheat-sheet">Cheat sheet</a></li><li class="toc-h2"><a href="#where-to-go-next">Where to go next</a></li></ul></details></nav><blockquote class="callout callout-tip"><p class="callout-title">If you read nothing else, read this</p><ul><li><code>acc</code> is your <strong>only scratchpad</strong>. All arithmetic lands there.</li><li><strong>Time units are the clock.</strong> <code>slp 1</code> moves you to the next one.</li><li><strong>Power = instructions you actually run.</strong> Sleeping is free.</li><li><strong>Two pin types.</strong> Unmarked = simple I/O. Yellow dot = XBus. They never connect to each other.</li><li><strong>XBus waits.</strong> Touching an XBus pin stops the chip until the other side shows up.</li><li><strong><code>+</code> and <code>-</code> lines start switched off.</strong> A test instruction switches them on.</li></ul></blockquote>
+<p>Everything below is those six facts, slower.</p>
+<hr />
+<h2 id="the-four-concepts">The four concepts<a class="anchor" href="#the-four-concepts" aria-label="Link to this section">#</a></h2>
+<h3 id="1-acc-is-the-only-scratchpad">1. <code>acc</code> is the only scratchpad<a class="anchor" href="#1-acc-is-the-only-scratchpad" aria-label="Link to this section">#</a></h3>
+<p>Every arithmetic instruction reads <code>acc</code> and writes back to <code>acc</code>. You never say where the result goes.</p>
+<div class="code-block" data-lang="asm"><button class="copy-btn" type="button" data-copy>Copy</button><pre><code class="language-asm">  mov 5 acc    # acc = 5
+  add 3        # acc = 8
+  mul 2        # acc = 16</code></pre></div>
+<p>Values clamp to <strong>-999 to 999</strong>. <code>800</code> plus <code>400</code> is <code>999</code>, not <code>1200</code>.</p>
+<p>The MC4000 has <em>only</em> <code>acc</code>. The MC6000 adds a second one called <code>dat</code>.</p>
+<h3 id="2-time-units-are-the-clock">2. Time units are the clock<a class="anchor" href="#2-time-units-are-the-clock" aria-label="Link to this section">#</a></h3>
+<p>The chip runs <em>far</em> faster than the world around it. A whole program can run many times inside one time unit.</p>
+<p><strong><code>slp</code> is the only way to move time forward.</strong> A loop that just spins does not advance the clock — it burns power going nowhere.</p>
+<div class="code-block" data-lang="asm"><button class="copy-btn" type="button" data-copy>Copy</button><pre><code class="language-asm">  slp 1        # go to the start of the next time unit
+  slp 3        # skip three</code></pre></div>
+<h3 id="3-power-is-instructions-run">3. Power is instructions run<a class="anchor" href="#3-power-is-instructions-run" aria-label="Link to this section">#</a></h3>
+<p>Your score is how many instructions actually execute. Two ways to spend less:</p>
+<ul><li><strong>Sleep.</strong> A sleeping chip costs nothing.</li><li><strong>Skip.</strong> A <code>+</code>/<code>-</code> line that is switched off is skipped and costs nothing.</li></ul>
+<h3 id="4-everything-is-a-pin">4. Everything is a pin<a class="anchor" href="#4-everything-is-a-pin" aria-label="Link to this section">#</a></h3>
+<p>Pins are registers. Read one to get the world&#39;s value, write one to change it.</p>
+<div class="code-block" data-lang="asm"><button class="copy-btn" type="button" data-copy>Copy</button><pre><code class="language-asm">  mov p0 acc     # read pin p0 into acc
+  mov 100 p1     # drive pin p1 to 100</code></pre></div>
+<blockquote class="callout callout-note"><p class="callout-title">Note</p><p>Writing a simple I/O pin makes it an <strong>output</strong>. Reading it makes it an <strong>input</strong> and wipes whatever you were outputting. A pin is one or the other, never both at once.</p></blockquote>
+<hr />
+<h2 id="the-two-interfaces">The two interfaces<a class="anchor" href="#the-two-interfaces" aria-label="Link to this section">#</a></h2>
+<p>This is the part that catches everyone. There are two kinds of pin and they behave completely differently.</p>
+<div class="table-wrap"><table><thead><tr><th></th><th>Simple I/O</th><th>XBus</th></tr></thead><tbody><tr><td><strong>Looks like</strong></td><td>unmarked pin</td><td>pin with a <strong>yellow dot</strong></td></tr><tr><td><strong>Values</strong></td><td>0 to 100</td><td>-999 to 999</td></tr><tr><td><strong>Means</strong></td><td>a level, held continuously</td><td>one packet, sent once</td></tr><tr><td><strong>Timing</strong></td><td>read/write any time</td><td><strong>waits for the other side</strong></td></tr><tr><td><strong>Use for</strong></td><td>buttons, LEDs, motors, mics</td><td>chip-to-chip, keypads, displays</td></tr></tbody></table></div>
+<p><strong>They never connect to each other.</strong> Unmarked joins to unmarked, yellow dot joins to yellow dot. If a wire refuses to attach, this is why.</p>
+<h3 id="simple-io-a-level">Simple I/O: a level<a class="anchor" href="#simple-io-a-level" aria-label="Link to this section">#</a></h3>
+<p>Think of a dimmer switch. <code>0</code> is off, <code>100</code> is full, <code>50</code> is half. The value just sits there until you change it. Reading never waits.</p>
+<h3 id="xbus-a-handshake">XBus: a handshake<a class="anchor" href="#xbus-a-handshake" aria-label="Link to this section">#</a></h3>
+<p>Think of handing someone a note. <strong>Nothing moves until both people are there</strong> — one holding it out, one reaching for it.</p>
+<p>So an XBus read with nobody writing <strong>stops your chip dead</strong> until somebody writes. Same the other way.</p>
+<p>That is not a bug, it is how you synchronise two chips. But it is also the number one reason a design mysteriously freezes.</p>
+<div class="code-block" data-lang="asm"><button class="copy-btn" type="button" data-copy>Copy</button><pre><code class="language-asm">  slx x0         # sleep until there is something on x0
+  mov x0 acc     # now read it</code></pre></div>
+<p><code>slx</code> sleeps until data is ready. A plain <code>mov x0 acc</code> would also wait — <code>slx</code> just lets you wait in one place and read in another.</p>
+<hr />
+<h2 id="example-1-blink-an-output">Example 1: blink an output<a class="anchor" href="#example-1-blink-an-output" aria-label="Link to this section">#</a></h2>
+<p><strong>Goal:</strong> make pin <code>p1</code> turn on for 3 time units, off for 3, forever.</p>
+<p><strong>You need:</strong> one MC4000. Wire <code>p1</code> to whatever you&#39;re lighting up.</p>
+<p><strong>Type this:</strong></p>
+<div class="code-block" data-lang="asm"><button class="copy-btn" type="button" data-copy>Copy</button><pre><code class="language-asm">  mov 100 p1
+  slp 3
+  mov 0 p1
+  slp 3</code></pre></div>
+<p><strong>What happens:</strong></p>
+<div class="table-wrap"><table><thead><tr><th>Line</th><th>Effect</th></tr></thead><tbody><tr><td><code>mov 100 p1</code></td><td><code>p1</code> becomes an output at full</td></tr><tr><td><code>slp 3</code></td><td>clock jumps forward 3 time units, chip costs nothing</td></tr><tr><td><code>mov 0 p1</code></td><td><code>p1</code> drops to off</td></tr><tr><td><code>slp 3</code></td><td>3 more time units</td></tr><tr><td><em>(end)</em></td><td>execution <strong>wraps back to line 1</strong> and repeats</td></tr></tbody></table></div>
+<blockquote class="callout callout-tip"><p class="callout-title">Tip</p><p>There is no <code>jmp</code> here. When a program runs off the bottom it starts again at the top, so a plain list of instructions is already a loop.</p></blockquote>
+<hr />
+<h2 id="example-2-react-to-an-input">Example 2: react to an input<a class="anchor" href="#example-2-react-to-an-input" aria-label="Link to this section">#</a></h2>
+<p><strong>Goal:</strong> light <code>p1</code> while button <code>p0</code> is held.</p>
+<p><strong>You need:</strong> one MC4000. <code>p0</code> to the button, <code>p1</code> to the lamp. Both unmarked pins.</p>
+<p><strong>Type this:</strong></p>
+<div class="code-block" data-lang="asm"><button class="copy-btn" type="button" data-copy>Copy</button><pre><code class="language-asm">  tgt p0 50
++ mov 100 p1
+- mov 0 p1
+  slp 1</code></pre></div>
+<p><strong>What happens:</strong></p>
+<div class="table-wrap"><table><thead><tr><th>Line</th><th>Effect</th></tr></thead><tbody><tr><td><code>tgt p0 50</code></td><td>reads <code>p0</code>, asks &quot;is it greater than 50?&quot;</td></tr><tr><td><code>+ mov 100 p1</code></td><td>runs <strong>only if yes</strong> — lamp on</td></tr><tr><td><code>- mov 0 p1</code></td><td>runs <strong>only if no</strong> — lamp off</td></tr><tr><td><code>slp 1</code></td><td>wait one time unit, then wrap to the top</td></tr></tbody></table></div>
+<p>The test flips a switch inside the chip. <code>+</code> lines run when the test passed, <code>-</code> lines when it failed. Whichever one doesn&#39;t run is skipped for free.</p>
+<p><strong>Why 50?</strong> A button gives you <code>0</code> or <code>100</code>, but sensors give in-between values. 50 is the halfway line. (Logic gates use the same threshold.)</p>
+<blockquote class="callout callout-warning"><p class="callout-title">Warning</p><p>A <code>+</code> or <code>-</code> line with <strong>no test before it never runs</strong>. Conditional lines start switched off. If a line seems to be ignored, check there is a <code>t</code> instruction above it.</p></blockquote>
+<hr />
+<h2 id="example-3-two-chips-over-xbus">Example 3: two chips over XBus<a class="anchor" href="#example-3-two-chips-over-xbus" aria-label="Link to this section">#</a></h2>
+<p><strong>Goal:</strong> chip A reads a sensor, sends the value to chip B, which drives a lamp.</p>
+<p><strong>You need:</strong> two MC4000s. Wire A&#39;s <code>x0</code> to B&#39;s <code>x0</code> — both yellow-dot pins. Sensor to A&#39;s <code>p0</code>, lamp to B&#39;s <code>p1</code>.</p>
+<p><strong>Chip A (the sender):</strong></p>
+<div class="code-block" data-lang="asm"><button class="copy-btn" type="button" data-copy>Copy</button><pre><code class="language-asm">  mov p0 x0
+  slp 1</code></pre></div>
+<p><strong>Chip B (the receiver):</strong></p>
+<div class="code-block" data-lang="asm"><button class="copy-btn" type="button" data-copy>Copy</button><pre><code class="language-asm">  slx x0
+  mov x0 p1</code></pre></div>
+<p><strong>What happens:</strong></p>
+<div class="table-wrap"><table><thead><tr><th>Step</th><th>Chip A</th><th>Chip B</th></tr></thead><tbody><tr><td>1</td><td>reads <code>p0</code>, offers it on <code>x0</code> — <strong>waits</strong></td><td>asleep on <code>slx x0</code></td></tr><tr><td>2</td><td><em>(both sides present)</em></td><td>wakes up</td></tr><tr><td>3</td><td>hand-off completes</td><td>reads <code>x0</code>, drives <code>p1</code></td></tr><tr><td>4</td><td><code>slp 1</code></td><td>wraps to top, sleeps again</td></tr></tbody></table></div>
+<p>Neither chip needs to know the other&#39;s timing. The handshake <em>is</em> the synchronisation — that is what XBus is for.</p>
+<hr />
+<h2 id="stuck">Stuck?<a class="anchor" href="#stuck" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead><tbody><tr><td>A <code>+</code> or <code>-</code> line never runs</td><td>Conditionals start switched off</td><td>Put a test (<code>teq</code>, <code>tgt</code>, <code>tlt</code>, <code>tcp</code>) above it</td></tr><tr><td>Chip freezes, nothing happens</td><td>XBus read or write with nobody on the other end</td><td>Check the wire; use <code>slx</code> to wait properly</td></tr><tr><td>A wire refuses to connect</td><td>Mixing pin types</td><td>Unmarked ↔ unmarked, yellow dot ↔ yellow dot</td></tr><tr><td>Output never changes / time never moves</td><td>No <code>slp</code> anywhere</td><td>Add <code>slp 1</code></td></tr><tr><td>Error about a register</td><td>That chip doesn&#39;t have it</td><td>MC4000 has <code>acc</code> only. <code>dat</code> is MC6000</td></tr><tr><td>Maths gives exactly <code>999</code> or <code>-999</code></td><td>Values clamp at the limits</td><td>Scale your numbers down</td></tr><tr><td>An output went dead</td><td>You read the pin, which wiped the output</td><td>A pin is input <em>or</em> output, not both</td></tr><tr><td>Out of room</td><td>MC4000 = <strong>9 lines</strong>, MC6000 = <strong>14</strong></td><td>Split across two chips, or use a bigger one</td></tr></tbody></table></div>
+<hr />
+<h2 id="cheat-sheet">Cheat sheet<a class="anchor" href="#cheat-sheet" aria-label="Link to this section">#</a></h2>
+<p>Everything you need, repeated so you don&#39;t have to scroll up.</p>
+<p><strong>Move and jump</strong></p>
+<div class="table-wrap"><table><tbody><tr><td><code>mov R/I R</code></td><td>copy first into second</td></tr><tr><td><code>jmp L</code></td><td>jump to a label</td></tr><tr><td><code>slp R/I</code></td><td>sleep N time units</td></tr><tr><td><code>slx P</code></td><td>sleep until an XBus pin has data</td></tr><tr><td><code>nop</code></td><td>do nothing</td></tr></tbody></table></div>
+<p><strong>Maths — all of it lands in <code>acc</code></strong></p>
+<div class="table-wrap"><table><tbody><tr><td><code>add R/I</code></td><td><code>acc = acc + x</code></td></tr><tr><td><code>sub R/I</code></td><td><code>acc = acc - x</code></td></tr><tr><td><code>mul R/I</code></td><td><code>acc = acc * x</code></td></tr><tr><td><code>not</code></td><td><code>0</code> becomes <code>100</code>, anything else becomes <code>0</code></td></tr><tr><td><code>dgt R/I</code></td><td>keep one digit of <code>acc</code></td></tr><tr><td><code>dst R/I R/I</code></td><td>set one digit of <code>acc</code></td></tr></tbody></table></div>
+<p><strong>Tests — switch the <code>+</code> and <code>-</code> lines</strong></p>
+<div class="table-wrap"><table><tbody><tr><td><code>teq a b</code></td><td>equal</td></tr><tr><td><code>tgt a b</code></td><td>a greater than b</td></tr><tr><td><code>tlt a b</code></td><td>a less than b</td></tr><tr><td><code>tcp a b</code></td><td>greater → <code>+</code>, less → <code>-</code>, equal → neither</td></tr></tbody></table></div>
+<p><strong>Numbers</strong></p>
+<div class="table-wrap"><table><tbody><tr><td>Simple I/O</td><td><code>0</code> to <code>100</code></td></tr><tr><td>XBus</td><td><code>-999</code> to <code>999</code></td></tr><tr><td>Registers</td><td><code>-999</code> to <code>999</code>, clamped</td></tr><tr><td>On / off threshold</td><td><code>50</code></td></tr></tbody></table></div>
+<p><strong>Chips</strong></p>
+<div class="table-wrap"><table><thead><tr><th></th><th>Program lines</th><th>Registers</th><th>Pins</th></tr></thead><tbody><tr><td>MC4000</td><td>9</td><td><code>acc</code></td><td>2 simple, 2 XBus</td></tr><tr><td>MC6000</td><td>14</td><td><code>acc</code>, <code>dat</code></td><td>2 simple, 4 XBus</td></tr></tbody></table></div>
+<hr />
+<h2 id="where-to-go-next">Where to go next<a class="anchor" href="#where-to-go-next" aria-label="Link to this section">#</a></h2>
+<ul><li>Need one instruction, right now → <a href="/playground/shenzhen-io/reference-card/">Reference card</a></li><li>Confused by <code>+</code> and <code>-</code> → <a href="/playground/shenzhen-io/language-reference/program-structure/">Program structure</a></li><li>Confused by XBus blocking → <a href="/playground/shenzhen-io/application-notes/an268-interfaces/">AN268: Two interfaces</a></li><li>What a specific chip can do → <a href="/playground/shenzhen-io/parts/">Parts datasheets</a></li></ul>
+      <nav class="pager" aria-label="Pagination"><a class="pager-link pager-prev" href="/playground/shenzhen-io/"><span class="pager-label">Previous</span><span class="pager-title">SHENZHEN I/O</span></a><a class="pager-link pager-next" href="/playground/shenzhen-io/reference-card/"><span class="pager-label">Next</span><span class="pager-title">Reference card</span></a></nav>
+    </article>
+    <footer class="site-footer">
+      <p>Field Notes - built as a static site. Source notes are kept as Markdown.</p>
+    </footer>
+  </main>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-head">
+      <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input type="search" class="search-input" placeholder="Search all notes" aria-label="Search query" autocomplete="off" />
+      <button class="icon-btn" type="button" data-close-search aria-label="Close search">Esc</button>
+    </div>
+    <div class="search-results" role="listbox" aria-label="Search results"></div>
+  </div>
+</div>
+
+<script src="/playground/assets/app.js" defer></script>
+</body>
+</html>
