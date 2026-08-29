@@ -110,13 +110,16 @@ unconnected one. Leave a `pinout-col` empty for a part with pins on one side.
 
 ## Deployment
 
-`.github/workflows/deploy-docs.yml` builds the site and publishes it to GitHub
-Pages on every push to `main` that touches `site/`. It sets `BASE_PATH`
-automatically: `/<repo>` for a project page, empty for a `<user>.github.io`
-repository.
+`.github/workflows/deploy-docs.yml` builds the site and pushes the output to the
+`pages` branch on every push to `main` that touches `site/`. The `pages` branch
+holds the built site and nothing else - each run replaces its contents. It sets
+`BASE_PATH` automatically: `/<repo>` for a project page, empty for a
+`<user>.github.io` repository.
 
-To turn it on, set **Settings → Pages → Build and deployment → Source** to
-**GitHub Actions**.
+To turn it on, set **Settings → Pages → Build and deployment** to
+**Deploy from a branch**, with branch `pages` and folder `/ (root)`.
+
+The workflow can also be run by hand from the Actions tab (`workflow_dispatch`).
 
 ## Layout of this directory
 

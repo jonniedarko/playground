@@ -8,20 +8,21 @@ on:
       - '.github/workflows/deploy-docs.yml'
   workflow_dispatch:
 
-# Allow GITHUB_TOKEN to deploy to GitHub Pages.
+# Pushing the built site to the `pages` branch needs write access to the repo.
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
-# One deployment at a time; queued runs supersede each other rather than cancelling
-# a deploy that is already in flight.
+# One publish at a time; queued runs supersede each other rather than interrupting
+# a push that is already in flight.
 concurrency:
-  group: pages
+  group: pages-branch
   cancel-in-progress: false
 
+env:
+  PAGES_BRANCH: pages
+
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -48,18 +49,32 @@ jobs:
           BASE_PATH: ${{ steps.base.outputs.path }}
         run: node build.mjs
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: site/dist
+      - name: Publish to the ${{ env.PAGES_BRANCH }} branch
+        run: |
+          set -euo pipefail
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          # Check the publish branch out beside the source tree. Creating it from the
+          # current commit is only a fallback for a repository that has none yet.
+          if git ls-remote --exit-code --heads origin "$PAGES_BRANCH" >/dev/null 2>&1; then
+            git fetch origin "$PAGES_BRANCH"
+            git worktree add ../publish "origin/$PAGES_BRANCH"
+          else
+            git worktree add ../publish --detach
+          fi
+          git -C ../publish checkout -B "$PAGES_BRANCH"
+
+          # Replace the branch contents wholesale: the built site is the branch.
+          find ../publish -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+          cp -R site/dist/. ../publish/
+
+          git -C ../publish add -A
+          if git -C ../publish diff --cached --quiet; then
+            echo 'Site output is unchanged; nothing to publish.'
+            exit 0
+          fi
+
+          git -C ../publish commit -m "Deploy documentation site from ${GITHUB_SHA:0:7}"
+          git -C ../publish push origin "$PAGES_BRANCH"
