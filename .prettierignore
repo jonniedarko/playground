@@ -37,3 +37,6 @@ next-env.d.ts
 
 pnpm-lock.yaml
 
+
+# static docs site - standalone, not part of the Next.js app
+/site

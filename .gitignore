@@ -39,3 +39,5 @@ yarn-error.log*
 
 # swc
 .swc
+# static docs site build output
+/site/dist
