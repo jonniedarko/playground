@@ -15,13 +15,13 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import http from 'node:http'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseFrontMatter, renderMarkdown, escapeHtml, slugify } from './lib/markdown.mjs'
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url))
 const CONTENT_DIR = path.join(ROOT, 'content')
 const ASSETS_DIR = path.join(ROOT, 'assets')
-const OUT_DIR = path.join(ROOT, 'dist')
+export const OUT_DIR = path.join(ROOT, 'dist')
 
 const SITE = {
   title: 'Field Notes',
@@ -30,7 +30,7 @@ const SITE = {
 }
 
 /** Normalised base path: '' for a root site, '/name' for a GitHub project page. */
-const BASE = (process.env.BASE_PATH || '').replace(/\/+$/, '')
+export const BASE = (process.env.BASE_PATH || '').replace(/\/+$/, '')
 
 const url = (p) => {
   if (!p) return BASE + '/'
@@ -344,7 +344,7 @@ async function copyDir(from, to) {
   }
 }
 
-async function build() {
+export async function buildSite({ quiet = false } = {}) {
   const started = Date.now()
   await fs.rm(OUT_DIR, { recursive: true, force: true })
   await fs.mkdir(OUT_DIR, { recursive: true })
@@ -447,8 +447,11 @@ async function build() {
   await fs.writeFile(path.join(OUT_DIR, '.nojekyll'), '')
 
   const pages = ordered.length + 2
-  process.stdout.write('Built ' + pages + ' pages in ' + (Date.now() - started) + 'ms -> ' + path.relative(process.cwd(), OUT_DIR) + '\n')
-  if (BASE) process.stdout.write('Base path: ' + BASE + '\n')
+  if (!quiet) {
+    process.stdout.write('Built ' + pages + ' pages in ' + (Date.now() - started) + 'ms -> ' + path.relative(process.cwd(), OUT_DIR) + '\n')
+    if (BASE) process.stdout.write('Base path: ' + BASE + '\n')
+  }
+  return { pages, routes: ordered.length + 1 }
 }
 
 /** Resolve links written in Markdown. Root-relative links get the base path; relative ones stay relative. */
@@ -491,8 +494,14 @@ async function serve(port = 4321) {
   server.listen(port, () => process.stdout.write('Serving on http://localhost:' + port + (BASE || '') + '/\n'))
 }
 
-await build()
-if (process.argv.includes('--serve')) {
-  const flagIndex = process.argv.indexOf('--port')
-  await serve(flagIndex > -1 ? Number(process.argv[flagIndex + 1]) : 4321)
+// Only build when run directly. Importing this module (scripts/, tests) must have
+// no side effects.
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+  await buildSite()
+  if (process.argv.includes('--serve')) {
+    const flagIndex = process.argv.indexOf('--port')
+    await serve(flagIndex > -1 ? Number(process.argv[flagIndex + 1]) : 4321)
+  }
 }
+
+export { serve }

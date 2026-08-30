@@ -286,12 +286,23 @@ function renderList(lines, start, inline, options) {
     break
   }
 
+  const startsBlock = (line) => isListItem(line) || /^\s*(`{3,}|>)/.test(line) || line.includes('|')
+
   const body = items
     .map((item) => {
-      const text = item.content.join('\n')
-      const hasBlock = item.content.slice(1).some((l) => isListItem(l) || /^\s*(`{3,}|>)/.test(l) || l.includes('|'))
-      if (hasBlock) return '<li>' + renderMarkdown(text, options).html + '</li>'
-      return '<li>' + inline(text.replace(/\n\s*/g, ' ').trim()) + '</li>'
+      // Leading wrapped prose is the item's own text; everything from the first
+      // block construct on is nested content. Rendering the whole item as blocks
+      // would wrap that leading text in a <p> and add a stray margin.
+      let split = item.content.length
+      for (let n = 1; n < item.content.length; n += 1) {
+        if (startsBlock(item.content[n])) {
+          split = n
+          break
+        }
+      }
+      const head = inline(item.content.slice(0, split).join('\n').replace(/\n\s*/g, ' ').trim())
+      if (split === item.content.length) return '<li>' + head + '</li>'
+      return '<li>' + head + renderMarkdown(item.content.slice(split).join('\n'), options).html + '</li>'
     })
     .join('')
 
