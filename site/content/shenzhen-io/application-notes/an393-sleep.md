@@ -37,7 +37,7 @@ The following program generates a square wave on simple I/O pin `p1` that is on
 With no `jmp`, the program wraps from the last line back to the first, giving a
 continuous six-time-unit period.
 
-<div class="circuit-figure" data-circuit="blink">
+<div class="circuit-figure" data-circuit="blink" data-run data-scope>
 <p>An MC4000 driving a lamp on <code>p1</code>: on for three time units, off for three.</p>
 </div>
 

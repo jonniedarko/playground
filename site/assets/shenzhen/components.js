@@ -296,6 +296,12 @@ textarea::selection { background: #6d3a2d; }
   opacity: .55;
 }
 
+/* ---- a terminal carrying a live value ---- */
+:host([lit]) .frame { background: linear-gradient(180deg, #b8862f, #6d4f1c); }
+:host([lit]) .face-label b { color: #ffe6ad; }
+.face-label .level { display: block; color: ${PALETTE.comment}; }
+:host([lit]) .face-label .level { color: #f3c46f; }
+
 /* ---- touch targets ----
    The visible pin tab is 9px wide, far below a usable tap size. Grow the hit
    area with a transparent pseudo-element, biased outward from the board edge so
@@ -430,6 +436,20 @@ class SzMcu extends SzPart {
   }
 
   get linesUsed() { return this.code.split('\n').filter(l => l.trim()).length; }
+
+  /** Write one register readout. The simulator drives these while it runs. */
+  setRegister(name, text) {
+    const index = this.meta.regs.indexOf(name);
+    if (index < 0) return;
+    const cell = this.shadowRoot.querySelectorAll('.reg span')[index];
+    if (cell) cell.textContent = String(text);
+  }
+
+  /** Put every readout back to how a chip looks before anything has run. */
+  resetRegisters() {
+    this.meta.regs.forEach(r => this.setRegister(r, r === 'acc' || r === 'dat' ? '0' : '----'));
+    this.removeAttribute('exec');
+  }
 }
 
 class MC4000 extends SzMcu {
@@ -501,7 +521,15 @@ class IOTerminal extends SzPart {
   }
 
   bodyHTML() {
-    return `<div class="face-label"><b>${esc(this.getAttribute('label') || 'io')}</b></div>`;
+    return `<div class="face-label"><b>${esc(this.getAttribute('label') || 'io')}</b>
+      <small class="level"></small></div>`;
+  }
+
+  /** Show the value the terminal is carrying, and light it when it is on. */
+  setLevel(value) {
+    const cell = this.shadowRoot.querySelector('.level');
+    if (cell) cell.textContent = value === null || value === undefined ? '' : String(value);
+    this.toggleAttribute('lit', Number(value) >= 50);
   }
 }
 
@@ -921,7 +949,72 @@ customElements.define('lc-70g08', LC70G08);
 customElements.define('lc-70g32', LC70G32);
 customElements.define('lc-70g86', LC70G86);
 
+/* ---------- scope trace -------------------------------------------------
+   A rolling plot of what a pin has been doing, one step per time unit. The
+   manual prints this as a screenshot; here it is drawn from the run.
+   ------------------------------------------------------------------------ */
+class ScopeTrace extends HTMLElement {
+  static SAMPLES = 24;
+
+  connectedCallback() {
+    if (!this.shadowRoot) this.attachShadow({ mode: 'open' });
+    if (!this._built) { this._built = true; this.series = new Map(); this._render(); }
+  }
+
+  /** Record one sample per named signal. */
+  record(values) {
+    for (const [name, value] of Object.entries(values)) {
+      if (!this.series.has(name)) this.series.set(name, []);
+      const list = this.series.get(name);
+      list.push(Number(value) || 0);
+      if (list.length > ScopeTrace.SAMPLES) list.shift();
+    }
+    this._render();
+  }
+
+  clear() { this.series = new Map(); this._render(); }
+
+  _render() {
+    const names = [...this.series.keys()];
+    const w = 100;
+    const rowH = 26;
+    const h = Math.max(rowH, names.length * rowH);
+    const rows = names.map((name, row) => {
+      const values = this.series.get(name);
+      // Leave headroom for the row label so its ascenders are not clipped.
+      const top = row * rowH + 10;
+      const bottom = top + rowH - 18;
+      // Step plot: hold each sample for its whole time unit.
+      const step = w / Math.max(1, ScopeTrace.SAMPLES);
+      let d = '';
+      values.forEach((v, i) => {
+        const y = v >= 50 ? top : bottom;
+        const x = i * step;
+        d += (i === 0 ? `M${x} ${y}` : `L${x} ${y}`) + ` L${x + step} ${y}`;
+        if (i < values.length - 1) {
+          const next = values[i + 1] >= 50 ? top : bottom;
+          if (next !== y) d += ` L${x + step} ${next}`;
+        }
+      });
+      return `<g><text x="1" y="${top - 3}">${name}</text>
+        <path d="${d || `M0 ${bottom} L${w} ${bottom}`}"/></g>`;
+    }).join('');
+
+    this.shadowRoot.innerHTML = `<style>
+      :host { display: block; }
+      svg { display: block; width: 100%; height: ${h}px; }
+      path { fill: none; stroke: ${PALETTE.trace}; stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+      text { fill: ${PALETTE.comment}; font: 400 5px var(--mono, monospace); }
+    </style>
+    <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img"
+         aria-label="${names.join(' and ')} over time">${rows || ''}</svg>`;
+  }
+}
+
+customElements.define('scope-trace', ScopeTrace);
+
 export {
+  ScopeTrace,
   CircuitBoard,
   SzPart,
   SzMcu,

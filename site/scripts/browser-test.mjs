@@ -109,6 +109,7 @@ async function main() {
   const failures = []
   let figuresChecked = 0
   let circuitsChecked = 0
+  let runnableChecked = 0
   for (const width of widths) {
     const context = await browser.newContext({
       viewport: { width, height: 844 },
@@ -188,6 +189,36 @@ async function main() {
         }))
       )
       circuitsChecked += circuits.length
+
+      // Runnable figures: controls present, and stepping actually moves the clock.
+      for (const el of await page.$$('.circuit-figure[data-run]')) {
+        const name = await el.evaluate((n) => n.dataset.circuit)
+        const at = `${width}px ${route} runnable ${name}`
+        const buttons = await el.$$('.sim-btn')
+        if (buttons.length < 3) {
+          failures.push(`${at}: only ${buttons.length} controls`)
+          continue
+        }
+        const before = await el.evaluate((n) => n.dataset.time)
+        const step = await el.$('.sim-btn:nth-of-type(2)')
+        await step.click()
+        await page.waitForTimeout(60)
+        const after = await el.evaluate((n) => ({ t: n.dataset.time, state: n.dataset.simState }))
+        if (after.t === before) failures.push(`${at}: step did not advance the clock`)
+        if (after.state === 'error') {
+          const why = await el.$eval('.sim-readout', (n) => n.textContent)
+          failures.push(`${at}: simulator error - ${why}`)
+        }
+        // Every control has to clear a usable tap target.
+        for (const b of buttons) {
+          const box = await b.boundingBox()
+          if (box && box.height < 44) {
+            failures.push(`${at}: control only ${Math.round(box.height)}px tall`)
+            break
+          }
+        }
+        runnableChecked += 1
+      }
       for (const c of circuits) {
         const at = `${width}px ${route} circuit ${c.name}`
         const spec = CIRCUITS[c.name]
@@ -214,7 +245,7 @@ async function main() {
     return
   }
   process.stdout.write(
-    `browser-test: ${all.length} routes x ${widths.join('/')}px, ${figuresChecked} chip figures, ${circuitsChecked} circuits` +
+    `browser-test: ${all.length} routes x ${widths.join('/')}px, ${figuresChecked} chip figures, ${circuitsChecked} circuits, ${runnableChecked} runnable` +
     ' - no overflow, no console errors\n'
   )
 }

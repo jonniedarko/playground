@@ -17,7 +17,7 @@ the rising edge and advance the light to the next intensity level - from off, to
 The circuit consists of two [MC4000](/shenzhen-io/parts/mc4000/)
 microcontrollers that communicate over XBus.
 
-<div class="circuit-figure" data-circuit="an650">
+<div class="circuit-figure" data-circuit="an650" data-run>
 <p>A capacitive switch feeds the first MC4000 on <code>p0</code>. It sends 0 or 1 over XBus to the second MC4000, which steps the lamp on <code>p1</code> through off, 50% and 100%.</p>
 </div>
 

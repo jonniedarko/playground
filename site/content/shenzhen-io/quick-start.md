@@ -138,7 +138,7 @@ just lets you wait in one place and read in another.
 | `slp 3` | 3 more time units |
 | *(end)* | execution **wraps back to line 1** and repeats |
 
-<div class="circuit-figure" data-circuit="blink">
+<div class="circuit-figure" data-circuit="blink" data-run data-scope>
 <p>An MC4000 driving a lamp on <code>p1</code>: on for three time units, off for three.</p>
 </div>
 
@@ -179,7 +179,7 @@ The test flips a switch inside the chip. `+` lines run when the test passed,
 **Why 50?** A button gives you `0` or `100`, but sensors give in-between values.
 50 is the halfway line. (Logic gates use the same threshold.)
 
-<div class="circuit-figure" data-circuit="button-lamp">
+<div class="circuit-figure" data-circuit="button-lamp" data-run>
 <p>The button feeds <code>p0</code>; the test gates which of the two conditional lines drives <code>p1</code>.</p>
 </div>
 
@@ -223,7 +223,7 @@ Sensor to A's `p0`, lamp to B's `p1`.
 Neither chip needs to know the other's timing. The handshake *is* the
 synchronisation — that is what XBus is for.
 
-<div class="circuit-figure" data-circuit="xbus-pair">
+<div class="circuit-figure" data-circuit="xbus-pair" data-run>
 <p>The sender offers a value on <code>x0</code> and waits; the receiver sleeps on <code>slx</code> until it arrives.</p>
 </div>
 

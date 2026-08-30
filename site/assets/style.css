@@ -942,3 +942,65 @@ td code { white-space: nowrap; }
   border-radius: var(--radius);
   background: #fbfbfa;
 }
+
+/* ------------------------------------------------------- simulator controls */
+/* Sits under a runnable figure. Wraps on a phone and every control clears the
+   44px tap target, since this is the part people actually poke at. */
+
+.sim-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #1e2a30;
+}
+
+.sim-btn {
+  min-height: 2.75rem;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid #0a0f13;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #2a343d, #1b232a);
+  color: #cfd9e0;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.sim-btn:hover { color: #f3c46f; border-color: #3d4a55; }
+.sim-btn:focus-visible { outline: 2px solid #f3c46f; outline-offset: 2px; }
+.sim-play { min-width: 5.5rem; }
+
+/* An input toggle reads as a switch: lit when it is feeding the circuit. */
+.sim-input[aria-pressed='true'] {
+  background: linear-gradient(180deg, #b8862f, #6d4f1c);
+  border-color: #f3c46f;
+  color: #ffe6ad;
+}
+
+.sim-readout {
+  flex: 1 1 100%;
+  margin: 0.25rem 0 0;
+  color: #7f8d98;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.circuit-figure[data-sim-state='deadlock'] .sim-readout,
+.circuit-figure[data-sim-state='error'] .sim-readout { color: #f0a598; }
+
+.sim-scope {
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #1e2a30;
+}
+
+@media (min-width: 48rem) {
+  .sim-readout { flex: 1 1 auto; margin: 0 0 0 0.5rem; text-align: right; }
+}

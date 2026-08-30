@@ -86,6 +86,11 @@ Whole circuit — definition lives in `circuits.js`, content stays a one-liner:
 Wire endpoint = `"<part index>:<pin name>"`. Wiring runs on the next frame
 (pins must be laid out first) and publishes `data-wires` when done.
 
+Add `data-run` to give a circuit figure Run/Step/Reset, live registers, the
+executing line and a toggle per input terminal. Add `data-scope` for a rolling
+`<scope-trace>` of its outputs. Without `data-run` a figure stays a still
+illustration — that is the default.
+
 Parts: `mc-4000` `mc-4000x` `mc-6000` `dx-300` `io-terminal` `p-100p14`
 `p-200p14` `lc-70g04` `lc-70g08` `lc-70g32` `lc-70g86`.
 **No component yet** — these keep their CSS `.pinout` markup until built:
