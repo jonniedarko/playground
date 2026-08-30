@@ -64,6 +64,9 @@
 <h2 id="reference-design">Reference design<a class="anchor" href="#reference-design" aria-label="Link to this section">#</a></h2>
 <p>The following circuit is a reference design for a touch-activated light controller. When a user touches a capacitive switch, the controller will detect the rising edge and advance the light to the next intensity level - from off, to 50%, to 100%, and back to off.</p>
 <p>The circuit consists of two <a href="/playground/shenzhen-io/parts/mc4000/">MC4000</a> microcontrollers that communicate over XBus.</p>
+<div class="circuit-figure" data-circuit="an650">
+<p>A capacitive switch feeds the first MC4000 on <code>p0</code>. It sends 0 or 1 over XBus to the second MC4000, which steps the lamp on <code>p1</code> through off, 50% and 100%.</p>
+</div>
 <h2 id="first-microcontroller-edge-detection">First microcontroller: edge detection<a class="anchor" href="#first-microcontroller-edge-detection" aria-label="Link to this section">#</a></h2>
 <p>The first microcontroller reads from the capacitive switch on simple I/O pin <code>p0</code> and sends either a <code>0</code> or a <code>1</code> over XBus to the second microcontroller every time unit:</p>
 <ul><li>a value of <code>0</code> means that the switch was not touched;</li><li>a value of <code>1</code> means that the switch was touched.</li></ul>
@@ -95,6 +98,6 @@
 </div>
 
 <script src="/playground/assets/app.js" defer></script>
-
+<script type="module" src="/playground/assets/shenzhen/embed.js"></script>
 </body>
 </html>

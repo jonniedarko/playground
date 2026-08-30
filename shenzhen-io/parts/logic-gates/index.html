@@ -69,6 +69,7 @@
 <p>This threshold matters when a gate is fed anything other than a clean <code>0</code> or <code>100</code> - a partially dimmed light or an averaged sensor reading will be rounded to a logic level at 50.</p>
 <h2 id="pin-locations">Pin locations<a class="anchor" href="#pin-locations" aria-label="Link to this section">#</a></h2>
 <p>The two-input gates take <code>input A</code> and <code>input B</code> on one side and produce <code>output</code> on the other. The inverter is a smaller part with a single input and a single output. All pins are simple I/O.</p>
+<div class="circuit-figure" data-circuit="logic-gates">
 <div class="pinout" role="img" aria-label="LC70G08, G32 and G86 pin layout: input A and input B on the left, output on the right. All simple I/O.">
 <div class="pinout-col"><span class="pin pin-s">in A</span><span class="pin pin-s">in B</span></div>
 <div class="pinout-chip"><span class="pinout-name">LC70G08 / G32 / G86</span></div>
@@ -78,6 +79,7 @@
 <div class="pinout-col"><span class="pin pin-s">in A</span></div>
 <div class="pinout-chip"><span class="pinout-name">LC70G04</span></div>
 <div class="pinout-col"><span class="pin pin-s">out</span></div>
+</div>
 </div>
 <h2 id="output-table">Output table<a class="anchor" href="#output-table" aria-label="Link to this section">#</a></h2>
 <div class="table-wrap"><table><thead><tr><th>A</th><th>B</th><th>Inverter LC70G04</th><th>AND LC70G08</th><th>OR LC70G32</th><th>XOR LC70G86</th></tr></thead><tbody><tr><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td></tr><tr><td>0</td><td>1</td><td>1</td><td>0</td><td>1</td><td>1</td></tr><tr><td>1</td><td>0</td><td>0</td><td>0</td><td>1</td><td>1</td></tr><tr><td>1</td><td>1</td><td>0</td><td>1</td><td>1</td><td>0</td></tr></tbody></table></div>
@@ -103,6 +105,6 @@
 </div>
 
 <script src="/playground/assets/app.js" defer></script>
-
+<script type="module" src="/playground/assets/shenzhen/embed.js"></script>
 </body>
 </html>

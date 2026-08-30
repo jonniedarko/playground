@@ -19,6 +19,7 @@
    ========================================================================= */
 
 import './components.js'
+import { CIRCUITS } from './circuits.js'
 
 const WIDE_CELL = 40
 const NARROW_CELL = 32
@@ -65,9 +66,78 @@ function upgrade(el) {
   return true
 }
 
+/** Build a whole reference circuit: parts, their programs, and the wires. */
+function upgradeCircuit(el) {
+  const spec = CIRCUITS[el.dataset.circuit]
+  if (!spec) return false
+
+  const cell = Number(el.dataset.cell) || spec.cell || 32
+  const board = document.createElement('circuit-board')
+  board.setAttribute('static', '')
+  board.style.setProperty('--cell', cell + 'px')
+
+  const made = spec.parts.map((p) => {
+    const ctor = customElements.get(p.t)
+    if (!ctor) return null
+    const part = document.createElement(p.t)
+    // Attributes that shape the part must land before it is connected, because
+    // io-terminal resolves its pins from them.
+    if (p.label) part.setAttribute('label', p.label)
+    if (p.type) part.setAttribute('type', p.type)
+    if (p.side) part.setAttribute('side', p.side)
+    part.setAttribute('x', String(p.x + 1))
+    part.setAttribute('y', String(p.y))
+    part.setAttribute('static', '')
+    part.setAttribute('labels', '')
+    if (p.code !== undefined) part.setAttribute('code', p.code)
+    board.appendChild(part)
+    return part
+  })
+
+  if (made.some((p) => !p)) return false
+
+  // Size the board to the parts, leaving a column each side for pin traces.
+  let cols = 0
+  let rows = 0
+  spec.parts.forEach((p, n) => {
+    const meta = made[n].meta
+    cols = Math.max(cols, p.x + 1 + meta.cols)
+    rows = Math.max(rows, p.y + meta.rows)
+  })
+  board.style.width = (cols + 1) * cell + 'px'
+  board.style.height = rows * cell + 'px'
+
+  el.replaceChildren(board)
+  el.setAttribute('role', 'img')
+  el.setAttribute('aria-label', el.getAttribute('aria-label') || spec.label || 'Circuit diagram')
+  el.dataset.upgraded = 'true'
+
+  // Wires need laid-out pins, so connect after the parts have been rendered.
+  requestAnimationFrame(() => {
+    for (const [from, to] of spec.wires) {
+      const [ai, an] = from.split(':')
+      const [bi, bn] = to.split(':')
+      const pa = made[Number(ai)]
+      const pb = made[Number(bi)]
+      const ea = pa && pa.pinElement(an)
+      const eb = pb && pb.pinElement(bn)
+      if (!ea || !eb) {
+        console.warn(`circuit ${el.dataset.circuit}: no pin for ${!ea ? from : to}`)
+        continue
+      }
+      board.connect({ part: pa, pin: ea }, { part: pb, pin: eb })
+    }
+    el.dataset.wires = String(board.wires.length)
+  })
+  return true
+}
+
 function upgradeAll() {
   for (const el of document.querySelectorAll('.chip-figure[data-part]:not([data-upgraded])')) {
     upgrade(el)
+  }
+  for (const el of document.querySelectorAll('.circuit-figure[data-circuit]:not([data-upgraded])')) {
+    upgradeCircuit(el)
   }
 }
 
@@ -77,4 +147,4 @@ if (document.readyState === 'loading') {
   upgradeAll()
 }
 
-export { upgrade, upgradeAll }
+export { upgrade, upgradeCircuit, upgradeAll }

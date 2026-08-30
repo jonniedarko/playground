@@ -262,6 +262,38 @@ textarea::selection { background: #6d3a2d; }
   text-decoration: none;
 }
 
+/* ---- plain-face parts (terminals, memory, gates) ---- */
+.face-label {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  gap: calc(var(--cell) * .06);
+  min-width: 0;
+  padding: calc(var(--cell) * .08);
+  color: ${PALETTE.amber};
+  font: 600 calc(var(--cell) * .26)/1.15 var(--mono);
+  text-align: center;
+  overflow: hidden;
+}
+.face-label b { font-weight: 700; letter-spacing: .02em; }
+.face-label small {
+  color: ${PALETTE.comment};
+  font-size: calc(var(--cell) * .19);
+  font-weight: 400;
+  letter-spacing: .04em;
+}
+.cells {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  width: 100%;
+}
+.cells i {
+  height: calc(var(--cell) * .12);
+  background: ${PALETTE.trace};
+  opacity: .55;
+}
+
 /* ---- touch targets ----
    The visible pin tab is 9px wide, far below a usable tap size. Grow the hit
    area with a transparent pseudo-element, biased outward from the board edge so
@@ -483,6 +515,98 @@ class DX300 extends SzPart {
   }
 }
 
+/* ---------- I/O terminal ------------------------------------------------
+   The labelled devices a reference circuit hangs off its microcontrollers:
+   button, lamp, motor-0, trigger, output. One typed pin and a name, which is
+   all any of them are on a board, so a single part covers the lot.
+
+   Per-instance attributes, because these vary by use rather than by model:
+     label="motor-0"   text on the face, and the pin name
+     type="simple"     or "xbus"
+     side="left"       which edge the pin sits on (default right)
+   ------------------------------------------------------------------------ */
+class IOTerminal extends SzPart {
+  static meta = {
+    name: 'I/O', cost: 0, cols: 2, rows: 2,
+    pins: [{ name: 'io', type: 'simple', side: 'right', at: .5 }]
+  };
+
+  /* Resolved per instance rather than per class - attributes decide the pin. */
+  get meta() {
+    const label = this.getAttribute('label') || 'io';
+    return {
+      ...IOTerminal.meta,
+      name: label,
+      pins: [{
+        name: label,
+        type: this.getAttribute('type') === 'xbus' ? 'xbus' : 'simple',
+        side: this.getAttribute('side') === 'left' ? 'left' : 'right',
+        at: .5
+      }]
+    };
+  }
+
+  bodyHTML() {
+    return `<div class="face-label"><b>${esc(this.getAttribute('label') || 'io')}</b></div>`;
+  }
+}
+
+/* ---------- Pingda memory ----------------------------------------------- */
+class SzMemory extends SzPart {
+  bodyHTML() {
+    const cells = Array.from({ length: 14 }, () => '<i></i>').join('');
+    return `<div class="face-label"><b>${this.meta.name}</b>
+      <div class="cells" aria-hidden="true">${cells}</div>
+      <small>${this.meta.kind}</small></div>`;
+  }
+}
+
+const MEMORY_PINS = [
+  { name: 'a0', type: 'xbus', side: 'left', at: .25 },
+  { name: 'd0', type: 'xbus', side: 'left', at: .75 },
+  { name: 'd1', type: 'xbus', side: 'right', at: .25 },
+  { name: 'a1', type: 'xbus', side: 'right', at: .75 }
+];
+
+class P100P14 extends SzMemory {
+  static meta = { name: '100P-14', kind: 'RAM', cost: 5, cols: 4, rows: 4, pins: MEMORY_PINS };
+}
+
+class P200P14 extends SzMemory {
+  static meta = { name: '200P-14', kind: 'ROM', cost: 5, cols: 4, rows: 4, pins: MEMORY_PINS };
+}
+
+/* ---------- The Logic Company gates -------------------------------------
+   Signals below 50 read as off, 50 and above as on. The inverter has one
+   input; the rest take two.
+   ------------------------------------------------------------------------ */
+class SzGate extends SzPart {
+  bodyHTML() {
+    return `<div class="face-label"><b>${this.meta.op}</b><small>${this.meta.name}</small></div>`;
+  }
+}
+
+const gatePins = (inputs) => [
+  ...(inputs === 1
+    ? [{ name: 'a', type: 'simple', side: 'left', at: .5 }]
+    : [{ name: 'a', type: 'simple', side: 'left', at: .25 },
+       { name: 'b', type: 'simple', side: 'left', at: .75 }]),
+  { name: 'out', type: 'simple', side: 'right', at: .5 }
+];
+
+class LC70G04 extends SzGate {
+  static meta = { name: 'LC70G04', op: 'NOT', cost: 1, cols: 2, rows: 2, inputs: 1, pins: gatePins(1) };
+}
+class LC70G08 extends SzGate {
+  static meta = { name: 'LC70G08', op: 'AND', cost: 1, cols: 2, rows: 2, inputs: 2, pins: gatePins(2) };
+}
+class LC70G32 extends SzGate {
+  static meta = { name: 'LC70G32', op: 'OR', cost: 1, cols: 2, rows: 2, inputs: 2, pins: gatePins(2) };
+}
+class LC70G86 extends SzGate {
+  static meta = { name: 'LC70G86', op: 'XOR', cost: 1, cols: 2, rows: 2, inputs: 2, pins: gatePins(2) };
+}
+
 /* ---------- board ------------------------------------------------------- */
 const BOARD_CSS = `
 circuit-board {
@@ -509,6 +633,7 @@ circuit-board > svg.wires {
   overflow: visible;
 }
 circuit-board[static] { overflow: visible; touch-action: auto; box-shadow: none; }
+circuit-board[static] .wire-hit { pointer-events: none; cursor: default; }
 circuit-board .wire-hit { stroke: transparent; fill: none; pointer-events: stroke; cursor: pointer; }
 circuit-board g.wire path { fill: none; stroke-linejoin: miter; stroke-linecap: butt; }
 circuit-board g.wire:hover .w-body { stroke: ${PALETTE.amber}; }
@@ -720,7 +845,10 @@ class CircuitBoard extends HTMLElement {
     wire.hit.setAttribute('class', 'wire-hit');
     g.appendChild(wire.hit);
 
-    g.addEventListener('click', () => this.removeWire(wire));
+    // A figure board is a picture: nothing to cut.
+    if (!this.hasAttribute('static')) {
+      g.addEventListener('click', () => this.removeWire(wire));
+    }
     this.svg.appendChild(g);
     this.wires.push(wire);
     this.drawWire(wire);
@@ -844,6 +972,13 @@ customElements.define('mc-4000', MC4000);
 customElements.define('mc-4000x', MC4000X);
 customElements.define('mc-6000', MC6000);
 customElements.define('dx-300', DX300);
+customElements.define('io-terminal', IOTerminal);
+customElements.define('p-100p14', P100P14);
+customElements.define('p-200p14', P200P14);
+customElements.define('lc-70g04', LC70G04);
+customElements.define('lc-70g08', LC70G08);
+customElements.define('lc-70g32', LC70G32);
+customElements.define('lc-70g86', LC70G86);
 
 export {
   CircuitBoard,
@@ -853,6 +988,15 @@ export {
   MC4000X,
   MC6000,
   DX300,
+  IOTerminal,
+  SzMemory,
+  P100P14,
+  P200P14,
+  SzGate,
+  LC70G04,
+  LC70G08,
+  LC70G32,
+  LC70G86,
   PALETTE,
   highlight,
   routeOrthogonal,

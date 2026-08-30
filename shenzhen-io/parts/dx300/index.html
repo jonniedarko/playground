@@ -79,6 +79,9 @@
 <blockquote class="callout callout-note"><p class="callout-title">Note</p><p>At any given time, the DX300 is either in input mode or output mode. Writing an XBus value to the DX300 will put its simple I/O pins into output mode with the specified output values. Reading an XBus value from the DX300 will put its pins into input mode, clearing any previously set output values.</p></blockquote>
 <h2 id="example-circuit-stepper-motor-controller">Example circuit: stepper motor controller<a class="anchor" href="#example-circuit-stepper-motor-controller" aria-label="Link to this section">#</a></h2>
 <p>The reference circuit controls a stepper motor using the DX300 to drive the <code>motor-0</code>, <code>motor-1</code> and <code>motor-2</code> signals, with the microcontroller&#39;s own simple I/O pin <code>p0</code> driving the remaining <code>motor-3</code> signal.</p>
+<div class="circuit-figure" data-circuit="dx300-stepper">
+<p>An MC6000 drives <code>motor-3</code> directly on <code>p0</code>, and the other three motor signals through the DX300 over XBus.</p>
+</div>
 <blockquote class="callout callout-tip"><p class="callout-title">Tip</p><p>Because the DX300 packs three lines into the digits of one value, the <a href="/playground/shenzhen-io/language-reference/arithmetic-instructions/"><code>dgt</code> and <code>dst</code> instructions</a> are the natural way to build and pick apart the values you send it.</p></blockquote>
       <nav class="pager" aria-label="Pagination"><a class="pager-link pager-prev" href="/playground/shenzhen-io/parts/mc4010/"><span class="pager-label">Previous</span><span class="pager-title">MC4010</span></a><a class="pager-link pager-next" href="/playground/shenzhen-io/parts/memory/"><span class="pager-label">Next</span><span class="pager-title">Memory - 100P-14 and 200P-14</span></a></nav>
     </article>

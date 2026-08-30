@@ -69,13 +69,18 @@
 <h3 id="usage">Usage<a class="anchor" href="#usage" aria-label="Link to this section">#</a></h3>
 <ul><li>All memory cells initialize to a value of <code>0</code>.</li><li>All memory pointers initialize to point at the first memory cell (address 0).</li><li>Memory pointers can be <strong>read and written</strong> over XBus with the <code>a0</code> and <code>a1</code> address pins.</li><li>Memory values referenced by pointers can be <strong>read and written</strong> over XBus with the <code>d0</code> and <code>d1</code> data pins.</li><li>After reading from or writing to a data pin, the corresponding memory pointer will automatically increment to the next memory location.</li></ul>
 <h3 id="pin-configuration">Pin configuration<a class="anchor" href="#pin-configuration" aria-label="Link to this section">#</a></h3>
+<div class="chip-figure" data-part="p-100p14" data-code="" aria-label="100P-14 pin layout. Left side: a0 address, d0 data. Right side: d1 data, a1 address. All XBus.">
 <div class="pinout" role="img" aria-label="100P-14 pin layout. Left side: a0 address, d0 data. Right side: d1 data, a1 address. All XBus.">
 <div class="pinout-col"><span class="pin pin-x">a0</span><span class="pin pin-x">d0</span></div>
 <div class="pinout-chip"><span class="pinout-name">100P-14</span></div>
 <div class="pinout-col"><span class="pin pin-x">d1</span><span class="pin pin-x">a1</span></div>
 </div>
+</div>
 <h3 id="example-circuit-data-packet-reverser">Example circuit: data packet reverser<a class="anchor" href="#example-circuit-data-packet-reverser" aria-label="Link to this section">#</a></h3>
 <p>The reference circuit reads in 3-value packets from <code>input</code> and writes them back out to <code>output</code> in reverse order, using a 100P-14 to temporarily store the values.</p>
+<div class="circuit-figure" data-circuit="packet-reverser">
+<p>An MC6000 reads three values from <code>input</code> into the 100P-14 through <code>d0</code>, seeks back with <code>a0</code>, then writes them out to <code>output</code> in reverse.</p>
+</div>
 <h2 id="200p-14-read-only-memory">200P-14 read-only memory<a class="anchor" href="#200p-14-read-only-memory" aria-label="Link to this section">#</a></h2>
 <p><em>Pingda Co. Ltd. - PD_VM_200 Datasheet, Rev 3, Mar 2020</em></p>
 <p>200P-14 read-only memory offers embedded system engineers the ability to easily access up to fourteen factory-programmed memory cells for a wide range of diverse applications.</p>
@@ -84,13 +89,18 @@
 <h3 id="usage-2">Usage<a class="anchor" href="#usage-2" aria-label="Link to this section">#</a></h3>
 <ul><li>All memory cell values are <strong>set in advance by the design engineer</strong>.</li><li>All memory pointers initialize to point at the first memory cell (address 0).</li><li>Memory pointers can be <strong>read</strong> over XBus with the <code>a0</code> and <code>a1</code> address pins.</li><li>Memory values referenced by pointers can be <strong>read</strong> over XBus with the <code>d0</code> and <code>d1</code> data pins.</li><li>After reading from a data pin, the corresponding memory pointer will automatically increment to the next memory location.</li></ul>
 <h3 id="pin-configuration-2">Pin configuration<a class="anchor" href="#pin-configuration-2" aria-label="Link to this section">#</a></h3>
+<div class="chip-figure" data-part="p-200p14" data-code="" aria-label="200P-14 pin layout. Left side: a0 address, d0 data. Right side: d1 data, a1 address. All XBus.">
 <div class="pinout" role="img" aria-label="200P-14 pin layout. Left side: a0 address, d0 data. Right side: d1 data, a1 address. All XBus.">
 <div class="pinout-col"><span class="pin pin-x">a0</span><span class="pin pin-x">d0</span></div>
 <div class="pinout-chip"><span class="pinout-name">200P-14</span></div>
 <div class="pinout-col"><span class="pin pin-x">d1</span><span class="pin pin-x">a1</span></div>
 </div>
+</div>
 <h3 id="example-circuit-data-packet-generator">Example circuit: data packet generator<a class="anchor" href="#example-circuit-data-packet-generator" aria-label="Link to this section">#</a></h3>
 <p>The reference circuit sends a data packet with a predetermined set of values to <code>output</code> every time unit that <code>trigger</code> is high.</p>
+<div class="circuit-figure" data-circuit="packet-generator">
+<p>While <code>trigger</code> is high, an MC6000 reads the factory-programmed values out of the 200P-14 and forwards them to <code>output</code>.</p>
+</div>
 <h2 id="comparing-the-two">Comparing the two<a class="anchor" href="#comparing-the-two" aria-label="Link to this section">#</a></h2>
 <div class="table-wrap"><table><thead><tr><th></th><th>100P-14</th><th>200P-14</th></tr></thead><tbody><tr><td>Cells</td><td>14</td><td>14</td></tr><tr><td>Cell contents</td><td>Initialise to <code>0</code></td><td>Set at design time</td></tr><tr><td>Address pins <code>a0</code>/<code>a1</code></td><td>Read and write</td><td>Read only</td></tr><tr><td>Data pins <code>d0</code>/<code>d1</code></td><td>Read and write</td><td>Read only</td></tr><tr><td>Auto-increment on data access</td><td>Yes</td><td>Yes</td></tr></tbody></table></div>
 <blockquote class="callout callout-tip"><p class="callout-title">Tip</p><p>Write to an address pin to seek; read or write a data pin to move. Because both pointers increment independently, one can be a write head and the other a read head over the same fourteen cells.</p></blockquote>
@@ -114,6 +124,6 @@
 </div>
 
 <script src="/playground/assets/app.js" defer></script>
-
+<script type="module" src="/playground/assets/shenzhen/embed.js"></script>
 </body>
 </html>
