@@ -1,6 +1,7 @@
 {
   "name": "field-notes-site",
   "private": true,
+  "type": "module",
   "description": "Zero-dependency static documentation site generator.",
   "scripts": {
     "build": "node build.mjs",

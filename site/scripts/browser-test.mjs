@@ -14,6 +14,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import http from 'node:http'
 import { buildSite, OUT_DIR, BASE } from '../build.mjs'
+import { CIRCUITS } from '../assets/shenzhen/circuits.js'
 
 /** Playwright lives outside the project here, so try the usual places before giving up. */
 const CANDIDATES = [
@@ -107,6 +108,7 @@ async function main() {
 
   const failures = []
   let figuresChecked = 0
+  let circuitsChecked = 0
   for (const width of widths) {
     const context = await browser.newContext({
       viewport: { width, height: 844 },
@@ -165,6 +167,38 @@ async function main() {
           failures.push(`${width}px ${route}: no static pinout fallback in served HTML`)
         }
       }
+
+      // Reference circuits: every part placed and every wire connected. Wiring
+      // happens on the next frame, so wait for the count to be published.
+      if (await page.$('.circuit-figure')) {
+        await page
+          .waitForFunction(
+            () => [...document.querySelectorAll('.circuit-figure')].every((f) => f.dataset.wires !== undefined),
+            { timeout: 4000 }
+          )
+          .catch(() => failures.push(`${width}px ${route}: circuit wiring never completed`))
+      }
+      const circuits = await page.evaluate(() =>
+        [...document.querySelectorAll('.circuit-figure')].map((f) => ({
+          name: f.dataset.circuit,
+          upgraded: f.dataset.upgraded === 'true',
+          wires: Number(f.dataset.wires),
+          // Only real parts have a shadow root; the board also holds an <svg> and a toast.
+          parts: [...f.querySelectorAll('circuit-board > *')].filter((e) => e.shadowRoot).length,
+        }))
+      )
+      circuitsChecked += circuits.length
+      for (const c of circuits) {
+        const at = `${width}px ${route} circuit ${c.name}`
+        const spec = CIRCUITS[c.name]
+        if (!spec) failures.push(`${at}: no such circuit in circuits.js`)
+        else if (!c.upgraded) failures.push(`${at}: did not upgrade`)
+        else if (c.parts !== spec.parts.length) {
+          failures.push(`${at}: placed ${c.parts} of ${spec.parts.length} parts`)
+        } else if (c.wires !== spec.wires.length) {
+          failures.push(`${at}: connected ${c.wires} of ${spec.wires.length} wires`)
+        }
+      }
     }
     await context.close()
   }
@@ -180,7 +214,7 @@ async function main() {
     return
   }
   process.stdout.write(
-    `browser-test: ${all.length} routes x ${widths.join('/')}px, ${figuresChecked} chip figures` +
+    `browser-test: ${all.length} routes x ${widths.join('/')}px, ${figuresChecked} chip figures, ${circuitsChecked} circuits` +
     ' - no overflow, no console errors\n'
   )
 }

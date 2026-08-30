@@ -1,6 +1,7 @@
 ---
 title: LC70Gxx logic gates
 description: The Logic Company's inverter, AND, OR and XOR gates for simple I/O.
+board: true
 order: 6
 ---
 
@@ -32,16 +33,17 @@ The two-input gates take `input A` and `input B` on one side and produce
 `output` on the other. The inverter is a smaller part with a single input and a
 single output. All pins are simple I/O.
 
+<div class="circuit-figure" data-circuit="logic-gates">
 <div class="pinout" role="img" aria-label="LC70G08, G32 and G86 pin layout: input A and input B on the left, output on the right. All simple I/O.">
 <div class="pinout-col"><span class="pin pin-s">in A</span><span class="pin pin-s">in B</span></div>
 <div class="pinout-chip"><span class="pinout-name">LC70G08 / G32 / G86</span></div>
 <div class="pinout-col"><span class="pin pin-s">out</span></div>
 </div>
-
 <div class="pinout" role="img" aria-label="LC70G04 inverter pin layout: one simple I/O input on the left, one inverted simple I/O output on the right.">
 <div class="pinout-col"><span class="pin pin-s">in A</span></div>
 <div class="pinout-chip"><span class="pinout-name">LC70G04</span></div>
 <div class="pinout-col"><span class="pin pin-s">out</span></div>
+</div>
 </div>
 
 ## Output table

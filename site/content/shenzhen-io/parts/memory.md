@@ -1,6 +1,7 @@
 ---
 title: Memory - 100P-14 and 200P-14
 description: Pingda RAM and ROM - fourteen cells, two auto-incrementing pointers.
+board: true
 order: 5
 ---
 
@@ -34,10 +35,12 @@ precious registers keeping track of memory addresses.
 
 ### Pin configuration
 
+<div class="chip-figure" data-part="p-100p14" data-code="" aria-label="100P-14 pin layout. Left side: a0 address, d0 data. Right side: d1 data, a1 address. All XBus.">
 <div class="pinout" role="img" aria-label="100P-14 pin layout. Left side: a0 address, d0 data. Right side: d1 data, a1 address. All XBus.">
 <div class="pinout-col"><span class="pin pin-x">a0</span><span class="pin pin-x">d0</span></div>
 <div class="pinout-chip"><span class="pinout-name">100P-14</span></div>
 <div class="pinout-col"><span class="pin pin-x">d1</span><span class="pin pin-x">a1</span></div>
+</div>
 </div>
 
 ### Example circuit: data packet reverser
@@ -45,6 +48,10 @@ precious registers keeping track of memory addresses.
 The reference circuit reads in 3-value packets from `input` and writes them back
 out to `output` in reverse order, using a 100P-14 to temporarily store the
 values.
+
+<div class="circuit-figure" data-circuit="packet-reverser">
+<p>An MC6000 reads three values from <code>input</code> into the 100P-14 through <code>d0</code>, seeks back with <code>a0</code>, then writes them out to <code>output</code> in reverse.</p>
+</div>
 
 ## 200P-14 read-only memory
 
@@ -71,16 +78,22 @@ diverse applications.
 
 ### Pin configuration
 
+<div class="chip-figure" data-part="p-200p14" data-code="" aria-label="200P-14 pin layout. Left side: a0 address, d0 data. Right side: d1 data, a1 address. All XBus.">
 <div class="pinout" role="img" aria-label="200P-14 pin layout. Left side: a0 address, d0 data. Right side: d1 data, a1 address. All XBus.">
 <div class="pinout-col"><span class="pin pin-x">a0</span><span class="pin pin-x">d0</span></div>
 <div class="pinout-chip"><span class="pinout-name">200P-14</span></div>
 <div class="pinout-col"><span class="pin pin-x">d1</span><span class="pin pin-x">a1</span></div>
+</div>
 </div>
 
 ### Example circuit: data packet generator
 
 The reference circuit sends a data packet with a predetermined set of values to
 `output` every time unit that `trigger` is high.
+
+<div class="circuit-figure" data-circuit="packet-generator">
+<p>While <code>trigger</code> is high, an MC6000 reads the factory-programmed values out of the 200P-14 and forwards them to <code>output</code>.</p>
+</div>
 
 ## Comparing the two
 

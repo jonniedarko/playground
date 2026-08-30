@@ -58,7 +58,8 @@ No registration step.
 | file | is |
 | --- | --- |
 | `components.js` | parts + board. defines custom elements on import |
-| `embed.js` | only entry point a page loads. upgrades `.chip-figure` |
+| `embed.js` | only entry point a page loads. upgrades both figure kinds |
+| `circuits.js` | named reference circuits as data: parts, code, wires |
 
 Figure markup in content — **must be contiguous**, blank line ends a raw HTML
 block. Static `.pinout` inside is the no-JS fallback, replaced on boot:
@@ -71,6 +72,24 @@ block. Static `.pinout` inside is the no-JS fallback, replaced on boot:
 
 `data-cell` overrides grid px. `data-code` overrides sample program; empty
 string = bare chip. Page needs `board: true`.
+
+Whole circuit — definition lives in `circuits.js`, content stays a one-liner:
+
+```html
+<div class="circuit-figure" data-circuit="an650">
+<p>prose fallback</p>
+</div>
+```
+
+Wire endpoint = `"<part index>:<pin name>"`. Wiring runs on the next frame
+(pins must be laid out first) and publishes `data-wires` when done.
+
+Parts: `mc-4000` `mc-4000x` `mc-6000` `dx-300` `io-terminal` `p-100p14`
+`p-200p14` `lc-70g04` `lc-70g08` `lc-70g32` `lc-70g86`.
+No component yet: MC4010, DT2415, C2S-RF901, FM Blaster, LX700/LX910C,
+N4PB-8000, D80C010-F, KUJI-EK1, PGA33X6, NLP2 — those keep CSS pinouts.
+`io-terminal` takes `label` / `type` / `side` and resolves its pin per
+instance, so one part covers button, lamp, motor-N, trigger, output.
 
 New part = `meta` (cols/rows/pins) + `bodyHTML`. Copy `DX300`.
 
