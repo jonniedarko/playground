@@ -72,6 +72,9 @@
 <p>Simple I/O pins can be read or written <strong>at any time</strong>, with no regard to the state of connected devices.</p>
 <p>XBus, however, is a <strong>synchronized protocol</strong>. Data over XBus pins is only transferred when there is both a reader attempting to read and a writer attempting to write.</p>
 <blockquote class="callout callout-warning"><p class="callout-title">Warning</p><p>If a read or write is attempted on an XBus pin without a corresponding operation on a connected device, <strong>the operation will block</strong>. The microcontroller stops there until the other side shows up.</p></blockquote>
+<div class="circuit-figure" data-circuit="interfaces">
+<p>One MC4000 carrying both kinds: an unmarked simple I/O pin to a switch, and a yellow-dotted XBus pin to a display.</p>
+</div>
 <h2 id="at-a-glance">At a glance<a class="anchor" href="#at-a-glance" aria-label="Link to this section">#</a></h2>
 <div class="table-wrap"><table><thead><tr><th></th><th>Simple I/O</th><th>XBus</th></tr></thead><tbody><tr><td>Marking</td><td>Unmarked</td><td>Yellow dot</td></tr><tr><td>Value range</td><td>0 to 100</td><td>-999 to 999</td></tr><tr><td>Meaning</td><td>Continuous signal level</td><td>Discrete data packet</td></tr><tr><td>Timing</td><td>Read or write any time</td><td>Synchronised; blocks until both sides ready</td></tr><tr><td>Typical use</td><td>Buttons, LEDs, motors, microphones</td><td>Chip-to-chip data, keypads, displays</td></tr></tbody></table></div>
 <blockquote class="callout callout-tip"><p class="callout-title">Tip</p><p>Because XBus blocks, <code>slx</code> exists: it sleeps the chip until a packet is available rather than blocking mid-program. A few parts - such as the <a href="/playground/shenzhen-io/parts/radio/">C2S-RF901 radio</a> and the <a href="/playground/shenzhen-io/parts/displays-and-inputs/">N4PB-8000 button controller</a> - deliberately break the rule with non-blocking buffers that return <code>-999</code> when there is nothing to read.</p></blockquote>
@@ -95,6 +98,6 @@
 </div>
 
 <script src="/playground/assets/app.js" defer></script>
-
+<script type="module" src="/playground/assets/shenzhen/embed.js"></script>
 </body>
 </html>

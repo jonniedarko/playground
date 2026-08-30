@@ -74,6 +74,9 @@
 <h2 id="null">null<a class="anchor" href="#null" aria-label="Link to this section">#</a></h2>
 <p><code>null</code> is a pseudo-register. Reading from the <code>null</code> register produces the value <code>0</code>. Writing to the <code>null</code> register has no effect.</p>
 <h2 id="register-availability-by-chip">Register availability by chip<a class="anchor" href="#register-availability-by-chip" aria-label="Link to this section">#</a></h2>
+<div class="circuit-figure" data-circuit="mcu-compare">
+<p>MC4000 on the left with <code>acc</code> and four pins; MC6000 on the right with <code>acc</code>, <code>dat</code> and six.</p>
+</div>
 <div class="table-wrap"><table><thead><tr><th>Chip</th><th><code>acc</code></th><th><code>dat</code></th><th>Simple I/O</th><th>XBus</th></tr></thead><tbody><tr><td><a href="/playground/shenzhen-io/parts/mc4000/">MC4000</a></td><td>yes</td><td>-</td><td><code>p0</code>, <code>p1</code></td><td><code>x0</code>, <code>x1</code></td></tr><tr><td><a href="/playground/shenzhen-io/parts/mc4000/">MC4000X</a></td><td>yes</td><td>-</td><td>-</td><td><code>x0</code>-<code>x3</code></td></tr><tr><td><a href="/playground/shenzhen-io/parts/mc6000/">MC6000</a></td><td>yes</td><td>yes</td><td><code>p0</code>, <code>p1</code></td><td><code>x0</code>-<code>x3</code></td></tr></tbody></table></div>
 <h2 id="value-range">Value range<a class="anchor" href="#value-range" aria-label="Link to this section">#</a></h2>
 <p>Registers store integer values between <strong>-999 and 999</strong>, inclusive. If an arithmetic operation would produce a result outside this range, the closest allowed value is stored instead - see <a href="/playground/shenzhen-io/language-reference/arithmetic-instructions/">Arithmetic instructions</a>.</p>
@@ -97,6 +100,6 @@
 </div>
 
 <script src="/playground/assets/app.js" defer></script>
-
+<script type="module" src="/playground/assets/shenzhen/embed.js"></script>
 </body>
 </html>
