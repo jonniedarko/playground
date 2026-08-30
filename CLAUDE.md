@@ -60,6 +60,8 @@ No registration step.
 | `components.js` | parts + board. defines custom elements on import |
 | `embed.js` | only entry point a page loads. upgrades both figure kinds |
 | `circuits.js` | named reference circuits as data: parts, code, wires |
+| `parts.js` | pin/meta data, no DOM. components.js **and** sim.js read it |
+| `sim.js` | MCxxxx interpreter. no DOM, tested under plain node |
 
 Figure markup in content — **must be contiguous**, blank line ends a raw HTML
 block. Static `.pinout` inside is the no-JS fallback, replaced on boot:
@@ -96,7 +98,23 @@ When one lands, swap its `.pinout` for a `.chip-figure` and add it to the
 `io-terminal` takes `label` / `type` / `side` and resolves its pin per
 instance, so one part covers button, lamp, motor-N, trigger, output.
 
-New part = `meta` (cols/rows/pins) + `bodyHTML`. Copy `DX300`.
+New part = add to `PART_META` in `parts.js`, then `bodyHTML` in
+`components.js`. Copy `DX300`. Never redeclare pins in `components.js` —
+one source or they drift.
+
+## Simulator
+
+`new Machine(spec)` where spec is a `circuits.js` entry. `setInput(label, v)`,
+`advance()` one time unit, `run(n)`, `output(label)`, `snapshot()`.
+
+- Conditional flag is **tri-state** (`none`/`true`/`false`). `tcp` on equality
+  disables both `+` and `-`; that is what makes it three-way.
+- `@` runs only on the first pass.
+- Program wraps last line → first.
+- XBus is a rendezvous. Both sides blocked = `deadlock`. Blocked while others
+  sleep = `stalled` (not provably fatal, but the symptom players hit).
+- A chip that never sleeps trips an instruction budget and sets `error`.
+- Reading a simple I/O pin drops whatever it was driving.
 
 **Prefer a live component over an image. Always.**
 

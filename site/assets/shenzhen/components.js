@@ -20,6 +20,8 @@
      part.setAttribute('thumb','')  palette mode: placeholder code, inert
    ========================================================================= */
 
+import { PART_META } from './parts.js'
+
 const PALETTE = {
   bezelTop: '#525d67',
   bezelBottom: '#232a31',
@@ -431,65 +433,20 @@ class SzMcu extends SzPart {
 }
 
 class MC4000 extends SzMcu {
-  static meta = {
-    name: 'MC4000', cost: 3, cols: 6, rows: 4, lines: 9,
-    regs: ['acc', 'state', 'power'],
-    ghost: [70, 84, 62, 78, 55, 80, 66, 48, 72],
-    pins: [
-      { name: 'x0', type: 'xbus', side: 'left', at: .25 },
-      { name: 'p0', type: 'simple', side: 'left', at: .75 },
-      { name: 'p1', type: 'simple', side: 'right', at: .25 },
-      { name: 'x1', type: 'xbus', side: 'right', at: .75 }
-    ],
-    sample: '# On for three,\n# off for three:\n  mov 100 p1\n  slp 3\n  mov 0 p1\n  slp 3'
-  };
+  static meta = PART_META['mc-4000'];
 }
 
 class MC4000X extends SzMcu {
-  static meta = {
-    name: 'MC4000X', cost: 3, cols: 6, rows: 4, lines: 9,
-    regs: ['acc', 'state', 'power'],
-    ghost: [64, 80, 58, 74, 68, 50, 76, 60, 44],
-    pins: [
-      { name: 'x0', type: 'xbus', side: 'left', at: .25 },
-      { name: 'x1', type: 'xbus', side: 'left', at: .75 },
-      { name: 'x2', type: 'xbus', side: 'right', at: .25 },
-      { name: 'x3', type: 'xbus', side: 'right', at: .75 }
-    ],
-    sample: '  slx x0\n  mov x0 acc\n  mov acc x2'
-  };
+  static meta = PART_META['mc-4000x'];
 }
 
 class MC6000 extends SzMcu {
-  static meta = {
-    name: 'MC6000', cost: 5, cols: 6, rows: 6, lines: 14,
-    regs: ['acc', 'dat', 'state', 'power'],
-    ghost: [72, 60, 84, 55, 78, 66, 50, 80, 62, 74, 58, 68, 46, 76],
-    pins: [
-      { name: 'x0', type: 'xbus', side: 'left', at: .2 },
-      { name: 'x1', type: 'xbus', side: 'left', at: .5 },
-      { name: 'p0', type: 'simple', side: 'left', at: .8 },
-      { name: 'p1', type: 'simple', side: 'right', at: .2 },
-      { name: 'x3', type: 'xbus', side: 'right', at: .5 },
-      { name: 'x2', type: 'xbus', side: 'right', at: .8 }
-    ],
-    sample: '@ mov 50 p1\n  slx x3\n  mov x3 dat\n  mov 13 acc\ni:teq dat 0\n+ mov x0 p1\n- mov x2 p1\n  slp 1\n  sub 1\n  tlt acc 0\n- jmp i'
-  };
+  static meta = PART_META['mc-6000'];
 }
 
 /* ---------- DX300 digital I/O expander ---------------------------------- */
 class DX300 extends SzPart {
-  static meta = {
-    name: 'DX300', cost: 1, cols: 3, rows: 5, bleed: true,
-    pins: [
-      { name: 'x0', type: 'xbus', side: 'left', at: .2 },
-      { name: 'x1', type: 'xbus', side: 'left', at: .5 },
-      { name: 'x2', type: 'xbus', side: 'left', at: .8 },
-      { name: 'p2', type: 'simple', side: 'right', at: .2 },
-      { name: 'p1', type: 'simple', side: 'right', at: .5 },
-      { name: 'p0', type: 'simple', side: 'right', at: .8 }
-    ]
-  };
+  static meta = PART_META['dx-300'];
 
   bodyHTML() {
     const A = PALETTE.amber;
@@ -526,10 +483,7 @@ class DX300 extends SzPart {
      side="left"       which edge the pin sits on (default right)
    ------------------------------------------------------------------------ */
 class IOTerminal extends SzPart {
-  static meta = {
-    name: 'I/O', cost: 0, cols: 2, rows: 2,
-    pins: [{ name: 'io', type: 'simple', side: 'right', at: .5 }]
-  };
+  static meta = PART_META['io-terminal'];
 
   /* Resolved per instance rather than per class - attributes decide the pin. */
   get meta() {
@@ -561,19 +515,13 @@ class SzMemory extends SzPart {
   }
 }
 
-const MEMORY_PINS = [
-  { name: 'a0', type: 'xbus', side: 'left', at: .25 },
-  { name: 'd0', type: 'xbus', side: 'left', at: .75 },
-  { name: 'd1', type: 'xbus', side: 'right', at: .25 },
-  { name: 'a1', type: 'xbus', side: 'right', at: .75 }
-];
 
 class P100P14 extends SzMemory {
-  static meta = { name: '100P-14', kind: 'RAM', cost: 5, cols: 4, rows: 4, pins: MEMORY_PINS };
+  static meta = PART_META['p-100p14'];
 }
 
 class P200P14 extends SzMemory {
-  static meta = { name: '200P-14', kind: 'ROM', cost: 5, cols: 4, rows: 4, pins: MEMORY_PINS };
+  static meta = PART_META['p-200p14'];
 }
 
 /* ---------- The Logic Company gates -------------------------------------
@@ -586,25 +534,18 @@ class SzGate extends SzPart {
   }
 }
 
-const gatePins = (inputs) => [
-  ...(inputs === 1
-    ? [{ name: 'a', type: 'simple', side: 'left', at: .5 }]
-    : [{ name: 'a', type: 'simple', side: 'left', at: .25 },
-       { name: 'b', type: 'simple', side: 'left', at: .75 }]),
-  { name: 'out', type: 'simple', side: 'right', at: .5 }
-];
 
 class LC70G04 extends SzGate {
-  static meta = { name: 'LC70G04', op: 'NOT', cost: 1, cols: 2, rows: 2, inputs: 1, pins: gatePins(1) };
+  static meta = PART_META['lc-70g04'];
 }
 class LC70G08 extends SzGate {
-  static meta = { name: 'LC70G08', op: 'AND', cost: 1, cols: 2, rows: 2, inputs: 2, pins: gatePins(2) };
+  static meta = PART_META['lc-70g08'];
 }
 class LC70G32 extends SzGate {
-  static meta = { name: 'LC70G32', op: 'OR', cost: 1, cols: 2, rows: 2, inputs: 2, pins: gatePins(2) };
+  static meta = PART_META['lc-70g32'];
 }
 class LC70G86 extends SzGate {
-  static meta = { name: 'LC70G86', op: 'XOR', cost: 1, cols: 2, rows: 2, inputs: 2, pins: gatePins(2) };
+  static meta = PART_META['lc-70g86'];
 }
 
 /* ---------- board ------------------------------------------------------- */
