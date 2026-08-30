@@ -86,6 +86,16 @@ Whole circuit — definition lives in `circuits.js`, content stays a one-liner:
 Wire endpoint = `"<part index>:<pin name>"`. Wiring runs on the next frame
 (pins must be laid out first) and publishes `data-wires` when done.
 
+Routing (`routeAvoiding`) treats every part as an obstacle and picks the
+nearest free horizontal lane, recording it so the next wire picks another.
+`redrawWires` routes the whole set in one pass — that shared lane list is the
+only thing stopping two wires landing on the same run, so never route one wire
+alone. `embed.js` offsets parts one cell in from every edge; the top and bottom
+margins are the lanes. Traces are green (`RIBBON`), not grey.
+Browser test asserts: no wire through a part, no two sharing a horizontal run,
+none outside the board. **Verticals can still cross another wire's lane** —
+avoiding a component is guaranteed, a fully planar layout is not.
+
 Add `data-run` to give a circuit figure Run/Step/Reset, live registers, the
 executing line and a toggle per input terminal. Add `data-scope` for a rolling
 `<scope-trace>` of its outputs. Without `data-run` a figure stays a still

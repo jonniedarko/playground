@@ -110,6 +110,7 @@ async function main() {
   let figuresChecked = 0
   let circuitsChecked = 0
   let runnableChecked = 0
+  let routingChecked = 0
   for (const width of widths) {
     const context = await browser.newContext({
       viewport: { width, height: 844 },
@@ -190,6 +191,67 @@ async function main() {
       )
       circuitsChecked += circuits.length
 
+      // No wire may be drawn through a component, and no two may share a
+      // horizontal run. Sample each path rather than trusting the router.
+      const routing = await page.evaluate(() => {
+        const problems = []
+        for (const fig of document.querySelectorAll('.circuit-figure')) {
+          const board = fig.querySelector('circuit-board')
+          if (!board) continue
+          const origin = board.getBoundingClientRect()
+          const local = (r) => ({
+            x0: r.left - origin.left, y0: r.top - origin.top,
+            x1: r.right - origin.left, y1: r.bottom - origin.top,
+          })
+          const parts = [...board.children].filter((e) => e.shadowRoot).map((e) => local(e.getBoundingClientRect()))
+          // The visible body is inset a few px from the host box; allow for it
+          // so a wire hugging a chip edge is not reported.
+          const inset = 6
+          const runs = []
+          for (const path of board.querySelectorAll('g.wire .w-body')) {
+            const len = path.getTotalLength()
+            if (!len) continue
+            let prev = null
+            let escaped = false
+            for (let d = 0; d <= len; d += 3) {
+              const pt = path.getPointAtLength(d)
+              for (const r of parts) {
+                if (pt.x > r.x0 + inset && pt.x < r.x1 - inset && pt.y > r.y0 + inset && pt.y < r.y1 - inset) {
+                  problems.push(`${fig.dataset.circuit}: wire crosses a part at ${Math.round(pt.x)},${Math.round(pt.y)}`)
+                  d = len
+                  break
+                }
+              }
+              // A wire drawn outside the board reads as a rendering bug even
+              // though it clears every part.
+              if (!escaped && (pt.x < -1 || pt.y < -1 || pt.x > origin.width + 1 || pt.y > origin.height + 1)) {
+                escaped = true
+                problems.push(`${fig.dataset.circuit}: wire leaves the board at ${Math.round(pt.x)},${Math.round(pt.y)}`)
+              }
+              // Collect horizontal runs so overlapping ones can be spotted.
+              if (prev && Math.abs(pt.y - prev.y) < 0.5 && Math.abs(pt.x - prev.x) > 0.5) {
+                const last = runs[runs.length - 1]
+                if (last && Math.abs(last.y - pt.y) < 0.5 && Math.abs(last.x1 - prev.x) < 4) last.x1 = pt.x
+                else runs.push({ y: pt.y, x0: prev.x, x1: pt.x, fig: fig.dataset.circuit })
+              }
+              prev = { x: pt.x, y: pt.y }
+            }
+          }
+          for (let i = 0; i < runs.length; i += 1) {
+            for (let j = i + 1; j < runs.length; j += 1) {
+              const a = runs[i], b = runs[j]
+              if (Math.abs(a.y - b.y) > 3) continue
+              const lo = Math.max(Math.min(a.x0, a.x1), Math.min(b.x0, b.x1))
+              const hi = Math.min(Math.max(a.x0, a.x1), Math.max(b.x0, b.x1))
+              if (hi - lo > 12) problems.push(`${a.fig}: two wires share a run at y=${Math.round(a.y)}`)
+            }
+          }
+        }
+        return [...new Set(problems)]
+      })
+      for (const r of routing) failures.push(`${width}px ${route} ${r}`)
+      routingChecked += circuits.length
+
       // Runnable figures: controls present, and stepping actually moves the clock.
       for (const el of await page.$$('.circuit-figure[data-run]')) {
         const name = await el.evaluate((n) => n.dataset.circuit)
@@ -245,7 +307,7 @@ async function main() {
     return
   }
   process.stdout.write(
-    `browser-test: ${all.length} routes x ${widths.join('/')}px, ${figuresChecked} chip figures, ${circuitsChecked} circuits, ${runnableChecked} runnable` +
+    `browser-test: ${all.length} routes x ${widths.join('/')}px, ${figuresChecked} chip figures, ${circuitsChecked} circuits, ${runnableChecked} runnable, ${routingChecked} routed` +
     ' - no overflow, no console errors\n'
   )
 }

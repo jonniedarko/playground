@@ -606,6 +606,7 @@ circuit-board[static] .wire-hit { pointer-events: none; cursor: default; }
 circuit-board .wire-hit { stroke: transparent; fill: none; pointer-events: stroke; cursor: pointer; }
 circuit-board g.wire path { fill: none; stroke-linejoin: miter; stroke-linecap: butt; }
 circuit-board g.wire:hover .w-body { stroke: ${PALETTE.amber}; }
+circuit-board g.wire .w-end { stroke: #06110e; }
 circuit-board path.draft { stroke: ${PALETTE.amber}; stroke-width: 2; stroke-dasharray: 5 4; fill: none; }
 circuit-board .toast {
   position: absolute;
@@ -627,11 +628,13 @@ circuit-board .toast[open] { opacity: 1; }
 `;
 
 /* conductor stack, outermost first: [class, width factor, colour] */
+/* Conductor stack, outermost first: [class, width factor, colour].
+   Green to read as a board trace rather than a bare metal jumper. */
 const RIBBON = [
-  ['w-case', 1.00, '#0a0f13'],
-  ['w-body', 0.86, PALETTE.metal],
-  ['w-groove', 0.52, '#78838c'],
-  ['w-core', 0.20, '#cfd8de']
+  ['w-case', 1.00, '#06110e'],
+  ['w-body', 0.86, '#3fae93'],
+  ['w-groove', 0.52, '#24705f'],
+  ['w-core', 0.20, '#8fe4cf']
 ];
 
 class CircuitBoard extends HTMLElement {
@@ -820,7 +823,7 @@ class CircuitBoard extends HTMLElement {
     }
     this.svg.appendChild(g);
     this.wires.push(wire);
-    this.drawWire(wire);
+    this.redrawWires();
     this.dispatchEvent(new CustomEvent('wires-changed', { detail: this.wires }));
     return wire;
   }
@@ -847,11 +850,20 @@ class CircuitBoard extends HTMLElement {
     return p;
   }
 
-  drawWire(wire) {
+  /** Every part's box in board coordinates, for the router to steer around. */
+  partRects() {
+    return this.parts.map(part => {
+      const r = part.getBoundingClientRect();
+      const tl = this._toLocal(r.left, r.top);
+      return { x0: tl.x, y0: tl.y, x1: tl.x + r.width, y1: tl.y + r.height };
+    });
+  }
+
+  drawWire(wire, rects = this.partRects(), lanes = []) {
     const cell = this.cell;
     const a = this._anchor(wire.a.pin);
     const b = this._anchor(wire.b.pin);
-    const d = routeOrthogonal(a, b, cell);
+    const d = routeAvoiding(a, b, cell, rects, lanes);
     const gauge = Math.max(7, cell * 0.2);
 
     wire.layers.forEach((p, i) => {
@@ -870,7 +882,13 @@ class CircuitBoard extends HTMLElement {
     });
   }
 
-  redrawWires() { this.wires.forEach(w => this.drawWire(w)); }
+  redrawWires() {
+    // Route the whole set in one pass so each wire can see the lanes already
+    // claimed and pick a different one.
+    const rects = this.partRects();
+    const lanes = [];
+    this.wires.forEach(w => this.drawWire(w, rects, lanes));
+  }
 
   toast(msg) {
     this.toastEl.textContent = msg;
@@ -917,18 +935,76 @@ class CircuitBoard extends HTMLElement {
   }
 }
 
-/** Right-angled ribbon route between two pin anchors. */
-function routeOrthogonal(a, b, cell) {
-  const out = Math.max(10, cell * 0.4);
+/**
+ * Right-angled ribbon route between two pin anchors that keeps clear of the
+ * parts on the board.
+ *
+ * The old version picked a lane from the pin positions alone, so a long run
+ * between two same-side pins was drawn straight through whatever sat between
+ * them. This one treats every part as an obstacle and picks the nearest
+ * horizontal lane that is actually free, then records the lane so the next
+ * wire does not land on top of it.
+ */
+function routeAvoiding(a, b, cell, rects, lanes) {
+  const out = Math.max(12, cell * 0.45);
+  // Smaller than `out`, so a pin's own part never blocks its own stub.
+  const pad = Math.max(5, cell * 0.16);
+  const gap = Math.max(6, cell * 0.22);
   const ax = a.x + a.dir * out;
   const bx = b.x + b.dir * out;
+
+  const hitsH = (y, x0, x1) => {
+    const lo = Math.min(x0, x1), hi = Math.max(x0, x1);
+    return rects.some(r => y > r.y0 - pad && y < r.y1 + pad && hi > r.x0 - pad && lo < r.x1 + pad);
+  };
+  const hitsV = (x, y0, y1) => {
+    const lo = Math.min(y0, y1), hi = Math.max(y0, y1);
+    return rects.some(r => x > r.x0 - pad && x < r.x1 + pad && hi > r.y0 - pad && lo < r.y1 + pad);
+  };
+  const taken = (y, x0, x1) => lanes.some(l =>
+    Math.abs(l.y - y) < gap &&
+    Math.max(x0, x1) > Math.min(l.x0, l.x1) &&
+    Math.min(x0, x1) < Math.max(l.x0, l.x1));
+
+  const claim = (y, x0, x1, d) => { lanes.push({ y, x0, x1 }); return d; };
+
+  // Straight across, when the pins line up and nothing is in the way.
+  if (Math.abs(a.y - b.y) < 1 && !hitsH(a.y, a.x, b.x) && !taken(a.y, a.x, b.x)) {
+    return claim(a.y, a.x, b.x, `M${a.x} ${a.y} H${b.x}`);
+  }
+
+  // Pins facing each other: one vertical in the gap between them.
   const facing = (a.dir === 1 && b.dir === -1 && bx > ax) || (a.dir === -1 && b.dir === 1 && ax > bx);
   if (facing) {
     const mid = Math.round((ax + bx) / 2);
-    return `M${a.x} ${a.y} H${mid} V${b.y} H${b.x}`;
+    if (!hitsV(mid, a.y, b.y) && !hitsH(a.y, a.x, mid) && !hitsH(b.y, mid, b.x)) {
+      lanes.push({ y: a.y, x0: a.x, x1: mid });
+      return claim(b.y, mid, b.x, `M${a.x} ${a.y} H${mid} V${b.y} H${b.x}`);
+    }
   }
-  const lane = Math.round(Math.max(a.y, b.y) + cell * 0.9);
-  return `M${a.x} ${a.y} H${ax} V${lane} H${bx} V${b.y} H${b.x}`;
+
+  // Otherwise run out to a lane. Prefer one near the middle of the two pins,
+  // and search the clear bands above and below every part.
+  const midY = (a.y + b.y) / 2;
+  const candidates = [a.y, b.y];
+  for (const r of rects) {
+    candidates.push(r.y0 - pad - gap);
+    candidates.push(r.y1 + pad + gap);
+  }
+  candidates.sort((p, q) => Math.abs(p - midY) - Math.abs(q - midY));
+
+  for (const base of candidates) {
+    for (let n = 0; n < 8; n += 1) {
+      const lane = Math.round(base + (n % 2 ? -1 : 1) * Math.ceil(n / 2) * gap);
+      if (hitsH(lane, ax, bx) || taken(lane, ax, bx)) continue;
+      if (hitsV(ax, a.y, lane) || hitsV(bx, lane, b.y)) continue;
+      return claim(lane, ax, bx, `M${a.x} ${a.y} H${ax} V${lane} H${bx} V${b.y} H${b.x}`);
+    }
+  }
+
+  // Nothing clear: go below everything rather than through anything.
+  const floor = Math.round(rects.reduce((m, r) => Math.max(m, r.y1), Math.max(a.y, b.y)) + pad + gap * (lanes.length + 1));
+  return claim(floor, ax, bx, `M${a.x} ${a.y} H${ax} V${floor} H${bx} V${b.y} H${b.x}`);
 }
 
 /* ---------- register ---------------------------------------------------- */
@@ -1033,5 +1109,5 @@ export {
   LC70G86,
   PALETTE,
   highlight,
-  routeOrthogonal,
+  routeAvoiding,
 };
