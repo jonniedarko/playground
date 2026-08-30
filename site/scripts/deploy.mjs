@@ -23,8 +23,12 @@ const BRANCH = 'pages'
 
 const dryRun = process.argv.includes('--dry-run')
 
-const git = (args, opts = {}) =>
-  execFileSync('git', args, { cwd: REPO, encoding: 'utf8', ...opts }).trim()
+const git = (args, opts = {}) => {
+  // execFileSync returns null when stdio is inherited rather than captured,
+  // so only trim what is actually a string.
+  const out = execFileSync('git', args, { cwd: REPO, encoding: 'utf8', ...opts })
+  return typeof out === 'string' ? out.trim() : ''
+}
 
 /** A project page is served from /<repo>; a user or org page from the root. */
 function deriveBasePath() {
