@@ -86,8 +86,13 @@ Wire endpoint = `"<part index>:<pin name>"`. Wiring runs on the next frame
 
 Parts: `mc-4000` `mc-4000x` `mc-6000` `dx-300` `io-terminal` `p-100p14`
 `p-200p14` `lc-70g04` `lc-70g08` `lc-70g32` `lc-70g86`.
-No component yet: MC4010, DT2415, C2S-RF901, FM Blaster, LX700/LX910C,
-N4PB-8000, D80C010-F, KUJI-EK1, PGA33X6, NLP2 — those keep CSS pinouts.
+**No component yet** — these keep their CSS `.pinout` markup until built:
+MC4010, DT2415, C2S-RF901, FM Blaster, N4PB-8000, LX700, LX910C, D80C010-F,
+KUJI-EK1, PGA33X6, NLP2. All are the same shape (a face plus pins, no code),
+so a declarative factory beats a class each. Two need work first: a `nc` pin
+type for N/C pins, and per-instance pin overrides like `io-terminal` has.
+When one lands, swap its `.pinout` for a `.chip-figure` and add it to the
+`catalogue` circuit.
 `io-terminal` takes `label` / `type` / `side` and resolves its pin per
 instance, so one part covers button, lamp, motor-N, trigger, output.
 

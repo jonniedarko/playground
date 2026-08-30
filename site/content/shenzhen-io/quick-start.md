@@ -1,6 +1,7 @@
 ---
 title: Quick start
 description: The whole system in one page - six facts, the two pin types, and three programs you can type in and watch run.
+board: true
 order: 0
 icon: 🚀
 ---
@@ -137,6 +138,10 @@ just lets you wait in one place and read in another.
 | `slp 3` | 3 more time units |
 | *(end)* | execution **wraps back to line 1** and repeats |
 
+<div class="circuit-figure" data-circuit="blink">
+<p>An MC4000 driving a lamp on <code>p1</code>: on for three time units, off for three.</p>
+</div>
+
 > [!TIP]
 > There is no `jmp` here. When a program runs off the bottom it starts again at
 > the top, so a plain list of instructions is already a loop.
@@ -173,6 +178,10 @@ The test flips a switch inside the chip. `+` lines run when the test passed,
 
 **Why 50?** A button gives you `0` or `100`, but sensors give in-between values.
 50 is the halfway line. (Logic gates use the same threshold.)
+
+<div class="circuit-figure" data-circuit="button-lamp">
+<p>The button feeds <code>p0</code>; the test gates which of the two conditional lines drives <code>p1</code>.</p>
+</div>
 
 > [!WARNING]
 > A `+` or `-` line with **no test before it never runs**. Conditional lines
@@ -213,6 +222,10 @@ Sensor to A's `p0`, lamp to B's `p1`.
 
 Neither chip needs to know the other's timing. The handshake *is* the
 synchronisation — that is what XBus is for.
+
+<div class="circuit-figure" data-circuit="xbus-pair">
+<p>The sender offers a value on <code>x0</code> and waits; the receiver sleeps on <code>slx</code> until it arrives.</p>
+</div>
 
 ---
 

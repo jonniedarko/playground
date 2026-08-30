@@ -1,6 +1,7 @@
 ---
 title: Registers
 description: acc, dat, the pin registers and null - what each one does and which chips have them.
+board: true
 order: 2
 ---
 
@@ -51,6 +52,10 @@ the two interface types differ.
 `0`. Writing to the `null` register has no effect.
 
 ## Register availability by chip
+
+<div class="circuit-figure" data-circuit="mcu-compare">
+<p>MC4000 on the left with <code>acc</code> and four pins; MC6000 on the right with <code>acc</code>, <code>dat</code> and six.</p>
+</div>
 
 | Chip | `acc` | `dat` | Simple I/O | XBus |
 | --- | --- | --- | --- | --- |

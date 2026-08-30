@@ -1,6 +1,7 @@
 ---
 title: 'AN393: Make sure to get enough sleep'
 description: Why slp is the right way to wait, and how time units relate to instruction count.
+board: true
 order: 2
 ---
 
@@ -35,6 +36,10 @@ The following program generates a square wave on simple I/O pin `p1` that is on
 
 With no `jmp`, the program wraps from the last line back to the first, giving a
 continuous six-time-unit period.
+
+<div class="circuit-figure" data-circuit="blink">
+<p>An MC4000 driving a lamp on <code>p1</code>: on for three time units, off for three.</p>
+</div>
 
 > [!NOTE]
 > The listing above is reconstructed from the note's stated behaviour: the

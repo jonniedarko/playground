@@ -61,3 +61,16 @@ The part exposes four kinds of pin. `cN` drives segments, `tN` reports touches,
 > [!NOTE]
 > The `qN` pins are used as a pair of operations: write the segment number you
 > want to ask about, then read back the `1` or `0` answer.
+
+### Custom display template
+
+A custom LCD is specified by drawing the design and numbering each region, which
+is what the segment numbers in the table above refer to. This is the template
+from the manual, filled in for a reactor control panel - the same temperature,
+power output and control rod readouts the
+[Poseidon-779 spec](/shenzhen-io/supplemental/signal-specs/) describes.
+
+![The LuX Industry custom LCD template, filled in for a thorium reactor control panel: compressor, turbine and generator blocks across the top with a power output bar, a coolant loop in the middle, and a thorium salt reactor along the bottom with a temperature bar and five control rod segments.](/assets/img/shenzhen/lux-lcd-template.png)
+
+Reproduced from the manual. No component can draw this one - it is artwork
+rather than a circuit.

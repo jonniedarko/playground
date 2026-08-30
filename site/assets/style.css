@@ -927,3 +927,18 @@ td code { white-space: nowrap; }
   font-size: 0.9rem;
 }
 .circuit-figure > p:last-child { margin-bottom: 0; }
+
+/* --------------------------------------------------------- manual figures */
+/* Scans from the manual are black line art on white. Frame them on a light
+   panel so they stay legible in the dark theme instead of glaring. */
+
+.doc img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 0 1.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fbfbfa;
+}

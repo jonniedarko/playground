@@ -160,12 +160,119 @@ const logicGates = {
   wires: [],
 }
 
+
+/** Square wave generator - Application Note 393, and quick start example 1. */
+const blink = {
+  cell: 30,
+  label:
+    'Square wave generator: one MC4000 driving a lamp on p1, on for three time ' +
+    'units and off for three.',
+  parts: [
+    {
+      t: 'mc-4000', x: 0, y: 0,
+      code: ['  mov 100 p1', '  slp 3', '  mov 0 p1', '  slp 3'].join('\n'),
+    },
+    { t: 'io-terminal', x: 8, y: 1, label: 'lamp', type: 'simple', side: 'left' },
+  ],
+  wires: [['0:p1', '1:lamp']],
+}
+
+/** Quick start example 2: drive an output from an input through a threshold. */
+const buttonLamp = {
+  cell: 30,
+  label:
+    'Reacting to an input: an MC4000 tests a button on p0 against the halfway ' +
+    'threshold and drives the lamp on p1 from the result.',
+  parts: [
+    { t: 'io-terminal', x: 0, y: 1, label: 'button', type: 'simple', side: 'right' },
+    {
+      t: 'mc-4000', x: 3, y: 0,
+      code: ['  tgt p0 50', '+ mov 100 p1', '- mov 0 p1', '  slp 1'].join('\n'),
+    },
+    { t: 'io-terminal', x: 11, y: 1, label: 'lamp', type: 'simple', side: 'left' },
+  ],
+  wires: [['0:button', '1:p0'], ['1:p1', '2:lamp']],
+}
+
+/** Quick start example 3: two chips synchronising over XBus. */
+const xbusPair = {
+  cell: 28,
+  label:
+    'Two chips over XBus: the sender reads a sensor and offers the value on x0; ' +
+    'the receiver sleeps on slx until it arrives, then drives the lamp.',
+  parts: [
+    { t: 'io-terminal', x: 0, y: 1, label: 'sensor', type: 'simple', side: 'right' },
+    { t: 'mc-4000', x: 3, y: 0, code: ['  mov p0 x0', '  slp 1'].join('\n') },
+    { t: 'mc-4000', x: 11, y: 0, code: ['  slx x0', '  mov x0 p1'].join('\n') },
+    { t: 'io-terminal', x: 19, y: 1, label: 'lamp', type: 'simple', side: 'left' },
+  ],
+  wires: [['0:sensor', '1:p0'], ['1:x0', '2:x0'], ['2:p1', '3:lamp']],
+}
+
+/** AN268: the two pin types, side by side on one chip. */
+const interfaces = {
+  cell: 30,
+  label:
+    'The two interfaces on one MC4000: an unmarked simple I/O pin carrying a ' +
+    'level from a switch, and a yellow-dotted XBus pin carrying packets to a display.',
+  parts: [
+    { t: 'io-terminal', x: 0, y: 1, label: 'switch', type: 'simple', side: 'right' },
+    { t: 'mc-4000', x: 3, y: 0, code: '' },
+    { t: 'io-terminal', x: 11, y: 0, label: 'display', type: 'xbus', side: 'left' },
+  ],
+  wires: [['0:switch', '1:p0'], ['1:x1', '2:display']],
+}
+
+/** The two microcontrollers together, for the register availability table. */
+const mcuCompare = {
+  cell: 28,
+  label:
+    'MC4000 and MC6000 side by side: nine lines and acc against fourteen lines, ' +
+    'acc and dat, and twice the XBus pins.',
+  parts: [
+    { t: 'mc-4000', x: 0, y: 1, code: '' },
+    { t: 'mc-6000', x: 8, y: 0, code: '' },
+  ],
+  wires: [],
+}
+
+/** Every component the site can draw, as the parts index illustration. */
+const catalogue = {
+  cell: 26,
+  label:
+    'The component catalogue: MC4000, MC4000X and MC6000 microcontrollers; the ' +
+    'DX300 expander, 100P-14 RAM, 200P-14 ROM and a generic I/O terminal; and ' +
+    'the four LC70Gxx logic gates.',
+  parts: [
+    // The three microcontrollers look alike at a glance, so name each one in
+    // its own code panel rather than leaving three blank boxes.
+    { t: 'mc-4000', x: 0, y: 0, code: '# MC4000\n# 9 lines\n# acc' },
+    { t: 'mc-4000x', x: 7, y: 0, code: '# MC4000X\n# XBus only\n# 9 lines' },
+    { t: 'mc-6000', x: 14, y: 0, code: '# MC6000\n# 14 lines\n# acc + dat' },
+    { t: 'dx-300', x: 0, y: 7 },
+    { t: 'p-100p14', x: 4, y: 7 },
+    { t: 'p-200p14', x: 9, y: 7 },
+    { t: 'io-terminal', x: 14, y: 8, label: 'button', type: 'simple', side: 'right' },
+    { t: 'lc-70g04', x: 0, y: 13 },
+    { t: 'lc-70g08', x: 3, y: 13 },
+    { t: 'lc-70g32', x: 6, y: 13 },
+    { t: 'lc-70g86', x: 9, y: 13 },
+  ],
+  wires: [],
+}
+
 export const CIRCUITS = {
   an650,
   'dx300-stepper': dx300Stepper,
   'packet-reverser': packetReverser,
   'packet-generator': packetGenerator,
   'logic-gates': logicGates,
+  blink,
+  'button-lamp': buttonLamp,
+  'xbus-pair': xbusPair,
+  interfaces,
+  'mcu-compare': mcuCompare,
+  catalogue,
 }
 
 export default CIRCUITS

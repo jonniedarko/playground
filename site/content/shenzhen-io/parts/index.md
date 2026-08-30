@@ -1,12 +1,17 @@
 ---
 title: Parts datasheets
 description: One page per component - microcontrollers, memory, logic, displays, sensors and everything else you can place on a board.
+board: true
 order: 4
 icon: 🧩
 ---
 
 Every part you can place on a circuit board has a datasheet in the binder. The
 pages below group them by what they do.
+
+<div class="circuit-figure" data-circuit="catalogue">
+<p>The components this site can draw: the MC4000, MC4000X and MC6000 microcontrollers, the DX300 expander, 100P-14 RAM, 200P-14 ROM, a generic I/O terminal, and the four LC70Gxx logic gates.</p>
+</div>
 
 ## Quick index
 
