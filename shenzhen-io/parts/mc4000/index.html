@@ -66,10 +66,12 @@
 <h2 id="features">Features<a class="anchor" href="#features" aria-label="Link to this section">#</a></h2>
 <ul><li><strong>(9)</strong> lines of program memory</li><li><strong>(1)</strong> general-purpose register</li><li><strong>(2)</strong> XBus pins</li><li><strong>(2)</strong> simple I/O pins</li></ul>
 <h2 id="pin-configuration">Pin configuration<a class="anchor" href="#pin-configuration" aria-label="Link to this section">#</a></h2>
+<div class="chip-figure" data-part="mc-4000" aria-label="MC4000 pin layout. Left side, top to bottom: x0 XBus, p0 simple I/O. Right side, top to bottom: p1 simple I/O, x1 XBus.">
 <div class="pinout" role="img" aria-label="MC4000 pin layout. Left side, top to bottom: x0 XBus, p0 simple I/O. Right side, top to bottom: p1 simple I/O, x1 XBus.">
 <div class="pinout-col"><span class="pin pin-x">x0</span><span class="pin pin-s">p0</span></div>
 <div class="pinout-chip"><span class="pinout-name">MC4000</span></div>
 <div class="pinout-col"><span class="pin pin-s">p1</span><span class="pin pin-x">x1</span></div>
+</div>
 </div>
 <div class="table-wrap"><table><thead><tr><th>Pin</th><th>Type</th></tr></thead><tbody><tr><td><code>x0</code>, <code>x1</code></td><td>XBus</td></tr><tr><td><code>p0</code>, <code>p1</code></td><td>Simple I/O</td></tr></tbody></table></div>
 <h2 id="registers">Registers<a class="anchor" href="#registers" aria-label="Link to this section">#</a></h2>
@@ -77,6 +79,13 @@
 <blockquote class="callout callout-note"><p class="callout-title">Note</p><p>At any given time, a simple I/O pin is either in input mode or output mode. Writing a value to a pin register will put the corresponding pin into output mode with the specified output value. Reading a value from a pin register will put the corresponding pin into input mode, clearing any previously set output value.</p></blockquote>
 <h2 id="mc4000x-variant">MC4000X variant<a class="anchor" href="#mc4000x-variant" aria-label="Link to this section">#</a></h2>
 <p>As a result of customer feedback, an XBus-only variant is available under the <strong>MC4000X</strong> part number. It carries the same nine lines of program memory and single register, but all four pins are XBus (<code>x0</code>-<code>x3</code>) with no simple I/O.</p>
+<div class="chip-figure" data-part="mc-4000x" aria-label="MC4000X pin layout. Left side, top to bottom: x0 XBus, x1 XBus. Right side, top to bottom: x2 XBus, x3 XBus.">
+<div class="pinout" role="img" aria-label="MC4000X pin layout. Left side, top to bottom: x0 XBus, x1 XBus. Right side, top to bottom: x2 XBus, x3 XBus.">
+<div class="pinout-col"><span class="pin pin-x">x0</span><span class="pin pin-x">x1</span></div>
+<div class="pinout-chip"><span class="pinout-name">MC4000X</span></div>
+<div class="pinout-col"><span class="pin pin-x">x2</span><span class="pin pin-x">x3</span></div>
+</div>
+</div>
 <p>Refer to the <a href="/playground/shenzhen-io/language-reference/">MCxxxx language reference</a> for information about programming the MC4000.</p>
       <nav class="pager" aria-label="Pagination"><a class="pager-link pager-prev" href="/playground/shenzhen-io/parts/"><span class="pager-label">Previous</span><span class="pager-title">Parts datasheets</span></a><a class="pager-link pager-next" href="/playground/shenzhen-io/parts/mc6000/"><span class="pager-label">Next</span><span class="pager-title">MC6000</span></a></nav>
     </article>
@@ -98,5 +107,6 @@
 </div>
 
 <script src="/playground/assets/app.js" defer></script>
+<script type="module" src="/playground/assets/shenzhen/embed.js"></script>
 </body>
 </html>
