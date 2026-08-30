@@ -889,3 +889,30 @@ td code { white-space: nowrap; }
 }
 
 .pin-nc { color: var(--text-faint); font-style: italic; }
+
+/* ------------------------------------------------------------ chip figures */
+/* A datasheet figure showing a real component. The board inside is dark by
+   design - it is a picture of a device - so it gets a frame that reads as a
+   panel in both themes rather than a rendering fault. */
+
+.chip-figure {
+  margin: 0 0 1.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #0b1114;
+  /* The widest part is ~340px with its pin labels; scroll inside the frame
+     rather than pushing the page sideways on a narrow phone. */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chip-figure > circuit-board {
+  margin: 0 auto;
+}
+
+/* Until the module upgrades it, the figure holds the static pinout markup.
+   Give that fallback the page background so it stays readable on the dark frame. */
+.chip-figure:not([data-upgraded]) {
+  background: var(--bg-sunken);
+}

@@ -45,10 +45,36 @@ Front matter — **flat scalars only**, no arrays:
 | `description` | lede + meta + search snippet |
 | `order` | sidebar position. unset sorts last |
 | `icon` | emoji, sidebar + cards |
+| `board` | `true` loads the shenzhen component module on that page |
 
 Internal links root-relative (`/shenzhen-io/…`) so `BASE_PATH` applies.
 Nav, breadcrumbs, prev/next, search index all derive from folder tree.
 No registration step.
+
+## Components
+
+`site/assets/shenzhen/` — ES modules, no deps.
+
+| file | is |
+| --- | --- |
+| `components.js` | parts + board. defines custom elements on import |
+| `embed.js` | only entry point a page loads. upgrades `.chip-figure` |
+
+Figure markup in content — **must be contiguous**, blank line ends a raw HTML
+block. Static `.pinout` inside is the no-JS fallback, replaced on boot:
+
+```html
+<div class="chip-figure" data-part="mc-4000" aria-label="...">
+...static pinout markup...
+</div>
+```
+
+`data-cell` overrides grid px. `data-code` overrides sample program; empty
+string = bare chip. Page needs `board: true`.
+
+New part = `meta` (cols/rows/pins) + `bodyHTML`. Copy `DX300`.
+
+**Prefer a live component over an image. Always.**
 
 ## Deploy
 
@@ -85,6 +111,6 @@ Base CSS = phone. Media queries add desktop. Not the reverse.
 `node scripts/extract-manual-images.mjs --pdf FILE` → `assets/img/shenzhen/`.
 Pure-stdlib PDF parse + PNG encode in `scripts/lib/pdf_images.py`.
 
-**Prefer a live component over an image. Always.** Scans are last resort — only
-artwork no component can draw. Some manual figures are vector-only and have no
-image to extract at all (iNK colour space, sector map, neural lattice).
+Scans are last resort — only artwork no component can draw. Some manual figures
+are vector-only with no image to extract (iNK colour space, sector map,
+neural lattice).

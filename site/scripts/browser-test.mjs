@@ -106,6 +106,7 @@ async function main() {
   const browser = await pw.chromium.launch(launch)
 
   const failures = []
+  let figuresChecked = 0
   for (const width of widths) {
     const context = await browser.newContext({
       viewport: { width, height: 844 },
@@ -128,6 +129,42 @@ async function main() {
         failures.push(`${width}px ${route} overflows: ${box.scroll} > ${box.client}`)
       }
       for (const e of errors) failures.push(`${width}px ${route} console: ${e}`)
+
+      // Chip figures must upgrade to real components, and the static markup
+      // they replace must still be in the served HTML as the no-JS fallback.
+      const figures = await page.evaluate(() =>
+        [...document.querySelectorAll('.chip-figure')].map((fig) => {
+          const part = fig.querySelector('circuit-board > *')
+          return {
+            part: fig.dataset.part,
+            upgraded: fig.dataset.upgraded === 'true',
+            tag: part && part.tagName.toLowerCase(),
+            shadow: Boolean(part && part.shadowRoot),
+            pins: part && part.shadowRoot
+              ? part.shadowRoot.querySelectorAll('.pin').length
+              : 0,
+            labels: part && part.shadowRoot
+              ? getComputedStyle(part.shadowRoot.querySelector('.trace i')).opacity
+              : '0',
+          }
+        })
+      )
+      figuresChecked += figures.length
+      for (const fig of figures) {
+        const at = `${width}px ${route} figure ${fig.part}`
+        if (!fig.upgraded) failures.push(`${at}: did not upgrade`)
+        else if (fig.tag !== fig.part) failures.push(`${at}: rendered <${fig.tag}>`)
+        else if (!fig.shadow) failures.push(`${at}: no shadow root`)
+        else if (!fig.pins) failures.push(`${at}: no pins rendered`)
+        // Pin names must be legible without hovering - there is no hover on touch.
+        else if (fig.labels !== '1') failures.push(`${at}: pin labels hidden (opacity ${fig.labels})`)
+      }
+      if (figures.length) {
+        const html = await (await fetch(`http://localhost:${port}${route}`)).text()
+        if (!html.includes('class="pinout"')) {
+          failures.push(`${width}px ${route}: no static pinout fallback in served HTML`)
+        }
+      }
     }
     await context.close()
   }
@@ -143,7 +180,8 @@ async function main() {
     return
   }
   process.stdout.write(
-    `browser-test: ${all.length} routes x ${widths.join('/')}px - no overflow, no console errors\n`
+    `browser-test: ${all.length} routes x ${widths.join('/')}px, ${figuresChecked} chip figures` +
+    ' - no overflow, no console errors\n'
   )
 }
 

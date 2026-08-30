@@ -66,6 +66,7 @@ async function readTree(dir, urlPrefix = '') {
         description: index?.data.description || '',
         order: index?.data.order ?? 999,
         icon: index?.data.icon || '',
+        board: index?.data.board === true,
         doc: index,
         children,
       })
@@ -83,6 +84,7 @@ async function readTree(dir, urlPrefix = '') {
       description: doc.data.description || '',
       order: doc.data.order ?? 999,
       icon: doc.data.icon || '',
+      board: doc.data.board === true,
       doc,
       children: [],
     })
@@ -229,7 +231,7 @@ function renderPager(prev, next) {
   return '<nav class="pager" aria-label="Pagination">' + link(prev, 'prev', 'Previous') + link(next, 'next', 'Next') + '</nav>'
 }
 
-function layout({ title, description, content, nav, breadcrumbs, pager, isHome }) {
+function layout({ title, description, content, nav, breadcrumbs, pager, isHome, board = false }) {
   const pageTitle = isHome ? SITE.title + ' - ' + SITE.tagline : title + ' - ' + SITE.title
   return `<!doctype html>
 <html lang="en">
@@ -314,6 +316,7 @@ function layout({ title, description, content, nav, breadcrumbs, pager, isHome }
 </div>
 
 <script src="${url('assets/app.js')}" defer></script>
+${board ? `<script type="module" src="${url('assets/shenzhen/embed.js')}"></script>` : ''}
 </body>
 </html>
 `
@@ -385,6 +388,7 @@ export async function buildSite({ quiet = false } = {}) {
       breadcrumbs: renderBreadcrumbs(trail),
       pager: renderPager(position.prev, position.next),
       isHome: false,
+      board: node.board,
     })
 
     const dest = path.join(OUT_DIR, node.route, 'index.html')
