@@ -94,13 +94,19 @@ const packetReverser = {
     { t: 'io-terminal', x: 0, y: 2, label: 'input', type: 'xbus', side: 'right' },
     {
       t: 'mc-6000', x: 3, y: 0,
+      // x3 is wired to the memory's a0, x2 to its d0 - the chip has no a0/d0
+      // of its own. Store three values, then seek back and read them out.
       code: [
-        '  mov 0 a0',
-        '  mov x0 d0',
-        '  mov x0 d0',
-        '  mov x0 d0',
-        '  mov 2 a0',
-        '  mov d0 x1',
+        '  mov 0 x3',
+        '  mov x0 x2',
+        '  mov x0 x2',
+        '  mov x0 x2',
+        '  mov 2 x3',
+        '  mov x2 x1',
+        '  mov 1 x3',
+        '  mov x2 x1',
+        '  mov 0 x3',
+        '  mov x2 x1',
       ].join('\n'),
     },
     { t: 'p-100p14', x: 11, y: 1 },
@@ -125,12 +131,13 @@ const packetGenerator = {
     { t: 'io-terminal', x: 0, y: 2, label: 'trigger', type: 'simple', side: 'right' },
     {
       t: 'mc-6000', x: 3, y: 0,
+      // x3 addresses the ROM, x2 reads it; the chip has no a0/d0 of its own.
       code: [
         '  tgt p0 50',
-        '+ mov 0 a0',
-        '+ mov d0 x1',
-        '+ mov d0 x1',
-        '+ mov d0 x1',
+        '+ mov 0 x3',
+        '+ mov x2 x1',
+        '+ mov x2 x1',
+        '+ mov x2 x1',
         '  slp 1',
       ].join('\n'),
     },
