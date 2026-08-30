@@ -100,8 +100,13 @@ New part = `meta` (cols/rows/pins) + `bodyHTML`. Copy `DX300`.
 `pages` branch = built output only, nothing else. `ship` replaces contents,
 commits on top, fast-forward push. Never force.
 
-**Still off:** Settings → Pages → Deploy from a branch → `pages` → `/ (root)`.
-Nothing serves until set.
+Live at **jonnie.io/playground/** — custom domain sits on the *user* site
+(`jonniedarko.github.io`), project pages inherit it as `jonnie.io/<repo>/`.
+So `BASE_PATH` stays `/playground`; deploy derives it from the git remote.
+
+No `CNAME` on this repo's `pages` branch, and there must not be one — that
+would claim the domain root for this repo. `deploy.mjs` preserves `CNAME` if
+one ever appears, since the deploy replaces branch contents wholesale.
 
 CI: `.github/workflows/deploy-docs.yml`, fires on push to `main` touching
 `site/`. Site source currently lives on a feature branch, so CI has not run yet.

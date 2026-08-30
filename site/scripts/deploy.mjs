@@ -42,11 +42,25 @@ function deriveBasePath() {
   return repo.toLowerCase() === `${owner.toLowerCase()}.github.io` ? '' : `/${repo}`
 }
 
+/**
+ * Files GitHub Pages itself owns on the publish branch. Setting a custom domain
+ * writes CNAME there, so a wholesale replace must carry it across or the domain
+ * silently stops resolving on the next deploy.
+ */
+const PRESERVE = ['CNAME']
+
 async function emptyDir(dir) {
+  const kept = new Map()
+  for (const name of PRESERVE) {
+    const file = path.join(dir, name)
+    const body = await fs.readFile(file).catch(() => null)
+    if (body !== null) kept.set(name, body)
+  }
   for (const entry of await fs.readdir(dir)) {
     if (entry === '.git') continue
     await fs.rm(path.join(dir, entry), { recursive: true, force: true })
   }
+  return kept
 }
 
 async function copyDir(from, to) {
@@ -99,8 +113,13 @@ async function main() {
     }
     git(['-C', worktree, 'checkout', '-B', BRANCH])
 
-    await emptyDir(worktree)
+    const preserved = await emptyDir(worktree)
     await copyDir(path.join(SITE, 'dist'), worktree)
+    for (const [name, body] of preserved) {
+      // The build never produces these, so restoring is always safe.
+      await fs.writeFile(path.join(worktree, name), body)
+      process.stdout.write(`deploy: preserved ${name}\n`)
+    }
 
     git(['-C', worktree, 'add', '-A'])
     const staged = git(['-C', worktree, 'status', '--porcelain'])
