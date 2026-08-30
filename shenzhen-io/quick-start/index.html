@@ -109,7 +109,7 @@
   slp 3</code></pre></div>
 <p><strong>What happens:</strong></p>
 <div class="table-wrap"><table><thead><tr><th>Line</th><th>Effect</th></tr></thead><tbody><tr><td><code>mov 100 p1</code></td><td><code>p1</code> becomes an output at full</td></tr><tr><td><code>slp 3</code></td><td>clock jumps forward 3 time units, chip costs nothing</td></tr><tr><td><code>mov 0 p1</code></td><td><code>p1</code> drops to off</td></tr><tr><td><code>slp 3</code></td><td>3 more time units</td></tr><tr><td><em>(end)</em></td><td>execution <strong>wraps back to line 1</strong> and repeats</td></tr></tbody></table></div>
-<div class="circuit-figure" data-circuit="blink">
+<div class="circuit-figure" data-circuit="blink" data-run data-scope>
 <p>An MC4000 driving a lamp on <code>p1</code>: on for three time units, off for three.</p>
 </div>
 <blockquote class="callout callout-tip"><p class="callout-title">Tip</p><p>There is no <code>jmp</code> here. When a program runs off the bottom it starts again at the top, so a plain list of instructions is already a loop.</p></blockquote>
@@ -126,7 +126,7 @@
 <div class="table-wrap"><table><thead><tr><th>Line</th><th>Effect</th></tr></thead><tbody><tr><td><code>tgt p0 50</code></td><td>reads <code>p0</code>, asks &quot;is it greater than 50?&quot;</td></tr><tr><td><code>+ mov 100 p1</code></td><td>runs <strong>only if yes</strong> — lamp on</td></tr><tr><td><code>- mov 0 p1</code></td><td>runs <strong>only if no</strong> — lamp off</td></tr><tr><td><code>slp 1</code></td><td>wait one time unit, then wrap to the top</td></tr></tbody></table></div>
 <p>The test flips a switch inside the chip. <code>+</code> lines run when the test passed, <code>-</code> lines when it failed. Whichever one doesn&#39;t run is skipped for free.</p>
 <p><strong>Why 50?</strong> A button gives you <code>0</code> or <code>100</code>, but sensors give in-between values. 50 is the halfway line. (Logic gates use the same threshold.)</p>
-<div class="circuit-figure" data-circuit="button-lamp">
+<div class="circuit-figure" data-circuit="button-lamp" data-run>
 <p>The button feeds <code>p0</code>; the test gates which of the two conditional lines drives <code>p1</code>.</p>
 </div>
 <blockquote class="callout callout-warning"><p class="callout-title">Warning</p><p>A <code>+</code> or <code>-</code> line with <strong>no test before it never runs</strong>. Conditional lines start switched off. If a line seems to be ignored, check there is a <code>t</code> instruction above it.</p></blockquote>
@@ -143,7 +143,7 @@
 <p><strong>What happens:</strong></p>
 <div class="table-wrap"><table><thead><tr><th>Step</th><th>Chip A</th><th>Chip B</th></tr></thead><tbody><tr><td>1</td><td>reads <code>p0</code>, offers it on <code>x0</code> — <strong>waits</strong></td><td>asleep on <code>slx x0</code></td></tr><tr><td>2</td><td><em>(both sides present)</em></td><td>wakes up</td></tr><tr><td>3</td><td>hand-off completes</td><td>reads <code>x0</code>, drives <code>p1</code></td></tr><tr><td>4</td><td><code>slp 1</code></td><td>wraps to top, sleeps again</td></tr></tbody></table></div>
 <p>Neither chip needs to know the other&#39;s timing. The handshake <em>is</em> the synchronisation — that is what XBus is for.</p>
-<div class="circuit-figure" data-circuit="xbus-pair">
+<div class="circuit-figure" data-circuit="xbus-pair" data-run>
 <p>The sender offers a value on <code>x0</code> and waits; the receiver sleeps on <code>slx</code> until it arrives.</p>
 </div>
 <hr />

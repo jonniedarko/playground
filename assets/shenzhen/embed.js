@@ -20,6 +20,9 @@
 
 import './components.js'
 import { CIRCUITS } from './circuits.js'
+import { Machine } from './sim.js'
+
+const TICK_MS = 550
 
 const WIDE_CELL = 40
 const NARROW_CELL = 32
@@ -128,8 +131,147 @@ function upgradeCircuit(el) {
       board.connect({ part: pa, pin: ea }, { part: pb, pin: eb })
     }
     el.dataset.wires = String(board.wires.length)
+    // Only figures that opt in get controls; the rest stay illustrations.
+    if (el.hasAttribute('data-run')) {
+      el.runner = new Runner(el, board, made, spec, el.dataset.circuit)
+    }
   })
   return true
+}
+
+
+/* ---------------------------------------------------------------- runner
+   Drives a figure's circuit with the simulator: run, step, reset, live
+   registers, the executing line, and what each terminal is carrying.
+   ---------------------------------------------------------------------- */
+class Runner {
+  constructor(figure, board, parts, spec, name) {
+    this.figure = figure
+    this.board = board
+    this.parts = parts
+    this.spec = spec
+    this.name = name
+    this.machine = new Machine(spec)
+    this.timer = null
+    this.buildControls()
+    this.sync()
+  }
+
+  get inputs() {
+    // Terminals that feed the circuit rather than being driven by it.
+    return this.spec.parts
+      .map((p, id) => ({ ...p, id }))
+      .filter((p) => p.t === 'io-terminal' && p.side === 'right')
+  }
+
+  buildControls() {
+    const bar = document.createElement('div')
+    bar.className = 'sim-bar'
+
+    this.playBtn = this.button('Run', () => this.toggle(), 'sim-play')
+    this.stepBtn = this.button('Step', () => { this.pause(); this.tick() })
+    this.resetBtn = this.button('Reset', () => this.reset())
+    bar.append(this.playBtn, this.stepBtn, this.resetBtn)
+
+    for (const input of this.inputs) {
+      const toggle = this.button(input.label, () => {
+        const on = this.machine.terminal(input.label).value >= 50
+        this.machine.setInput(input.label, on ? 0 : 100)
+        toggle.setAttribute('aria-pressed', on ? 'false' : 'true')
+        this.sync()
+      }, 'sim-input')
+      toggle.setAttribute('aria-pressed', 'false')
+      bar.appendChild(toggle)
+    }
+
+    this.readout = document.createElement('p')
+    this.readout.className = 'sim-readout'
+    this.readout.setAttribute('role', 'status')
+    bar.appendChild(this.readout)
+
+    this.figure.appendChild(bar)
+
+    if (this.figure.hasAttribute('data-scope')) {
+      this.scope = document.createElement('scope-trace')
+      this.scope.className = 'sim-scope'
+      this.figure.appendChild(this.scope)
+    }
+  }
+
+  button(text, onClick, extra = '') {
+    const b = document.createElement('button')
+    b.type = 'button'
+    b.className = 'sim-btn' + (extra ? ' ' + extra : '')
+    b.textContent = text
+    b.addEventListener('click', onClick)
+    return b
+  }
+
+  toggle() {
+    if (this.timer) this.pause()
+    else this.play()
+  }
+
+  play() {
+    if (this.timer) return
+    this.playBtn.textContent = 'Pause'
+    this.timer = setInterval(() => this.tick(), TICK_MS)
+    this.figure.dataset.running = 'true'
+  }
+
+  pause() {
+    if (!this.timer) return
+    clearInterval(this.timer)
+    this.timer = null
+    this.playBtn.textContent = 'Run'
+    delete this.figure.dataset.running
+  }
+
+  reset() {
+    this.pause()
+    const inputs = new Map(this.inputs.map((i) => [i.label, this.machine.terminal(i.label).value]))
+    this.machine = new Machine(this.spec)
+    for (const [label, value] of inputs) this.machine.setInput(label, value)
+    if (this.scope) this.scope.clear()
+    for (const part of this.parts) part.resetRegisters?.()
+    this.sync()
+  }
+
+  tick() {
+    const ok = this.machine.advance()
+    this.sync()
+    if (!ok) this.pause()
+  }
+
+  sync() {
+    const m = this.machine
+    for (const snap of m.snapshot()) {
+      const el = this.parts[snap.id]
+      if (!el) continue
+      if (el.setRegister) {
+        el.setRegister('acc', snap.acc)
+        if (snap.dat !== null) el.setRegister('dat', snap.dat)
+        el.setRegister('state', snap.state.toUpperCase())
+        el.setRegister('power', snap.power)
+        el.setAttribute('exec', String(snap.pc))
+      }
+      if (el.setLevel) el.setLevel(m.output(snap.label))
+    }
+
+    if (this.scope) {
+      const outs = this.spec.parts.filter((p) => p.t === 'io-terminal' && p.side === 'left')
+      this.scope.record(Object.fromEntries(outs.map((o) => [o.label, m.output(o.label)])))
+    }
+
+    const power = m.snapshot().reduce((n, s) => n + (s.power || 0), 0)
+    let status = `t=${m.time}   power ${power}`
+    if (m.error) status = m.error
+    else if (m.deadlock) status = 'Deadlock: ' + m.deadlock.join('; ')
+    else if (m.stalled && m.stalled.length) status = 'Waiting: ' + m.stalled.join('; ')
+    this.readout.textContent = status
+    this.figure.dataset.simState = m.error ? 'error' : m.deadlock ? 'deadlock' : 'ok'
+    this.figure.dataset.time = String(m.time)
+  }
 }
 
 function upgradeAll() {
