@@ -89,7 +89,7 @@ function upgradeCircuit(el) {
     if (p.type) part.setAttribute('type', p.type)
     if (p.side) part.setAttribute('side', p.side)
     part.setAttribute('x', String(p.x + 1))
-    part.setAttribute('y', String(p.y))
+    part.setAttribute('y', String(p.y + 1))
     part.setAttribute('static', '')
     part.setAttribute('labels', '')
     if (p.code !== undefined) part.setAttribute('code', p.code)
@@ -99,16 +99,18 @@ function upgradeCircuit(el) {
 
   if (made.some((p) => !p)) return false
 
-  // Size the board to the parts, leaving a column each side for pin traces.
+  // Size the board to the parts, leaving a cell of margin all round: the
+  // sides carry the pin traces, the top and bottom give the router a lane to
+  // run in instead of pushing one outside the board.
   let cols = 0
   let rows = 0
   spec.parts.forEach((p, n) => {
     const meta = made[n].meta
     cols = Math.max(cols, p.x + 1 + meta.cols)
-    rows = Math.max(rows, p.y + meta.rows)
+    rows = Math.max(rows, p.y + 1 + meta.rows)
   })
   board.style.width = (cols + 1) * cell + 'px'
-  board.style.height = rows * cell + 'px'
+  board.style.height = (rows + 1) * cell + 'px'
 
   el.replaceChildren(board)
   el.setAttribute('role', 'img')
