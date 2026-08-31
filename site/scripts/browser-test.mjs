@@ -569,6 +569,77 @@ async function main() {
       await page.waitForTimeout(200)
       if ((await readout()) === beforeRun) failures.push(`${at}: step did not advance the clock`)
 
+      // Verify: reload the AN650 preset first - earlier steps in this same
+      // test overwrote a chip's program via the editor, and that has nothing
+      // to do with what this checks. AN650 has a shipped spec (specs.js)
+      // that its own reference circuit passes (verify.test.mjs), so a clean
+      // load of it must read PASS here too.
+      await page.selectOption('.ide-select', 'an650')
+      await page.waitForTimeout(300)
+      const verifyBtn = page.getByRole('button', { name: 'Verify', exact: true })
+      const vBox = await verifyBtn.boundingBox()
+      if (!vBox || vBox.height < 44 || vBox.width < 44) {
+        failures.push(`${at}: Verify control is ${vBox ? `${Math.round(vBox.width)}x${Math.round(vBox.height)}` : 'not visible'}`)
+      } else {
+        await verifyBtn.click()
+        await page.waitForTimeout(200)
+        const verifyText = await readout()
+        if (!verifyText.startsWith('Verify:')) {
+          failures.push(`${at}: Verify produced no result line - "${verifyText}"`)
+        } else if (!verifyText.includes('PASS')) {
+          failures.push(`${at}: AN650 preset failed its own spec - "${verifyText}"`)
+        }
+        // Test what is painted, not the `hidden` attribute - see the editor
+        // check above for why: a class-level `display` can outrank it.
+        const scopeShown = await page.evaluate(() => {
+          const w = document.querySelector('.sim-scope-wrap')
+          return Boolean(w && getComputedStyle(w).display !== 'none')
+        })
+        if (!scopeShown) failures.push(`${at}: scope trace did not appear after Verify`)
+
+        // And the failure path, which is the entire point of the feature: a
+        // PASS line proves the button runs, not that it diagnoses anything.
+        // Break AN650's edge detection into a level follower - the lamp then
+        // runs away past 50 while the switch is held - and check the readout
+        // names the unit and the values, and that the mark lands on that
+        // unit's column rather than anywhere at all.
+        await page.evaluate(() => {
+          const chip = document.querySelector('.ide-board mc-4000')
+          chip.shadowRoot.querySelector('.expand').click()
+        })
+        await page.waitForTimeout(200)
+        await page.fill('.ide-modal-area', '  teq p0 100\n+ mov 1 x1\n- mov 0 x1\n  slp 1')
+        await page.click('.ide-primary')
+        await page.waitForTimeout(300)
+        await verifyBtn.click()
+        await page.waitForTimeout(300)
+
+        const failText = await readout()
+        const m = /^Verify: FAIL at t=(\d+) - lamp expected \d+ got \d+/.exec(failText)
+        if (!m) {
+          failures.push(`${at}: a broken AN650 did not produce a diagnostic - "${failText}"`)
+        } else {
+          const mark = await page.evaluate(() => {
+            const el = document.querySelector('.sim-scope-mark')
+            if (!el || getComputedStyle(el).display === 'none') return null
+            return parseFloat(el.style.left)
+          })
+          if (mark === null) {
+            failures.push(`${at}: no mark on the trace for the failing unit`)
+          } else {
+            // The trace holds SAMPLES columns across its full width, so the
+            // failing unit's column starts at t/SAMPLES of the way along.
+            // Past SAMPLES units the trace has scrolled and the failing unit
+            // is simply the last column, which is the most it can show.
+            const samples = await page.evaluate(() => customElements.get('scope-trace').SAMPLES)
+            const want = (Math.min(Number(m[1]), samples - 1) / samples) * 100
+            if (Math.abs(mark - want) > 0.5) {
+              failures.push(`${at}: mark is at ${mark.toFixed(2)}%, but t=${m[1]} is column ${want.toFixed(2)}%`)
+            }
+          }
+        }
+      }
+
       // Every control the page offers has to be a real tap target.
       const small = await ide.evaluate((root) =>
         [...root.querySelectorAll('button, select')]

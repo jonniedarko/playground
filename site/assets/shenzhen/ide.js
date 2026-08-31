@@ -15,6 +15,8 @@
 import { Machine } from './sim.js'
 import { PART_META } from './parts.js'
 import CIRCUITS from './circuits.js'
+import { verify as runVerify } from './verify.js'
+import SPECS from './specs.js'
 
 const TICK_MS = 550
 const STORE_KEY = 'sz-ide-board'
@@ -98,12 +100,45 @@ function uniqueLabel(board, base) {
   for (let n = 2; ; n += 1) if (!used.has(`${base}-${n}`)) return `${base}-${n}`
 }
 
+/* ----------------------------------------------------------------- verify
+   Index into a time-indexed array, holding the last entry past its end -
+   the same rule verify.js applies to spec.inputs. Duplicated here rather
+   than imported: verify.js's `at()` is a private module helper, and this
+   file must not reach past verify()'s own return value for the pass/fail
+   call - see recordVerifyTrace below for why the same rule is still needed
+   here, for the scope trace alone.
+   ------------------------------------------------------------------------ */
+function heldValue(arr, t) {
+  return arr[t < arr.length ? t : arr.length - 1]
+}
+
+/** The line placed in the existing sim-readout on Verify. See verify.js's
+    module doc for the return shape. `lines` is presented as "instructions":
+    verify() counts only executable lines - blanks, comments and labels do
+    not count - which is not the game's own line score, so it is labelled
+    for what it actually is. */
+function formatVerify(result) {
+  const meta = `power ${result.power}   instructions ${result.lines}   units ${result.units}`
+  if (result.ok) return `Verify: PASS   ${meta}`
+  const d = result.divergence
+  // error/deadlock/halted divergences carry no expected value - see verify.js.
+  const detail = d.expected === null
+    ? `${d.signal}: ${d.actual}`
+    : `${d.signal} expected ${d.expected} got ${d.actual}`
+  return `Verify: FAIL at t=${d.time} - ${detail}   ${meta}`
+}
+
 /* ------------------------------------------------------------------- ide */
 class Ide {
   constructor(root) {
     this.root = root
     this.timer = null
     this.machine = null
+    // Which PRESETS key is on the board, if any - set by loadPreset, cleared
+    // by clear(). Most boards carry no spec at all: the two other presets
+    // (xbus-pair, blink, button-lamp) have none, and a board restored from a
+    // previous session (restore(), below) never sets this at all.
+    this.presetKey = null
     this.build()
     this.restore()
   }
@@ -155,9 +190,10 @@ class Ide {
     this.playBtn = this.button('Run', () => this.toggle(), 'sim-play')
     this.stepBtn = this.button('Step', () => { this.pause(); this.tick() })
     this.resetBtn = this.button('Reset', () => this.reset())
+    this.verifyBtn = this.button('Verify', () => this.verify())
     this.delBtn = this.button('Delete', () => this.deleteSelected(), 'ide-danger')
     this.delBtn.disabled = true
-    bar.append(this.playBtn, this.stepBtn, this.resetBtn, this.delBtn)
+    bar.append(this.playBtn, this.stepBtn, this.resetBtn, this.verifyBtn, this.delBtn)
 
     // Zoom buttons rather than a range input: a slider is the one control that
     // is genuinely worse with a thumb than with a mouse.
@@ -174,6 +210,21 @@ class Ide {
     this.readout = el('p', 'sim-readout')
     this.readout.setAttribute('role', 'status')
     bar.appendChild(this.readout)
+
+    // Verify's diagnostic trace. Hidden until Verify actually has a spec to
+    // run - most boards never show this at all. `.sim-scope` is the class
+    // the runnable-figure scope trace already uses (embed.js); reused here
+    // rather than given a rule of its own. `.sim-scope-wrap` exists only to
+    // give the mark below something to position against - see style.css.
+    this.scopeWrap = el('div', 'sim-scope-wrap')
+    this.scopeWrap.hidden = true
+    this.scope = document.createElement('scope-trace')
+    this.scope.className = 'sim-scope'
+    this.scopeMark = el('div', 'sim-scope-mark')
+    this.scopeMark.hidden = true
+    this.scopeMark.setAttribute('aria-hidden', 'true')
+    this.scopeWrap.append(this.scope, this.scopeMark)
+    bar.appendChild(this.scopeWrap)
     return bar
   }
 
@@ -299,6 +350,7 @@ class Ide {
 
   clear() {
     this.pause()
+    this.presetKey = null
     this.board.clearWires()
     this.board.parts.forEach((p) => p.remove())
     this.board.select(null)
@@ -310,6 +362,7 @@ class Ide {
   loadPreset(key) {
     const spec = CIRCUITS[key]
     if (!spec) return
+    this.presetKey = key
     this.pause()
     this.board.load({
       parts: spec.parts.map((p) => ({
@@ -363,6 +416,10 @@ class Ide {
     this.pause()
     this.machine = null
     this.buildInputs()
+    // A structural edit makes any earlier Verify diagnostic stale - the
+    // scope trace and mark were drawn from the circuit as it stood before
+    // this change, not as it stands now.
+    this.hideVerify()
     this.sync()
     this.save()
   }
@@ -501,6 +558,98 @@ class Ide {
       bits.push(`${tag} note ${note} instrument ${instrument}`)
     })
     return bits.join('   ')
+  }
+
+  /* ----- verify -----
+     Checks the current board against the spec for whichever preset was last
+     loaded - see the Files table in R12-R15-PLAN.md: SPECS lives in
+     specs.js, verify() in verify.js, neither of which this task may touch.
+     This is glue: build a Machine from the live board and hand it to
+     verify() exactly as verify.test.mjs does. */
+  verify() {
+    this.pause()
+    const spec = this.presetKey && SPECS[this.presetKey]
+    if (!spec) {
+      this.hideVerify()
+      this.readout.textContent = 'Verify: no spec for the loaded circuit.'
+      this.root.dataset.simState = 'ok'
+      return
+    }
+    let machine
+    try {
+      machine = new Machine(specFromBoard(this.board))
+    } catch (err) {
+      this.hideVerify()
+      this.readout.textContent = `Verify: cannot run - ${err.message}`
+      this.root.dataset.simState = 'error'
+      return
+    }
+    const result = runVerify(machine, spec)
+    this.readout.textContent = formatVerify(result)
+    this.root.dataset.simState = result.ok ? 'ok' : 'error'
+    this.recordVerifyTrace(spec, result)
+  }
+
+  /** Feeds the scope trace a per-unit series to draw. verify() above returns
+      only the first divergence, not a timeline - by design, see verify.js's
+      module doc - so this replays the same board on a second, fresh Machine
+      purely for the picture. Deterministic given the same spec and the
+      default seed (sim.js), so it reproduces exactly what runVerify() just
+      drove through; heldValue() applies spec.inputs on the same timeline
+      verify() used, for the same reason.
+
+      This always stops at the failing unit, not spec.length - which is what
+      lets setVerifyMark below place the mark with a plain fraction: the
+      failing sample is always the LAST column the trace has drawn. */
+  recordVerifyTrace(spec, result) {
+    this.scope.clear()
+    const expectLabels = Object.keys(spec.expect || {})
+    if (!expectLabels.length) { this.hideVerify(); return }
+    let machine
+    try {
+      machine = new Machine(specFromBoard(this.board))
+    } catch {
+      this.hideVerify()
+      return
+    }
+    const inputs = spec.inputs || {}
+    const inputLabels = Object.keys(inputs)
+    const stopAt = result.divergence ? result.divergence.time : spec.length - 1
+    for (let t = 0; t <= stopAt; t += 1) {
+      for (const label of inputLabels) machine.setInput(label, heldValue(inputs[label], t))
+      machine.advance()
+      const sample = {}
+      for (const signal of expectLabels) sample[signal] = machine.output(signal)
+      this.scope.record(sample)
+    }
+    this.scopeWrap.hidden = false
+    const cap = customElements.get('scope-trace')?.SAMPLES || 24
+    this.setVerifyMark(result.divergence ? Math.min(stopAt + 1, cap) : null)
+  }
+
+  /** Marks the failing column on the scope trace as a plain overlay block,
+      positioned by a left/width percentage rather than any pixel math or a
+      reach into scope-trace's shadow DOM (components.js is not this task's
+      file to edit). `shownFromStart` is the count of samples the trace is
+      currently holding (1-based) at the moment the run stopped - always the
+      LAST column drawn, per recordVerifyTrace above, so column index
+      shownFromStart - 1 out of `cap` total columns is exact. */
+  setVerifyMark(shownFromStart) {
+    if (!shownFromStart) { this.scopeMark.hidden = true; return }
+    const cap = customElements.get('scope-trace')?.SAMPLES || 24
+    const col = shownFromStart - 1
+    this.scopeMark.style.left = `${(col / cap) * 100}%`
+    this.scopeMark.style.width = `${(1 / cap) * 100}%`
+    this.scopeMark.hidden = false
+  }
+
+  /** Clears a stale Verify diagnostic - called whenever the board's
+      structure changes or is wiped, so a scope trace and mark from before
+      the edit never linger over a now-different circuit. */
+  hideVerify() {
+    this.scopeWrap.hidden = true
+    this.scopeMark.hidden = true
+    this.scope.clear()
   }
 
   announce(text) {

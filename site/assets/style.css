@@ -1248,6 +1248,28 @@ td code { white-space: nowrap; }
   border-top: 1px solid var(--sz-panel-line);
 }
 
+/* The workbench's Verify diagnostic (ide.js). The wrap carries the same
+   spacing .sim-scope gives itself elsewhere - moved here so the mark below
+   can line up with the trace's own box exactly, with nothing left over from
+   a margin or border of its own. Hidden by default: no class here sets
+   `display`, so the [hidden] UA rule still applies untouched. */
+.sim-scope-wrap {
+  position: relative;
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--sz-panel-line);
+}
+.sim-scope-wrap .sim-scope { margin-top: 0; padding-top: 0; border-top: none; }
+
+.sim-scope-mark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--sz-alert);
+  opacity: 0.32;
+  pointer-events: none;
+}
+
 @media (min-width: 48rem) {
   .sim-readout { flex: 1 1 auto; margin: 0 0 0 0.5rem; text-align: right; }
 }
