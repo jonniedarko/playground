@@ -288,6 +288,39 @@ async function main() {
       })
       for (const b of stretched) failures.push(`${width}px ${route} ${b}`)
 
+      // The stamp is meant to be reachable on a phone, in some form. It was
+      // hidden outright below 27rem once; this is the guard against that, and
+      // against the site name losing characters to make room for it.
+      const bar = await page.evaluate(() => {
+        const stamp = document.querySelector('.topbar-actions .build-stamp')
+        if (!stamp) return { missing: true }
+        const r = stamp.getBoundingClientRect()
+        const shown = [...stamp.children]
+          .filter((e) => getComputedStyle(e).display !== 'none')
+          .map((e) => e.textContent.trim())
+          .filter(Boolean)
+        const text = document.querySelector('.brand-text')
+        return {
+          width: Math.round(r.width),
+          height: Math.round(r.height),
+          shown,
+          brandClipped: text && getComputedStyle(text).display !== 'none' &&
+            text.scrollWidth > text.clientWidth + 1,
+        }
+      })
+      if (bar.missing) failures.push(`${width}px ${route}: no build stamp in the top bar`)
+      else {
+        if (!bar.width || !bar.shown.length) {
+          failures.push(`${width}px ${route}: build stamp is in the bar but paints nothing`)
+        }
+        if (bar.height && bar.height < 44) {
+          failures.push(`${width}px ${route}: build stamp only ${bar.height}px tall`)
+        }
+        if (bar.brandClipped) {
+          failures.push(`${width}px ${route}: the site name is clipped`)
+        }
+      }
+
       // Runnable figures: controls present, and stepping actually moves the clock.
       for (const el of await page.$$('.circuit-figure[data-run]')) {
         const name = await el.evaluate((n) => n.dataset.circuit)

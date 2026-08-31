@@ -186,9 +186,15 @@ in `--cell` units.
 GitHub commit url. Date is `git log -1` over `site/`, not the clock, so editing
 the unrelated starter does not move it. No git → no stamp, no crash.
 
-Rendered by `renderStamp(where)` into the top bar and the footer. The bar drops
-it below **27rem** (measured: it clipped the site name to `F..`); the footer
-carries it at every width.
+Rendered by `renderStamp(where)` into the top bar and the footer. The bar shows
+the shortest form that fits and grows: `.stamp-brief` (`3h`, `2d`, `08-31`)
+below 27rem, the full date from 27rem, the clock from 34rem, the sha from
+46rem. Footer always spells it out.
+
+Below **22rem** the bar is 33px short — measured — so `.brand-text` drops to
+the FN mark. The mark still links home and the `aria-label` still says the
+name. **The stamp does not drop; the wordmark does.** An earlier version had
+that backwards and the stamp vanished on a phone.
 
 **"2 hours ago" is computed in `app.js`, not at build time** — the pages are
 static, so a baked phrase would still say it a month later. Under a week it

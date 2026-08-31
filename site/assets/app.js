@@ -277,6 +277,17 @@
     return rtf.format(-Math.round(hours / 24), 'day')
   }
 
+  // What the top bar shows on a phone. Not localised, because it has to fit
+  // beside the site name at 320px and a translated phrase would not.
+  function brief(ms) {
+    var mins = Math.round(ms / 60000)
+    if (mins < 1) return 'now'
+    if (mins < 60) return mins + 'm'
+    var hours = Math.round(mins / 60)
+    if (hours < 24) return hours + 'h'
+    return Math.round(hours / 24) + 'd'
+  }
+
   Array.prototype.forEach.call(document.querySelectorAll('.build-stamp'), function (stamp) {
     var el = stamp.querySelector('time[datetime]')
     if (!el) return
@@ -289,6 +300,9 @@
 
     var phrase = relative(age)
     if (!phrase) return
+
+    var compact = stamp.querySelector('.stamp-brief')
+    if (compact) compact.textContent = brief(age)
 
     var clock = stamp.querySelector('.stamp-time')
     var absolute = (el.textContent.trim() + ' ' + (clock ? clock.textContent.trim() : '')).trim()

@@ -282,17 +282,23 @@ function renderStamp(where = 'topbar') {
     STAMP.iso,
   ].filter(Boolean).join(' - ')
   const label = `Last updated ${date}${time ? ' at ' + time + ' UTC' : ''}. Opens the commit on GitHub.`
-  // The top bar shows what fits; the footer always spells it out, which is
-  // also where a phone reads it, since the bar has no room to spare there.
+  // A phone has no room for "2026-08-31" beside the site name, so the bar also
+  // carries a compact form and CSS picks one. Both are filled in by app.js
+  // once it can work out the age; these are the no-JS values.
+  const brief = date.slice(5)
   const inner = where === 'footer'
     ? `Updated <time datetime="${escapeHtml(STAMP.iso || '')}">${escapeHtml(date)}${time ? ' ' + escapeHtml(time) + ' UTC' : ''}</time>` +
       ` &middot; <span class="stamp-sha">${escapeHtml(STAMP.short)}${STAMP.dirty ? '+' : ''}</span>`
-    : `<time datetime="${escapeHtml(STAMP.iso || '')}">${escapeHtml(date)}</time>` +
+    : `<span class="stamp-brief" aria-hidden="true">${escapeHtml(brief)}</span>` +
+      `<time datetime="${escapeHtml(STAMP.iso || '')}">${escapeHtml(date)}</time>` +
       `<span class="stamp-time">${escapeHtml(time)}</span>` +
       `<span class="stamp-sha">${escapeHtml(STAMP.short)}${STAMP.dirty ? '+' : ''}</span>`
 
   const cls = 'build-stamp' + (where === 'footer' ? ' build-stamp-footer' : '')
-  if (!STAMP.url) return `<span class="${cls}" title="${escapeHtml(title)}">${inner}</span>`
+  // The accessible name carries the full date whichever form is painted.
+  if (!STAMP.url) {
+    return `<span class="${cls}" title="${escapeHtml(title)}" aria-label="${escapeHtml(label.replace(' Opens the commit on GitHub.', ''))}">${inner}</span>`
+  }
   return `<a class="${cls}" href="${escapeHtml(STAMP.url)}" title="${escapeHtml(title)}"
      aria-label="${escapeHtml(label)}" rel="noopener" target="_blank">${inner}</a>`
 }
@@ -330,7 +336,7 @@ function layout({ title, description, content, nav, breadcrumbs, pager, isHome, 
   <button class="icon-btn menu-btn" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">
     <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
   </button>
-  <a class="brand" href="${url('')}">
+  <a class="brand" href="${url('')}" aria-label="${escapeHtml(SITE.title)} home">
     <span class="brand-mark" aria-hidden="true">FN</span>
     <span class="brand-text">${escapeHtml(SITE.title)}</span>
   </a>
