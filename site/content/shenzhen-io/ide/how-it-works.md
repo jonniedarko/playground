@@ -86,24 +86,42 @@ forever, so it is caught and reported rather than locking up the page.
 | The campaign, the story, the emails | Read those in [Story documents](/shenzhen-io/story/) |
 | Solitaire | Sorry |
 | Analogue timing, noise, propagation delay | Time is whole units. Signals are exact |
-| Most parts' behaviour | Every part in the manual is now drawable and wireable, but only the MCxxxx chips, DX300, memory and gates actually *do* anything when you press Run |
+| PGA33X6 | Every other part in the manual runs. This one only draws and wires - see below |
 
 The last one is the practical limit, and it is worth being precise about.
-Every part in the manual can be placed and wired here. Only some of them are
-*simulated*:
+Every part in the manual can be placed and wired here. All but one of them are
+also *simulated*:
 
 | Part | Placed and wired | Runs |
 | --- | --- | --- |
 | MC4000, MC4000X, MC6000 | yes | yes |
 | DX300, 100P-14, 200P-14, LC70Gxx | yes | yes |
 | I/O terminals | yes | yes |
-| MC4010, DT2415, C2S-RF901, FM Blaster | yes | not yet |
-| N4PB-8000, LX700, LX910C | yes | not yet |
-| D80C010-F, KUJI-EK1, PGA33X6, NLP2 | yes | not yet |
+| MC4010, DT2415, C2S-RF901, FM Blaster | yes | yes |
+| N4PB-8000, LX700, LX910C | yes | yes |
+| D80C010-F, KUJI-EK1, NLP2 | yes | yes |
+| PGA33X6 | yes | **no** |
 
-A part in the second group is a real component on the board - correct
-footprint, correct pins, correct pin types, and a wire to it is checked the
-same way. It simply sits there when the clock runs.
+PGA33X6 is a real component on the board - correct footprint, correct pins,
+correct pin types, and a wire to it is checked the same way. It simply sits
+there when the clock runs. Its datasheet page describes the shape of a
+programmable logic array - six product-term columns, a set/reset flip-flop, a
+switchable sum-of-products - but gives no programming model: no encoding, no
+configuration pin, no table saying which inputs map to which outputs. There is
+nothing to implement without inventing both a configuration format and an
+editor for it, so it stays undriven rather than guessed at.
+
+A handful of the parts that do run have one documented limit worth knowing
+before you wire one up:
+
+- **C2S-RF901** pairs are board-wide: a value written to one radio's
+  `transmit` reaches every *other* radio's `receive` on the same board, not
+  just one partner.
+- **NLP2** reports the twenty-six keyword hashes the manual actually
+  publishes - the twenty-four on the TV keyword list plus Raven and Dynamics
+  from its own datasheet. The manual never gives the hash function itself, so
+  a keyword outside that list has no hash to report. Its `audio` pin is a
+  pass-through with nothing behind it, and is deliberately left undriven.
 
 ---
 

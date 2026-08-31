@@ -476,8 +476,31 @@ class Ide {
     if (m.error) status = m.error
     else if (m.deadlock) status = 'Deadlock: ' + m.deadlock.join('; ')
     else if (m.stalled && m.stalled.length) status = 'Waiting: ' + m.stalled.join('; ')
+    const held = this.deviceReadout(m)
+    if (held) status += '   ' + held
     this.readout.textContent = status
     this.root.dataset.simState = m.error ? 'error' : m.deadlock ? 'deadlock' : 'ok'
+  }
+
+  /** What LX700 and FM Blaster are currently holding, appended to the same
+      status line as everything else - not a new panel, just more of the
+      text that line already carries. Numbered when there is more than one
+      of a kind, since neither part carries a label of its own. */
+  deviceReadout(m) {
+    const lx = m.parts.filter((p) => p.tag === 'lx-700')
+    const fm = m.parts.filter((p) => p.tag === 'fm-blaster')
+    const bits = []
+    lx.forEach((part, i) => {
+      const tag = lx.length > 1 ? `LX700 ${i + 1}` : 'LX700'
+      bits.push(`${tag} ${part.display === null || part.display === undefined ? 'blank' : part.display}`)
+    })
+    fm.forEach((part, i) => {
+      const tag = fm.length > 1 ? `FM Blaster ${i + 1}` : 'FM Blaster'
+      const note = part.note === null || part.note === undefined ? 'none' : part.note
+      const instrument = part.instrument === null || part.instrument === undefined ? 'none' : part.instrument
+      bits.push(`${tag} note ${note} instrument ${instrument}`)
+    })
+    return bits.join('   ')
   }
 
   announce(text) {

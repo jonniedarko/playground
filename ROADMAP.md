@@ -17,13 +17,16 @@ describes what it is *not yet*.
 | 100P-14, 200P-14 | yes | yes |
 | LC70G04/08/32/86 | yes | yes |
 | I/O terminals | yes | yes |
-| MC4010 | yes | **no** |
-| DT2415, C2S-RF901, FM Blaster | yes | **no** |
-| N4PB-8000, LX700, LX910C | yes | **no** |
-| D80C010-F, KUJI-EK1, PGA33X6, NLP2 | yes | **no** |
+| MC4010 | yes | yes |
+| DT2415, C2S-RF901, FM Blaster | yes | yes |
+| N4PB-8000, LX700, LX910C | yes | yes |
+| D80C010-F, KUJI-EK1, NLP2 | yes | yes |
+| PGA33X6 | yes | **no** |
 
 Every part in the manual is drawable, placeable and wireable with correct pins
-and pin types. Eleven of them do nothing when the clock runs.
+and pin types. Twenty-one of the twenty-two run when the clock does. PGA33X6
+does not: its datasheet describes the shape of a logic array but gives no
+programming model to implement, so it stays undriven rather than guessed at.
 
 The interpreter covers the whole instruction set, tri-state conditionals, XBus
 rendezvous, sleep scheduling, power accounting, deadlock and stall detection,

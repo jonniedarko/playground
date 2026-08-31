@@ -17,7 +17,6 @@
        serve(ctx, part, pin) { return 0 },          // the value to supply
        accept(ctx, part, pin, value) {},            // take an xbus write
        afterRead(ctx, part, pin) {},                // pointer moves, etc
-       tick(ctx, part) {},                          // once per time unit
      }
 
    canServe and canAccept answer two different questions: canServe is "can
@@ -34,7 +33,6 @@
    ========================================================================= */
 
 import { clamp } from './sim.js'
-import { keywordHash } from './keywords.js'
 
 export const DEVICES = {}
 
@@ -519,44 +517,6 @@ DEVICES['fm-blaster'] = {
       part.instrument = value
       part.note = null
     }
-  },
-}
-
-// ------------------------------------------------------------------- nlp-2
-
-/**
- * Speech recogniser. specialist-parts.md: keywords are "reported over XBus
- * as pairs of 3-digit values" through "an internal non-blocking buffer that
- * yields -999 when there is nothing to read". So `keywords` hands over one
- * 3-digit value per read, the high half first, and reads -999 when the
- * buffer is empty (parts.js marks the pin `blocking: false`).
- *
- * The manual never gives the hash function, only worked examples, so nothing
- * here hashes anything: Machine.hearKeyword takes a keyword the manual
- * actually publishes and looks its pair up in keywords.js, and Machine.hear
- * takes a pair directly for anything else. A word the manual does not list
- * has no hash and is refused rather than invented.
- *
- * `audio` is left undriven. The page calls it a "raw audio pass-through",
- * but the part has no audio input pin to pass anything through from, and
- * there is no audio in this simulator to carry - so there is nothing to
- * model rather than something being modelled as silence.
- */
-DEVICES['nlp-2'] = {
-  init(ctx, part) {
-    part.heard = [] // 3-digit values, already split into halves, in order
-  },
-
-  canServe(ctx, part, pin) {
-    return pin === 'keywords' && part.heard.length > 0
-  },
-
-  serve(ctx, part, pin) {
-    return part.heard[0] // peek; afterRead consumes
-  },
-
-  afterRead(ctx, part, pin) {
-    if (pin === 'keywords') part.heard.shift()
   },
 }
 

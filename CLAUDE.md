@@ -72,6 +72,7 @@ No registration step.
 | `circuits.js` | named reference circuits as data: parts, code, wires |
 | `parts.js` | pin/meta data, no DOM. components.js **and** sim.js read it |
 | `sim.js` | MCxxxx interpreter. no DOM, tested under plain node |
+| `devices.js` | device behaviour per part tag. `DEVICES` object, read by sim.js only |
 | `ide.js` | the workbench. lazy-imported by embed.js only where `.ide` exists |
 
 Figure markup in content — **must be contiguous**, blank line ends a raw HTML
@@ -121,7 +122,41 @@ Face plus pins, no code — built from `PART_META` by `definePart`, listed in
 `FIXED_PARTS`: `mc-4010` `dt-2415` `c2s-rf901` `fm-blaster` `n4pb-8000`
 `lx-700` `lx-910c` `d80c010-f` `kuji-ek1` `pga-33x6` `nlp-2`. Adding one is a
 `PART_META` entry plus its tag in `FIXED_PARTS` — no class.
-**These draw and wire but do not run.** The sim treats them as inert.
+**A fixed face says nothing about whether the part runs** — that is a
+separate axis, decided by `devices.js`. All of `FIXED_PARTS` runs except
+`pga-33x6`: its datasheet describes the shape of a logic array (six
+product-term columns, a set/reset flip-flop, a switchable sum-of-products)
+but gives no programming model — no encoding, no configuration pin, no table
+mapping inputs to outputs — so there is nothing to implement without
+inventing one, and it has no `DEVICES` entry.
+
+### Device behaviours (`devices.js`)
+
+`sim.js` is the machine — parsing, scheduling, nets, the XBus rendezvous.
+`devices.js` is what a device *does* when the machine asks: settle its
+outputs, answer an XBus read without blocking, take an XBus write, move a
+pointer after a read. Split out so `sim.js` does not grow a tag branch per
+part; `sim.js` looks a tag up in `DEVICES` rather than branching on it.
+
+`DEVICES[tag]` — every key optional, a device implements only what it needs:
+
+| hook | answers |
+| --- | --- |
+| `init(ctx, part)` | per-build state, once |
+| `refresh(ctx, part)` | drive nets each settle — terminals, gates, the clock, the oracle |
+| `canServe(ctx, part, pin)` | can this pin be **read** right now, without blocking |
+| `canAccept(ctx, part, pin)` | will this pin take a **write**. Falls back to `canServe` when a device declares none |
+| `serve(ctx, part, pin)` | the value to hand back |
+| `accept(ctx, part, pin, value)` | take a write |
+| `afterRead(ctx, part, pin)` | pointer moves, FIFO pops, once a value is taken |
+
+`canServe` and `canAccept` are two different questions, not one asked twice.
+Most parts read and write the same pin and need only `canServe`. A pin that
+is write-only (a radio's `transmit`) must say no to `canServe` and yes to
+`canAccept`; a read-only pin the reverse — never let a pin claim `canServe`
+for a read `serve()` has no branch for. `ctx` is the `Machine`: a device may
+call `ctx.net(part.id, pin)`, `ctx.refreshDevices()`, `ctx.random()` and
+`clamp` (imported from `sim.js`), and must not reach into chip internals.
 
 Pin types: `xbus` `simple` `nc`. An `nc` pin is drawn (the manual draws them)
 but is inert: no tap target, and `tryConnect` refuses it.
@@ -186,6 +221,14 @@ in `--cell` units.
 - Program wraps last line → first.
 - XBus is a rendezvous. Both sides blocked = `deadlock`. Blocked while others
   sleep = `stalled` (not provably fatal, but the symptom players hit).
+- **A pin can opt out of the rendezvous.** `blocking: false` on a pin in
+  `PART_META` means the *other* side of that net never makes a reader wait:
+  with no writer present the read yields `-999` at once instead of parking
+  the chip. The device gets first refusal even so — `canServe` is asked
+  before the short-circuit fires, so a device that *does* have a value still
+  hands it over rather than getting skipped for `-999`. Every non-blocking
+  reader in `devices.js` (N4PB-8000, C2S-RF901's `receive`, LX910C's `t0`,
+  NLP2's `keywords`) relies on this; no part sets it on a write-only pin.
 - A chip that never sleeps trips an instruction budget and sets `error`.
 - Reading a simple I/O pin drops whatever it was driving.
 
