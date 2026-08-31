@@ -1,7 +1,9 @@
-import test from 'node:test'
+import test, { after } from 'node:test'
 import assert from 'node:assert/strict'
 import { Machine, clamp, parseProgram } from '../assets/shenzhen/sim.js'
 import { CIRCUITS } from '../assets/shenzhen/circuits.js'
+import { PART_META } from '../assets/shenzhen/parts.js'
+import { DEVICES } from '../assets/shenzhen/devices.js'
 
 /** One MC4000 with a lamp on p1 and a button on p0, so tests can poke and look. */
 const rig = (code, extra = {}) => new Machine({
@@ -214,6 +216,99 @@ test('slx waits for data instead of spinning', () => {
   m.run(2)
   assert.equal(m.error, null)
   assert.equal(m.output('lamp'), 60)
+})
+
+// ------------------------------------------------------ non-blocking XBus
+
+// Proves the blocking: false machinery generically. No real part sets the
+// flag yet (that lands with the parts that need it) so this registers a
+// throwaway tag directly on the shared PART_META, the same object sim.js
+// reads from, and removes it once this file's tests are done.
+PART_META['test-nonblocking-xbus'] = {
+  name: 'Test NB', cost: 0, cols: 1, rows: 1,
+  pins: [{ name: 'x0', type: 'xbus', side: 'left', at: 0.5, blocking: false }],
+}
+// The shape every non-blocking part in R11 actually has: a buffer that
+// sometimes holds a value and sometimes does not. canServe is the question
+// "have you got one right now", which is what keeps -999 an answer rather
+// than the only answer.
+PART_META['test-nonblocking-buffer'] = {
+  name: 'Test NB buffer', cost: 0, cols: 1, rows: 1,
+  pins: [{ name: 'x0', type: 'xbus', side: 'left', at: 0.5, blocking: false }],
+}
+DEVICES['test-nonblocking-buffer'] = {
+  init(ctx, part) { part.buffer = [] },
+  canServe(ctx, part) { return part.buffer.length > 0 },
+  serve(ctx, part) { return part.buffer.shift() },
+}
+
+after(() => {
+  delete PART_META['test-nonblocking-xbus']
+  delete PART_META['test-nonblocking-buffer']
+  delete DEVICES['test-nonblocking-buffer']
+})
+
+test('a blocking XBus read with no writer still blocks (regression)', () => {
+  const m = new Machine({
+    parts: [
+      { t: 'mc-4000x', x: 0, y: 0, code: '  mov x0 acc\n  slp 1' },
+      { t: 'mc-4000x', x: 8, y: 0, code: '' }, // halted: never writes
+    ],
+    wires: [['0:x0', '1:x2']],
+  })
+  assert.equal(m.advance(), false, 'nothing ever supplies a value, so the clock cannot advance')
+  assert.equal(m.parts[0].chip.state, 'block')
+  assert.equal(m.time, 0, 'still stuck on the first time unit')
+})
+
+test('a non-blocking read with no writer returns -999 and the chip continues', () => {
+  const m = new Machine({
+    parts: [
+      { t: 'mc-4000x', x: 0, y: 0, code: '  mov x0 acc\n  slp 1' },
+      { t: 'test-nonblocking-xbus', x: 8, y: 0 },
+    ],
+    wires: [['0:x0', '1:x0']],
+  })
+  assert.equal(m.advance(), true, 'a blocking: false pin never parks the reader')
+  assert.equal(m.parts[0].chip.regs.acc, -999)
+  assert.notEqual(m.parts[0].chip.state, 'block')
+})
+
+test('a non-blocking read with a writer present returns the written value, not -999', () => {
+  const m = new Machine({
+    parts: [
+      { t: 'mc-4000x', x: 0, y: 0, code: '  slp 1\n  mov x0 acc\n  slp 9' }, // reads on unit 1
+      { t: 'test-nonblocking-xbus', x: 8, y: 0 },
+      { t: 'mc-4000x', x: 16, y: 0, code: '  mov 42 x2\n  slp 9' }, // writes on unit 0
+    ],
+    wires: [['0:x0', '1:x0'], ['1:x0', '2:x2']],
+  })
+  m.advance() // unit 0: the writer queues its value while the reader is still asleep
+  assert.equal(m.parts[2].chip.state, 'block', 'the write is queued, waiting for a reader')
+  m.advance() // unit 1: the reader arrives and must take the queued value, not -999
+  assert.equal(m.parts[0].chip.regs.acc, 42, 'the pending write wins over the -999 fallback')
+})
+
+test('a non-blocking device with a value to give is asked before -999 is returned', () => {
+  // The failure this guards against: reading the flag first and short-circuiting
+  // means the device is never asked, so a part whose contract is "a value if
+  // there is one, -999 if not" answers -999 forever.
+  const build = () => new Machine({
+    parts: [
+      { t: 'mc-4000x', x: 0, y: 0, code: '  mov x0 acc\n  slp 9' },
+      { t: 'test-nonblocking-buffer', x: 8, y: 0 },
+    ],
+    wires: [['0:x0', '1:x0']],
+  })
+
+  const loaded = build()
+  loaded.parts[1].buffer.push(42)
+  loaded.advance()
+  assert.equal(loaded.parts[0].chip.regs.acc, 42, 'a device holding a value must supply it')
+
+  const empty = build()
+  empty.advance()
+  assert.equal(empty.parts[0].chip.regs.acc, -999, 'with nothing buffered, the read still yields -999')
 })
 
 // ---------------------------------------------------------------- devices

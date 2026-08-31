@@ -267,6 +267,12 @@ export class Machine {
     if (!net) throw BLOCKED // an unwired XBus pin waits forever
     const pending = net.writes.find((w) => w.id !== chip.id)
     if (!pending) {
+      // A pin marked blocking: false never makes a reader wait. But a device
+      // that has something to hand over must still be asked first, or a part
+      // whose whole contract is "a value if there is one, -999 if not" would
+      // answer -999 forever. deviceReaderOn is that question; when it says no,
+      // there is nothing to wait for and the read yields -999 at once.
+      if (!this.deviceReaderOn(net, chip.id) && this.deviceSideNonBlocking(net, chip.id)) return MIN
       if (!net.reads.some((r) => r.id === chip.id)) net.reads.push({ id: chip.id })
       throw BLOCKED
     }
@@ -303,6 +309,11 @@ export class Machine {
       if (target.chip) target.chip.deliver = value
     }
     net.writes = net.writes.filter((w) => w.id !== chip.id)
+  }
+
+  /** True if some other pin on this net is explicitly marked blocking: false. */
+  deviceSideNonBlocking(net, exceptId) {
+    return net.members.some((m) => m.id !== exceptId && this.pinMeta(m.id, m.pin).blocking === false)
   }
 
   /** XBus devices are always ready, so a chip talking to one never blocks. */

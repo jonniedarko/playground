@@ -10,6 +10,13 @@
    An 'nc' pin is a real, drawn pin that is not connected to anything inside
    the part. The manual shows them, so the components do too, but nothing may
    wire to one and the simulator never puts one in a net.
+
+   An xbus pin may also carry `blocking: false`. Absent (or true) is today's
+   behaviour: a chip reading that pin over the bus with no writer present
+   parks until one arrives. `blocking: false` means the *other* side of the
+   net — the device wired to that pin — never makes a reader wait: with no
+   writer present the read yields -999 at once instead of blocking. No part
+   sets this yet; see sim.js's readPin.
    ========================================================================= */
 
 export const PART_META = {

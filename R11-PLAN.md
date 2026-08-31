@@ -137,13 +137,20 @@ yield `-999`. Build the machinery now, with no parts using it yet.
 1. Support an optional `blocking: false` on a pin in `PART_META`. Absent means
    blocking, which is every pin today.
 2. In the read path, a read on a net whose device side is non-blocking returns
-   `-999` immediately instead of parking the chip.
+   `-999` instead of parking the chip — **but only once the device has been
+   asked and has nothing**. The device gets first refusal. Reading the flag and
+   short-circuiting means a part whose contract is "a value if there is one,
+   `-999` if not" answers `-999` forever, which is every part in Task 4.
+   `canServe` is that question: it means "have you got one right now".
 3. Add tests, in this order:
    - a blocking XBus read with no writer still blocks (**existing behaviour, must
      not regress**);
    - a non-blocking read with no writer returns `-999` and the chip continues;
    - a non-blocking read with a writer present returns the written value, not
-     `-999`.
+     `-999`;
+   - a non-blocking read on a device that **does** have a value gets the value,
+     and the same device with an empty buffer still gives `-999`. Both
+     directions in one test, or the fix is untested in one of them.
 
 ### Gate
 
@@ -219,8 +226,15 @@ The three non-blocking readers. **Requires Task 2.**
 5. **LX910C**: `tN` yields touch events with the same `-999` idle rule. `qN` is
    a write-then-read pair: write a segment number, the next read returns `1` or
    `0`. `cN` accepts segment writes per the page's table.
-6. Test each part reading `-999` when idle **and** not blocking the chip. That
-   second assertion is the one that catches the bug.
+6. Test each part three ways: reading `-999` when idle, **not blocking the
+   chip** while it does so, and returning a real value when it has one. The
+   second catches a part that parks; the third catches a part that answers
+   `-999` even when it has something to give.
+7. **Tighten `canServe`.** Task 1 left memory's `serve` returning `undefined`
+   for a pin that is neither `dN` nor `aN`, where the pre-refactor code served
+   nothing at all. Unreachable then, reachable now: your parts answer on some
+   pins and not others. Make each device's `canServe` return false for a pin it
+   does not serve, rather than relying on `serve` to shrug.
 
 ### Gate
 
