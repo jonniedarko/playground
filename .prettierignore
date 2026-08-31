@@ -45,3 +45,4 @@ pnpm-lock.yaml
 # as /site: they are not part of the Next.js app.
 /CLAUDE.md
 /ROADMAP.md
+/R11-PLAN.md
