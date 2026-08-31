@@ -296,6 +296,156 @@ async function main() {
     await context.close()
   }
 
+  // The workbench: a touch-only interaction pass, because every affordance it
+  // adds (place, drag, wire, delete, edit) is one a phone has to reach without
+  // a keyboard or a hover.
+  let ideChecked = 0
+  for (const width of widths) {
+    const context = await browser.newContext({
+      viewport: { width, height: 844 },
+      isMobile: true,
+      hasTouch: true,
+    })
+    const page = await context.newPage()
+    const errors = []
+    page.on('pageerror', (e) => errors.push(String(e.message)))
+    page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
+    const at = `${width}px ide`
+    try {
+      await page.goto(`http://localhost:${port}${BASE}/shenzhen-io/ide/`, { waitUntil: 'networkidle' })
+      await page.waitForSelector('.ide[data-ready]', { timeout: 8000 })
+      await page.waitForTimeout(400)
+      ideChecked += 1
+
+      const ide = await page.$('.ide')
+      const count = () => page.evaluate(() => document.querySelector('.ide-board').parts.length)
+
+      // The editor must not be showing before anything asked for it. Test what
+      // is painted, not the `hidden` attribute: a class-level `display` beats
+      // the UA rule for [hidden], which is exactly how this broke once.
+      const editorShown = () => page.evaluate(() => {
+        const m = document.querySelector('.ide-modal')
+        return Boolean(m && getComputedStyle(m).display !== 'none')
+      })
+      if (await editorShown()) failures.push(`${at}: the code editor is open on load`)
+
+      // Place from the palette.
+      const start = await count()
+      await page.getByRole('button', { name: 'MC6000', exact: true }).click()
+      await page.waitForTimeout(200)
+      if ((await count()) !== start + 1) failures.push(`${at}: palette did not place a part`)
+
+      // Remove it with the on-screen control - there is no Delete key here.
+      const del = await page.$('.ide-danger')
+      if (await del.evaluate((n) => n.disabled)) {
+        failures.push(`${at}: delete stayed disabled with a part selected`)
+      } else {
+        await del.click()
+        await page.waitForTimeout(200)
+        if ((await count()) !== start) failures.push(`${at}: on-screen delete did not remove the part`)
+      }
+
+      // Pointer coordinates are viewport-relative, so the panel has to be on
+      // screen before anything is measured or dragged.
+      await page.locator('.ide-stage').scrollIntoViewIfNeeded()
+      await page.waitForTimeout(200)
+
+      // Drag a part, then wire two pins, both with a touch pointer.
+      const term = await page.evaluate(() => {
+        const p = document.querySelector('.ide-board io-terminal')
+        const r = p.getBoundingClientRect()
+        return { pos: `${p.getAttribute('x')},${p.getAttribute('y')}`, x: r.x + r.width / 2, y: r.y + r.height / 2 }
+      })
+      if (term.y < 0 || term.y > 844 || term.x < 0 || term.x > width) {
+        failures.push(`${at}: part is off screen at ${Math.round(term.x)},${Math.round(term.y)} - cannot test the drag`)
+      }
+      await page.mouse.move(term.x, term.y)
+      await page.mouse.down()
+      await page.mouse.move(term.x + 60, term.y + 50, { steps: 10 })
+      await page.mouse.up()
+      await page.waitForTimeout(200)
+      const moved = await page.evaluate(() => {
+        const p = document.querySelector('.ide-board io-terminal')
+        return `${p.getAttribute('x')},${p.getAttribute('y')}`
+      })
+      if (moved === term.pos) failures.push(`${at}: dragging a part did nothing`)
+
+      // A mismatched pin pair must be refused through the drag path.
+      const wiresBefore = await page.evaluate(() => document.querySelector('.ide-board').wires.length)
+      const bad = await page.evaluate(() => {
+        const board = document.querySelector('.ide-board')
+        const mc = board.querySelector('mc-4000')
+        const t = [...board.querySelectorAll('io-terminal')].find((e) => e.getAttribute('type') !== 'xbus')
+        if (!mc || !t) return null
+        const c = (e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } }
+        return { from: c(mc.pinElement('x0')), to: c(t.pinElement(t.getAttribute('label'))) }
+      })
+      if (bad) {
+        await page.mouse.move(bad.from.x, bad.from.y)
+        await page.mouse.down()
+        await page.mouse.move(bad.to.x, bad.to.y, { steps: 12 })
+        await page.mouse.up()
+        await page.waitForTimeout(200)
+        const after = await page.evaluate(() => document.querySelector('.ide-board').wires.length)
+        if (after !== wiresBefore) failures.push(`${at}: XBus was allowed to wire to a simple pin`)
+      }
+
+      // The larger editor has to be reachable without a hover, and writing back.
+      const opened = await page.evaluate(() => {
+        const chip = document.querySelector('.ide-board mc-4000')
+        const btn = chip && chip.shadowRoot.querySelector('.expand')
+        if (!btn) return 'no expand button'
+        if (getComputedStyle(btn).opacity === '0') return 'expand button is invisible without hover'
+        btn.click()
+        return null
+      })
+      if (opened) failures.push(`${at}: ${opened}`)
+      await page.waitForTimeout(200)
+      if (!(await editorShown())) {
+        failures.push(`${at}: the larger editor did not open`)
+      } else {
+        await page.fill('.ide-modal-area', '  mov 7 acc\n  slp 1')
+        await page.click('.ide-primary')
+        await page.waitForTimeout(200)
+        const code = await page.evaluate(() => document.querySelector('.ide-board mc-4000').code)
+        if (!code.includes('mov 7 acc')) failures.push(`${at}: the editor did not write back to the chip`)
+        if (await editorShown()) failures.push(`${at}: the editor stayed open after Done`)
+      }
+
+      // Running has to move the clock.
+      const readout = () => page.$eval('.ide .sim-readout', (n) => n.textContent)
+      const beforeRun = await readout()
+      await page.click('.ide .sim-btn:nth-of-type(2)')
+      await page.waitForTimeout(200)
+      if ((await readout()) === beforeRun) failures.push(`${at}: step did not advance the clock`)
+
+      // Every control the page offers has to be a real tap target.
+      const small = await ide.evaluate((root) =>
+        [...root.querySelectorAll('button, select')]
+          .filter((e) => {
+            const r = e.getBoundingClientRect()
+            return r.height > 0 && (r.height < 44 || r.width < 44)
+          })
+          .map((e) => `${(e.textContent || '').trim() || e.className}`)
+          .slice(0, 4))
+      for (const name of small) failures.push(`${at}: control "${name}" is under 44px`)
+
+      // The board survives a reload, terminals and all.
+      const saved = await page.evaluate(() => document.querySelector('.ide-board').parts.length)
+      await page.reload({ waitUntil: 'networkidle' })
+      await page.waitForSelector('.ide[data-ready]', { timeout: 8000 })
+      await page.waitForTimeout(600)
+      if ((await count()) !== saved) failures.push(`${at}: the board did not survive a reload`)
+      if (!(await page.evaluate(() => document.querySelector('.ide-board').wires.length))) {
+        failures.push(`${at}: wires were lost on reload`)
+      }
+    } catch (err) {
+      failures.push(`${at}: ${err.message.split('\n')[0]}`)
+    }
+    for (const e of errors) failures.push(`${at} console: ${e}`)
+    await context.close()
+  }
+
   await browser.close()
   server.close()
 
@@ -307,7 +457,7 @@ async function main() {
     return
   }
   process.stdout.write(
-    `browser-test: ${all.length} routes x ${widths.join('/')}px, ${figuresChecked} chip figures, ${circuitsChecked} circuits, ${runnableChecked} runnable, ${routingChecked} routed` +
+    `browser-test: ${all.length} routes x ${widths.join('/')}px, ${figuresChecked} chip figures, ${circuitsChecked} circuits, ${runnableChecked} runnable, ${routingChecked} routed, ${ideChecked} ide` +
     ' - no overflow, no console errors\n'
   )
 }

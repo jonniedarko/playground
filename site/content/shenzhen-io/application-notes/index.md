@@ -1,7 +1,7 @@
 ---
 title: Application notes
 description: Design guides from 诚尚Micro on interfaces, power and reference circuits.
-order: 3
+order: 4
 icon: 📐
 ---
 

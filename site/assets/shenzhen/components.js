@@ -211,6 +211,18 @@ textarea::selection { background: #6d3a2d; }
   z-index: 4;
 }
 .body:hover .expand, .expand:focus-visible { opacity: 1; }
+/* Without a pointer there is no hover to reveal it, and the larger editor is
+   the only way to read a full program on a phone. Show it, and grow the hit
+   area to 44px with a transparent pseudo-element - the badge stays 15px so it
+   does not cover the code. */
+@media (hover: none) {
+  .expand { opacity: 1; }
+  .expand::before {
+    content: '';
+    position: absolute;
+    top: -15px; left: -29px; right: -6px; bottom: -6px;
+  }
+}
 
 /* ---- register readouts ---- */
 .regs {
@@ -674,10 +686,17 @@ class CircuitBoard extends HTMLElement {
   get cell() { return parseFloat(getComputedStyle(this).getPropertyValue('--cell')) || 40; }
   get parts() { return [...this.children].filter(el => el instanceof SzPart); }
 
-  addPart(tag, x = 1, y = 1) {
+  addPart(tag, x = 1, y = 1, attrs = null) {
     const el = document.createElement(tag);
     el.setAttribute('x', x);
     el.setAttribute('y', y);
+    // Shaping attributes must land before the part is connected: io-terminal
+    // resolves its pin from them when it first renders.
+    if (attrs) {
+      ['label', 'type', 'side'].forEach(a => {
+        if (attrs[a] !== undefined && attrs[a] !== null) el.setAttribute(a, attrs[a]);
+      });
+    }
     this.appendChild(el);
     return el;
   }
@@ -902,12 +921,20 @@ class CircuitBoard extends HTMLElement {
     const parts = this.parts;
     return {
       cell: this.cell,
-      parts: parts.map(p => ({
-        tag: p.tagName.toLowerCase(),
-        x: Number(p.getAttribute('x')) || 0,
-        y: Number(p.getAttribute('y')) || 0,
-        code: p.getAttribute('code') || ''
-      })),
+      // label/type/side shape an io-terminal's only pin, so a saved board that
+      // dropped them would come back with the wrong pin and lose its wires.
+      parts: parts.map(p => {
+        const out = {
+          tag: p.tagName.toLowerCase(),
+          x: Number(p.getAttribute('x')) || 0,
+          y: Number(p.getAttribute('y')) || 0,
+          code: p.getAttribute('code') || ''
+        };
+        ['label', 'type', 'side'].forEach(a => {
+          if (p.hasAttribute(a)) out[a] = p.getAttribute(a);
+        });
+        return out;
+      }),
       wires: this.wires.map(w => ({
         a: [parts.indexOf(w.a.part), w.a.pin.dataset.pin],
         b: [parts.indexOf(w.b.part), w.b.pin.dataset.pin]
@@ -919,7 +946,7 @@ class CircuitBoard extends HTMLElement {
     this.clearWires();
     this.parts.forEach(p => p.remove());
     const made = data.parts.map(p => {
-      const el = this.addPart(p.tag, p.x, p.y);
+      const el = this.addPart(p.tag, p.x, p.y, p);
       if (p.code) el.setCode?.(p.code);
       return el;
     });

@@ -1,7 +1,7 @@
 ---
 title: Supplemental data
 description: The specification documents individual puzzles hand you - lookup tables, formulas and diagrams.
-order: 5
+order: 6
 icon: 📎
 ---
 

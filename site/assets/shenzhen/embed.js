@@ -283,6 +283,10 @@ function upgradeAll() {
   for (const el of document.querySelectorAll('.circuit-figure[data-circuit]:not([data-upgraded])')) {
     upgradeCircuit(el)
   }
+  // The workbench is one page's worth of code; fetch it only where it is used.
+  if (document.querySelector('.ide:not([data-ready])')) {
+    import('./ide.js').then((m) => m.upgradeIde())
+  }
 }
 
 if (document.readyState === 'loading') {

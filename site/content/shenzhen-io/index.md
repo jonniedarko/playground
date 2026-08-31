@@ -31,6 +31,9 @@ six facts, the two pin types, and three programs you can type straight in.
 **Mid-puzzle and need one instruction?** The
 [reference card](/shenzhen-io/reference-card/) is the fastest lookup.
 
+**Want to try something?** The [workbench](/shenzhen-io/ide/) is a live board -
+place parts, wire them up, write a program and run it here in the page.
+
 **Want the full detail?** Start at
 [Program structure](/shenzhen-io/language-reference/program-structure/).
 

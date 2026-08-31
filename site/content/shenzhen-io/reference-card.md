@@ -1,7 +1,7 @@
 ---
 title: Reference card
 description: The whole MCxxxx instruction set on one page - the fold-into-quarters card from the front of the binder.
-order: 1
+order: 2
 icon: 🗂️
 ---
 

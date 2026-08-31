@@ -2,7 +2,7 @@
 title: Parts datasheets
 description: One page per component - microcontrollers, memory, logic, displays, sensors and everything else you can place on a board.
 board: true
-order: 4
+order: 5
 icon: 🧩
 ---
 

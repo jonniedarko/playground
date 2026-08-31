@@ -67,6 +67,7 @@ async function readTree(dir, urlPrefix = '') {
         order: index?.data.order ?? 999,
         icon: index?.data.icon || '',
         board: index?.data.board === true,
+        wide: index?.data.wide === true,
         doc: index,
         children,
       })
@@ -85,6 +86,7 @@ async function readTree(dir, urlPrefix = '') {
       order: doc.data.order ?? 999,
       icon: doc.data.icon || '',
       board: doc.data.board === true,
+      wide: doc.data.wide === true,
       doc,
       children: [],
     })
@@ -231,7 +233,7 @@ function renderPager(prev, next) {
   return '<nav class="pager" aria-label="Pagination">' + link(prev, 'prev', 'Previous') + link(next, 'next', 'Next') + '</nav>'
 }
 
-function layout({ title, description, content, nav, breadcrumbs, pager, isHome, board = false }) {
+function layout({ title, description, content, nav, breadcrumbs, pager, isHome, board = false, wide = false }) {
   const pageTitle = isHome ? SITE.title + ' - ' + SITE.tagline : title + ' - ' + SITE.title
   return `<!doctype html>
 <html lang="en">
@@ -292,8 +294,8 @@ function layout({ title, description, content, nav, breadcrumbs, pager, isHome, 
     </div>
   </aside>
 
-  <main class="content" id="main">
-    <article class="doc">
+  <main class="content${wide ? ' content-wide' : ''}" id="main">
+    <article class="doc${wide ? ' doc-wide' : ''}">
       ${breadcrumbs}
       ${content}
       ${pager}
@@ -389,6 +391,7 @@ export async function buildSite({ quiet = false } = {}) {
       pager: renderPager(position.prev, position.next),
       isHome: false,
       board: node.board,
+      wide: node.wide,
     })
 
     const dest = path.join(OUT_DIR, node.route, 'index.html')

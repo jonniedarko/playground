@@ -90,7 +90,8 @@ async function main() {
 
   for (const file of files) {
     const html = await fs.readFile(file, 'utf8')
-    const article = /<article class="doc">([\s\S]*?)<\/article>/.exec(html)
+    // A wide page carries `doc doc-wide`, so match the class list, not a string.
+    const article = /<article class="doc(?: [^"]*)?">([\s\S]*?)<\/article>/.exec(html)
     if (!article) {
       add(file, 'structure', 'no <article class="doc"> in page')
       continue

@@ -298,6 +298,7 @@ Everything you need, repeated so you don't have to scroll up.
 
 ## Where to go next
 
+- Try it on a live board → [Workbench](/shenzhen-io/ide/)
 - Need one instruction, right now → [Reference card](/shenzhen-io/reference-card/)
 - Confused by `+` and `-` → [Program structure](/shenzhen-io/language-reference/program-structure/)
 - Confused by XBus blocking → [AN268: Two interfaces](/shenzhen-io/application-notes/an268-interfaces/)

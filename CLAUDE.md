@@ -46,6 +46,7 @@ Front matter — **flat scalars only**, no arrays:
 | `order` | sidebar position. unset sorts last |
 | `icon` | emoji, sidebar + cards |
 | `board` | `true` loads the shenzhen component module on that page |
+| `wide` | `true` drops the measure + TOC gutter. workspace pages only |
 
 Internal links root-relative (`/shenzhen-io/…`) so `BASE_PATH` applies.
 Nav, breadcrumbs, prev/next, search index all derive from folder tree.
@@ -62,6 +63,7 @@ No registration step.
 | `circuits.js` | named reference circuits as data: parts, code, wires |
 | `parts.js` | pin/meta data, no DOM. components.js **and** sim.js read it |
 | `sim.js` | MCxxxx interpreter. no DOM, tested under plain node |
+| `ide.js` | the workbench. lazy-imported by embed.js only where `.ide` exists |
 
 Figure markup in content — **must be contiguous**, blank line ends a raw HTML
 block. Static `.pinout` inside is the no-JS fallback, replaced on boot:
@@ -117,6 +119,43 @@ New part = add to `PART_META` in `parts.js`, then `bodyHTML` in
 `components.js`. Copy `DX300`. Never redeclare pins in `components.js` —
 one source or they drift.
 
+## Workbench
+
+`/shenzhen-io/ide/`. Page is `board: true` + `wide: true`, body holds one
+`<div class="ide">` whose contents are the no-JS fallback.
+
+`ide.js` assembles what already exists — `circuit-board` places/drags/wires,
+`Machine` runs — and adds the touch affordances neither has:
+
+- **on-screen Delete.** the board's own delete is the Delete key. no keyboard on a phone.
+- **zoom −/+** instead of a range input. sliders are the one control worse with a thumb.
+- **panel capped to `100dvh`**, palette top / board middle / bars bottom. that cap
+  is what keeps controls in thumb reach — a sticky bar instead floats over the
+  palette while the panel is half on screen. `dvh` so the keyboard shrinks it.
+- **modal editor in `dvh`**, reached by `⤢`, which is `opacity:0` until hover on
+  a pointer device and forced visible under `@media (hover:none)`.
+
+`specFromBoard()` converts live board state to the circuits.js shape `Machine`
+takes. `board.toJSON()` carries `label`/`type`/`side` — drop them and a saved
+`io-terminal` comes back with the wrong pin and loses its wires.
+Board is saved to `localStorage` on every edit; `addPart(tag,x,y,attrs)` sets
+shaping attributes *before* connect, because `io-terminal` reads them on render.
+
+`tryConnect` holds the pin-type check; `connect` is the trusted path used by
+circuits.js and `load`. Wire user gestures to `tryConnect`.
+
+Wiring is a board-level drag that reports nothing back, so the machine is
+rebuilt whenever `signature()` (tags + labels + code + wire pairs, **not**
+positions) changes. Don't try to catch each edit with a listener. Changing the
+circuit therefore restarts the run — moving a part does not.
+
+`freeSpot` leaves a cell between parts. Flush parts overlap each other's 44px
+pin hit areas and a wire drag then starts and ends on the same pin.
+
+`circuit-board` has **no intrinsic size** — parts are absolutely positioned — so
+a board outside `upgradeCircuit` needs an explicit canvas. `.ide-board` sets one
+in `--cell` units.
+
 ## Simulator
 
 `new Machine(spec)` where spec is a `circuits.js` entry. `setInput(label, v)`,
@@ -157,6 +196,13 @@ Base CSS = phone. Media queries add desktop. Not the reverse.
 - **No hover on touch.** Never hide an affordance behind `:hover` alone.
   Bit us twice: `.copy-btn`, and the POC's `.expand`.
 - Verify at 320px, not just 390px.
+- Pointer coords are viewport-relative and Playwright's `click` auto-scrolls.
+  Re-scroll and re-measure immediately before a synthetic drag, or it silently
+  lands off-screen and the assertion "passes".
+- Browser test drives the workbench under touch at both widths: place, drag,
+  wire, reject a mismatched pin, delete without a keyboard, open the larger
+  editor without a hover, step the clock, survive a reload. Every control it
+  finds must clear 44px in **both** axes.
 
 ## Gotchas — all cost real time already
 
@@ -165,6 +211,11 @@ Base CSS = phone. Media queries add desktop. Not the reverse.
 - `inset` shorthand *after* `top` clobbers it. Killed the sticky sidebar.
 - Inline `<code>` in tables gets `white-space: nowrap` so tokens don't split.
 - A wrapped prose line starting `- ` becomes a list. Reword.
+- A class-level `display` outranks the UA rule for `[hidden]`. Bit the modal:
+  it rendered open on load while `.hidden` still read `true`, so assert
+  computed `display`, never the attribute.
+- Floating `.toc` needs `.content`'s 15rem gutter. `wide` removes it, so the
+  TOC goes inline there or the page scrolls sideways.
 - Network is locked down: no npm, no PyPI. Stdlib only, both languages.
 - Playwright is a system install at `/opt/node22/lib/node_modules`, not a dep.
 

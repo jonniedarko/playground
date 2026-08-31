@@ -1,7 +1,7 @@
 ---
 title: Language reference
 description: The MCxxxx programming system - program structure, registers, and the full instruction set.
-order: 2
+order: 3
 icon: 📘
 ---
 
