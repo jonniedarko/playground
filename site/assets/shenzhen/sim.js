@@ -224,6 +224,25 @@ export class Machine {
     return net ? net.level : 0
   }
 
+  /** Find an N4PB-8000 by its label, the same way terminal() finds an io-terminal. */
+  buttonController(label) {
+    const part = this.parts.find((p) => p.tag === 'n4pb-8000' && p.label === label)
+    if (!part) throw new Error(`no N4PB-8000 labelled "${label}"`)
+    return part
+  }
+
+  /** Queue a button-down event: the next read of any of its pins yields n. */
+  pressButton(label, n) {
+    this.buttonController(label).events.push(n)
+    return this
+  }
+
+  /** Queue a button-up event: the next read of any of its pins yields -n. */
+  releaseButton(label, n) {
+    this.buttonController(label).events.push(-n)
+    return this
+  }
+
   // ----------------------------------------------------------- devices
 
   /** Terminals and gates are continuous: recompute what they drive. */
@@ -295,7 +314,7 @@ export class Machine {
 
     if (!net) throw BLOCKED
     const waiting = net.reads.find((r) => r.id !== chip.id)
-    const device = this.deviceReaderOn(net, chip.id)
+    const device = this.deviceAcceptorOn(net, chip.id)
     if (!waiting && !device) {
       if (!net.writes.some((w) => w.id === chip.id)) net.writes.push({ id: chip.id, value })
       throw BLOCKED
@@ -323,6 +342,28 @@ export class Machine {
       const part = this.parts[member.id]
       const device = part && DEVICES[part.tag]
       if (device && device.canServe && device.canServe(this, part, member.pin)) return { part, pin: member.pin }
+    }
+    return null
+  }
+
+  /**
+   * A device that will take a write on this pin.
+   *
+   * Reading and writing are two different questions, and a write-only pin
+   * answers them differently: `transmit` on a radio takes a write and has
+   * nothing to read back. Asking canServe for both made such a pin either
+   * refuse the write or answer a read it could not honour - a radio handed
+   * back a packet from its receive buffer, an LCD handed back undefined. A
+   * device says canAccept when the two differ; most parts read and write on
+   * the same pins and need only canServe.
+   */
+  deviceAcceptorOn(net, exceptId) {
+    for (const member of net.members) {
+      if (member.id === exceptId) continue
+      const part = this.parts[member.id]
+      const device = part && DEVICES[part.tag]
+      const can = device && (device.canAccept || device.canServe)
+      if (can && can.call(device, this, part, member.pin)) return { part, pin: member.pin }
     }
     return null
   }

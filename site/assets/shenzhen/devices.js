@@ -31,9 +31,10 @@ export const DEVICES = {}
 // ------------------------------------------------------------------ dx-300
 
 DEVICES['dx-300'] = {
-  // XBus devices are always ready, so a chip talking to one never blocks.
+  // XBus devices are always ready, so a chip talking to one never blocks -
+  // but only on the three pins this part actually has (x0, x1, x2).
   canServe(ctx, part, pin) {
-    return true
+    return pin.startsWith('x')
   },
 
   // Offer whatever the digits are currently showing.
@@ -66,8 +67,10 @@ DEVICES['dx-300'] = {
  * infrastructure, not device-specific, so it stays in sim.js's build().
  */
 const memory = {
+  // Ready on its two data pins and its two address pins - matches serve()'s
+  // own dispatch below, so the two stay in step.
   canServe(ctx, part, pin) {
-    return true
+    return pin.startsWith('d') || pin.startsWith('a')
   },
 
   serve(ctx, part, pin) {
@@ -154,9 +157,9 @@ DEVICES['d80c010-f'] = {
     part.identification = 1000
   },
 
-  // Read-only XBus: always has the value ready, on either pin.
+  // Read-only XBus: always has the value ready, on either of its two pins.
   canServe(ctx, part, pin) {
-    return true
+    return pin === 'read0' || pin === 'read1'
   },
 
   serve(ctx, part, pin) {
@@ -186,9 +189,9 @@ DEVICES['mc-4010'] = {
     part.pending = []
   },
 
-  // Always has a result ready, on any pin.
+  // Always has a result ready, on any of its four xbus pins.
   canServe(ctx, part, pin) {
-    return true
+    return pin.startsWith('x')
   },
 
   serve(ctx, part, pin) {
@@ -228,6 +231,143 @@ DEVICES['mc-4010'] = {
     // `+ 0` folds the -0 a fractional exponent truncates to back into 0.
     part.result = Number.isFinite(result) ? clamp(result) + 0 : 0
     part.pending = []
+  },
+}
+
+// ---------------------------------------------------------------- n4pb-8000
+
+/**
+ * Push-button controller. A press reads as the button's number, a release as
+ * its negation; idle reads yield -999 (parts.js marks all four pins
+ * `blocking: false`). The datasheet gives no per-pin mapping for its up-to-8
+ * buttons across 4 pins, so - as with D80C010-F's two pins and MC4010's four -
+ * this is one shared FIFO answered from any pin, matching Machine.pressButton
+ * / releaseButton, which take no pin argument either.
+ */
+DEVICES['n4pb-8000'] = {
+  init(ctx, part) {
+    part.events = [] // n for a press, -n for a release
+  },
+
+  canServe(ctx, part, pin) {
+    if (!pin.startsWith('x')) return false
+    return part.events.length > 0
+  },
+
+  // Peek only; afterRead consumes. Serving without a guaranteed consumption
+  // (e.g. two reads racing the same net) must not drop an unread event.
+  serve(ctx, part, pin) {
+    return part.events[0]
+  },
+
+  afterRead(ctx, part, pin) {
+    part.events.shift()
+  },
+}
+
+// --------------------------------------------------------------- c2s-rf901
+
+/**
+ * Paired transceiver. `transmit` always accepts a write - a radio never
+ * stores its own outgoing packet, it hands it straight off - and broadcasts
+ * it onto every other C2S-RF901 on the board's `receive` buffer. The page
+ * never states the rule for more than two radios on a board; "every other
+ * radio" is this task's own instruction (radio.md itself describes only a
+ * single radio's own dual-pin link, not how radios reach each other), so
+ * that is what this implements. `receive` yields -999 when its buffer is
+ * empty (parts.js marks it `blocking: false`).
+ */
+DEVICES['c2s-rf901'] = {
+  init(ctx, part) {
+    part.buffer = [] // FIFO of values received from other radios' transmit
+  },
+
+  // Only `receive` can be read, and only with a packet buffered. `transmit`
+  // is write-only: answering a read there handed back a packet from the
+  // receive buffer, on the wrong pin and without consuming it.
+  canServe(ctx, part, pin) {
+    return pin === 'receive' && part.buffer.length > 0
+  },
+
+  canAccept(ctx, part, pin) {
+    return pin === 'transmit'
+  },
+
+  serve(ctx, part, pin) {
+    return part.buffer[0] // peek; afterRead consumes
+  },
+
+  accept(ctx, part, pin, value) {
+    if (pin !== 'transmit') return
+    for (const other of ctx.parts) {
+      if (other.tag === 'c2s-rf901' && other.id !== part.id) other.buffer.push(value)
+    }
+  },
+
+  afterRead(ctx, part, pin) {
+    if (pin === 'receive') part.buffer.shift()
+  },
+}
+
+// ---------------------------------------------------------------- lx-910c
+
+/**
+ * Custom LCD: `cN` drives segments, `tN` reports touches, `qN` queries a
+ * segment's state. This part has exactly one of each (c0, t0, q0) - the "N"
+ * in the datasheet names the segment addressed by the value, not a family of
+ * pins.
+ *
+ * `t0` is an event queue with the same idle -999 as N4PB-8000 (parts.js
+ * marks it `blocking: false`). `c0` and `q0` are not: the datasheet's table
+ * gives `tN` an explicit `-999` row but gives `qN` none, so `qN` is a plain
+ * always-answers register - like D80C010-F or DX300 - rather than an event
+ * stream: write the segment to ask about, then read back its state, which
+ * only works if the write is always accepted and the read always answers.
+ * Segment state itself is a sparse map over a blanket on/off default, since
+ * the datasheet gives no bound on how many segments a custom design has.
+ */
+DEVICES['lx-910c'] = {
+  init(ctx, part) {
+    part.touches = []         // FIFO: segment for touch-down, -segment for release
+    part.segments = new Map() // segment number -> explicit on/off
+    part.allOn = false        // blanket state where segments has no entry
+    part.queryPending = null  // segment last asked about via q0
+  },
+
+  // `c0` is write-only - it drives segments and has nothing to report - so it
+  // says no here and yes to canAccept. Saying yes to both made a read of `c0`
+  // fall through serve() with no branch and hand a register `undefined`.
+  canServe(ctx, part, pin) {
+    if (pin === 'q0') return true
+    if (pin === 't0') return part.touches.length > 0
+    return false
+  },
+
+  canAccept(ctx, part, pin) {
+    return pin === 'c0' || pin === 'q0'
+  },
+
+  serve(ctx, part, pin) {
+    if (pin === 't0') return part.touches[0] // peek; afterRead consumes
+    if (pin === 'q0') {
+      const on = part.segments.has(part.queryPending) ? part.segments.get(part.queryPending) : part.allOn
+      return on ? 1 : 0
+    }
+  },
+
+  accept(ctx, part, pin, value) {
+    if (pin === 'c0') {
+      if (value === 999) { part.allOn = true; part.segments.clear() }
+      else if (value === -999) { part.allOn = false; part.segments.clear() }
+      else if (value < 0) part.segments.set(-value, false)
+      else part.segments.set(value, true)
+    } else if (pin === 'q0') {
+      part.queryPending = value
+    }
+  },
+
+  afterRead(ctx, part, pin) {
+    if (pin === 't0') part.touches.shift()
   },
 }
 

@@ -117,7 +117,7 @@ export const PART_META = {
   'c2s-rf901': {
     name: 'C2S-RF901', kind: 'radio', cost: 6, cols: 4, rows: 3,
     pins: [
-      { name: 'receive', type: 'xbus', side: 'left', at: 0.28 },
+      { name: 'receive', type: 'xbus', side: 'left', at: 0.28, blocking: false },
       { name: 'transmit', type: 'xbus', side: 'left', at: 0.72 },
     ],
   },
@@ -133,10 +133,10 @@ export const PART_META = {
   'n4pb-8000': {
     name: 'N4PB-8000', kind: 'buttons', cost: 3, cols: 3, rows: 4,
     pins: [
-      { name: 'x0', type: 'xbus', side: 'left', at: 0.25 },
-      { name: 'x1', type: 'xbus', side: 'left', at: 0.75 },
-      { name: 'x2', type: 'xbus', side: 'right', at: 0.25 },
-      { name: 'x3', type: 'xbus', side: 'right', at: 0.75 },
+      { name: 'x0', type: 'xbus', side: 'left', at: 0.25, blocking: false },
+      { name: 'x1', type: 'xbus', side: 'left', at: 0.75, blocking: false },
+      { name: 'x2', type: 'xbus', side: 'right', at: 0.25, blocking: false },
+      { name: 'x3', type: 'xbus', side: 'right', at: 0.75, blocking: false },
     ],
   },
 
@@ -149,7 +149,7 @@ export const PART_META = {
     name: 'LX910C', kind: 'LCD', cost: 8, cols: 4, rows: 4,
     pins: [
       { name: 'c0', type: 'xbus', side: 'left', at: 0.2 },
-      { name: 't0', type: 'xbus', side: 'left', at: 0.5 },
+      { name: 't0', type: 'xbus', side: 'left', at: 0.5, blocking: false },
       { name: 'q0', type: 'xbus', side: 'left', at: 0.8 },
     ],
   },
