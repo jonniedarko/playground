@@ -256,4 +256,48 @@
   // Close the TOC by default on small screens so it does not push content down.
   var toc = document.querySelector('.toc details')
   if (toc && window.matchMedia('(max-width: 47.99rem)').matches) toc.open = false
+
+  // ------------------------------------------------- relative build stamp
+
+  // A recent build reads better as "2 hours ago" than as a date. This has to
+  // happen in the browser: the pages are static, so a phrase baked at build
+  // time would still say "2 hours ago" a month later. The absolute date is
+  // what is in the HTML, so with no JavaScript the stamp is merely less
+  // friendly, never wrong.
+  var WEEK = 7 * 24 * 60 * 60 * 1000
+
+  function relative(ms) {
+    if (!window.Intl || !Intl.RelativeTimeFormat) return null
+    var rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' })
+    var mins = Math.round(ms / 60000)
+    if (mins < 1) return 'just now'
+    if (mins < 60) return rtf.format(-mins, 'minute')
+    var hours = Math.round(mins / 60)
+    if (hours < 24) return rtf.format(-hours, 'hour')
+    return rtf.format(-Math.round(hours / 24), 'day')
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.build-stamp'), function (stamp) {
+    var el = stamp.querySelector('time[datetime]')
+    if (!el) return
+    var built = new Date(el.getAttribute('datetime'))
+    if (isNaN(built)) return
+
+    // A clock behind the build host would otherwise read as a future date.
+    var age = Math.max(0, Date.now() - built.getTime())
+    if (age >= WEEK) return
+
+    var phrase = relative(age)
+    if (!phrase) return
+
+    var clock = stamp.querySelector('.stamp-time')
+    var absolute = (el.textContent.trim() + ' ' + (clock ? clock.textContent.trim() : '')).trim()
+    el.textContent = phrase
+    // "2 hours ago 03:05" reads as noise, so the clock goes; it survives in
+    // the title and the accessible name.
+    if (clock) clock.hidden = true
+    if (stamp.hasAttribute('aria-label')) {
+      stamp.setAttribute('aria-label', 'Last updated ' + phrase + ', ' + absolute + '. Opens the commit on GitHub.')
+    }
+  })
 })()

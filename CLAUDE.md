@@ -180,6 +180,23 @@ in `--cell` units.
 
 **Prefer a live component over an image. Always.**
 
+## Build stamp
+
+`gitStamp()` in `build.mjs` exports `STAMP` — sha, short, iso, subject, dirty,
+GitHub commit url. Date is `git log -1` over `site/`, not the clock, so editing
+the unrelated starter does not move it. No git → no stamp, no crash.
+
+Rendered by `renderStamp(where)` into the top bar and the footer. The bar drops
+it below **27rem** (measured: it clipped the site name to `F..`); the footer
+carries it at every width.
+
+**"2 hours ago" is computed in `app.js`, not at build time** — the pages are
+static, so a baked phrase would still say it a month later. Under a week it
+swaps the date for a relative phrase and hides `.stamp-time`; a week or more
+stays as the built date. The absolute time stays in the `aria-label` either
+way. Clock skew is clamped, so a client running behind never reads a future
+date. Browser test fakes `Date.now` to cover the switch in both directions.
+
 ## Deploy
 
 `pages` branch = built output only, nothing else. `ship` replaces contents,

@@ -332,6 +332,72 @@ async function main() {
     await context.close()
   }
 
+  // The build stamp reads as "2 hours ago" for a recent build and falls back to
+  // the date after a week. That switch happens in the browser, so it is tested
+  // by moving the page's clock rather than by waiting a week.
+  let stampChecked = 0
+  {
+    const cases = [
+      ['2 hours', 2 * 3600e3, true],
+      ['6 days', 6 * 24 * 3600e3, true],
+      ['8 days', 8 * 24 * 3600e3, false],
+      ['clock skew', -3600e3, true],
+    ]
+    for (const [label, ageMs, wantRelative] of cases) {
+      const context = await browser.newContext({ viewport: { width: 900, height: 400 } })
+      const page = await context.newPage()
+      // addInitScript runs before any page script, so app.js sees this clock.
+      await page.addInitScript((ms) => {
+        const real = Date.now
+        Date.now = () => real() + ms
+      }, ageMs)
+      const at = `build stamp (${label})`
+      try {
+        await page.goto(`http://localhost:${port}${BASE}/`, { waitUntil: 'networkidle' })
+        await page.waitForTimeout(200)
+        const seen = await page.evaluate(() => {
+          const top = document.querySelector('.topbar-actions .build-stamp')
+          const foot = document.querySelector('.build-stamp-footer')
+          if (!top || !foot) return null
+          const clock = top.querySelector('.stamp-time')
+          return {
+            text: top.querySelector('time').textContent.trim(),
+            foot: foot.textContent.trim(),
+            clockShown: clock ? getComputedStyle(clock).display !== 'none' : false,
+            aria: top.getAttribute('aria-label') || '',
+            href: top.getAttribute('href') || '',
+          }
+        })
+        if (!seen) {
+          failures.push(`${at}: no build stamp on the page`)
+        } else {
+          const isRelative = /ago|just now|yesterday/.test(seen.text)
+          if (isRelative !== wantRelative) {
+            failures.push(`${at}: read "${seen.text}", expected ${wantRelative ? 'a relative phrase' : 'an absolute date'}`)
+          }
+          if (!/ago|just now|yesterday/.test(seen.foot) === wantRelative) {
+            failures.push(`${at}: footer read "${seen.foot}"`)
+          }
+          // The clock is redundant beside a relative phrase and wanted beside a date.
+          if (seen.clockShown === wantRelative) {
+            failures.push(`${at}: clock ${seen.clockShown ? 'shown' : 'hidden'} alongside "${seen.text}"`)
+          }
+          // Whatever is displayed, the exact time stays in the accessible name.
+          if (!/\d{4}-\d{2}-\d{2}/.test(seen.aria)) {
+            failures.push(`${at}: accessible name lost the date - "${seen.aria}"`)
+          }
+          if (!/\/commit\/[0-9a-f]{7,}/.test(seen.href)) {
+            failures.push(`${at}: does not link to a commit - "${seen.href}"`)
+          }
+        }
+        stampChecked += 1
+      } catch (err) {
+        failures.push(`${at}: ${err.message.split('\n')[0]}`)
+      }
+      await context.close()
+    }
+  }
+
   // Colour schemes. The components draw from --sz-* tokens that the site
   // redefines per theme, so a token added on one side and forgotten on the
   // other leaves text sitting on its own colour. Check what is painted.
@@ -365,18 +431,25 @@ async function main() {
               const m = (s || '').match(/[\d.]+/g)
               return m && (m.length < 4 || Number(m[3]) > 0.9)
             }
-            // Effective background: walk up until something paints. A gradient
-            // has no readable backgroundColor, so stop and report nothing
-            // rather than measuring against whatever is behind it - that
-            // false-flagged the amber register readouts at 1.14.
-            const bgOf = (el) => {
+            // Every colour the text could be sitting on, walking up until
+            // something paints. A gradient has no backgroundColor, so its
+            // stops are read out of backgroundImage and all of them are
+            // checked - skipping gradients instead would silently disable the
+            // check on chip code, whose nearest painted ancestor is the chip
+            // body's gradient.
+            const bgsOf = (el) => {
               for (let n = el; n; n = n.parentElement || n.getRootNode().host) {
                 const style = getComputedStyle(n)
-                if (style.backgroundImage && style.backgroundImage !== 'none') return null
+                const img = style.backgroundImage
+                if (img && img !== 'none') {
+                  const stops = [...img.matchAll(/rgba?\([^)]*\)/g)]
+                    .map((m) => m[0]).filter(opaque).map(parse).filter(Boolean)
+                  if (stops.length) return stops
+                }
                 const c = style.backgroundColor
-                if (parse(c) && opaque(c)) return parse(c)
+                if (parse(c) && opaque(c)) return [parse(c)]
               }
-              return [255, 255, 255]
+              return [[255, 255, 255]]
             }
             const ratio = (fg, bg) => {
               const a = lum(fg), b = lum(bg)
@@ -386,10 +459,11 @@ async function main() {
             const check = (el, label, min) => {
               if (!el) return
               const fg = parse(getComputedStyle(el).color)
-              const bg = fg && bgOf(el)
-              if (!fg || !bg) return
-              const r = ratio(fg, bg)
-              if (r < min) out.push(`${label} contrast ${r.toFixed(2)} (needs ${min})`)
+              if (!fg) return
+              // Worst stop wins: text has to be readable across the whole
+              // gradient, not just where it happens to be lightest.
+              const worst = Math.min(...bgsOf(el).map((bg) => ratio(fg, bg)))
+              if (worst < min) out.push(`${label} contrast ${worst.toFixed(2)} (needs ${min})`)
             }
             const chip = document.querySelector('mc-4000, mc-6000')
             if (chip) {
@@ -572,7 +646,7 @@ async function main() {
     return
   }
   process.stdout.write(
-    `browser-test: ${all.length} routes x ${widths.join('/')}px, ${figuresChecked} chip figures, ${circuitsChecked} circuits, ${runnableChecked} runnable, ${routingChecked} routed, ${ideChecked} ide, ${themesChecked} theme` +
+    `browser-test: ${all.length} routes x ${widths.join('/')}px, ${figuresChecked} chip figures, ${circuitsChecked} circuits, ${runnableChecked} runnable, ${routingChecked} routed, ${ideChecked} ide, ${themesChecked} theme, ${stampChecked} stamp` +
     ' - no overflow, no console errors\n'
   )
 }

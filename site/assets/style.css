@@ -367,6 +367,10 @@ a:hover { text-decoration-thickness: 2px; }
   .stamp-time { display: inline; }
 }
 
+/* app.js hides the clock once the date is shown as "2 hours ago". The class
+   rule above is more specific than the UA rule for [hidden], so say it here. */
+.stamp-time[hidden] { display: none; }
+
 @media (min-width: 46rem) {
   .topbar-actions .stamp-sha {
     display: inline;
