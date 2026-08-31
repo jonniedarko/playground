@@ -40,16 +40,34 @@ Each is independently shippable. Stop after any one and the site is coherent.
 
 | R | Ships | Why it is next | Size |
 | --- | --- | --- | --- |
-| **R10** | Device behaviours | The eleven inert parts are the most visible gap | L |
-| **R11** | Verification harness | Turns the bench into something you can be *right* on | M |
-| **R12** | Puzzle definitions | Content on top of R11 | M |
-| **R13** | Share and import | A design you cannot send is a design you cannot discuss | S |
-| **R14** | Debugging tools | Where the time actually goes when a design misbehaves | M |
-| **R15** | Authoring tools | Repo scripts, so adding content stops being hand work | S |
+| **R10** | Authoring tools | Repo scripts, so adding content stops being hand work | S |
+| **R11** | Device behaviours | The eleven inert parts are the most visible gap | L |
+| **R12** | Verification harness | Turns the bench into something you can be *right* on | M |
+| **R13** | Puzzle definitions | Content on top of R12 | M |
+| **R14** | Share and import | A design you cannot send is a design you cannot discuss | S |
+| **R15** | Debugging tools | Where the time actually goes when a design misbehaves | M |
 
 ---
 
-## R10 — Device behaviours
+## R10 — Authoring tools
+
+Repo scripts, so adding content stops being hand work.
+
+- **`scripts/new-part.mjs`** — writes the `PART_META` entry, the `FIXED_PARTS`
+  line, the datasheet page stub with its figure, and the catalogue entry. Four
+  edits that are currently done by hand and easy to half-do.
+- **`scripts/check.mjs` additions** — every `PART_META` tag has a component;
+  every `data-part` in content resolves; every `circuits.js` wire endpoint
+  names a pin that exists. All three are currently only caught in the browser.
+- **`scripts/screenshot.mjs`** — the ad-hoc Playwright scripts written per
+  release, made permanent and parameterised.
+
+**The next release, Device behaviours (R11), is what exercises this
+tooling** — eleven parts is exactly the situation the generator is for.
+
+---
+
+## R11 — Device behaviours
 
 Make the eleven inert parts run. Each is small; the value is that a design
 using them stops being a picture.
@@ -109,7 +127,7 @@ is the bug that will not show up any other way.
 
 ---
 
-## R11 — Verification harness
+## R12 — Verification harness
 
 Right now the bench has no notion of correct. This is what turns it into a
 tool: give a circuit an expected output and let it tell you whether you got
@@ -130,9 +148,9 @@ passes is the classic failure here.
 
 ---
 
-## R12 — Puzzle definitions
+## R13 — Puzzle definitions
 
-Content on top of R11. A handful of the manual's own worked problems as specs
+Content on top of R12. A handful of the manual's own worked problems as specs
 you can attempt in the workbench.
 
 - Start with the ones already documented: AN650 light controller, the DX300
@@ -146,7 +164,7 @@ is a test, not a claim.
 
 ---
 
-## R13 — Share and import
+## R14 — Share and import
 
 - **URL round-trip.** A board serialises to a compressed query string, so a
   design can be pasted into a message. `toJSON` already exists; this is
@@ -161,7 +179,7 @@ programs included, at 320px and on desktop.
 
 ---
 
-## R14 — Debugging tools
+## R15 — Debugging tools
 
 Where the time actually goes when a design does not work.
 
@@ -177,32 +195,14 @@ that mysteriously freezes is this.
 
 ---
 
-## R15 — Authoring tools
-
-Repo scripts, so adding content stops being hand work.
-
-- **`scripts/new-part.mjs`** — writes the `PART_META` entry, the `FIXED_PARTS`
-  line, the datasheet page stub with its figure, and the catalogue entry. Four
-  edits that are currently done by hand and easy to half-do.
-- **`scripts/check.mjs` additions** — every `PART_META` tag has a component;
-  every `data-part` in content resolves; every `circuits.js` wire endpoint
-  names a pin that exists. All three are currently only caught in the browser.
-- **`scripts/screenshot.mjs`** — the ad-hoc Playwright scripts written per
-  release, made permanent and parameterised.
-
-**Do this earlier if R10 drags.** Eleven parts is exactly the situation the
-generator is for.
-
----
-
 ## Risks, honestly
 
 | Risk | Handling |
 | --- | --- |
 | **Non-blocking XBus contaminates the blocking path** | Build it behind an explicit per-pin flag, test both in the same suite. This is the one change that can break already-working circuits |
 | **PGA33X6 is a second editor** | Defer it. Ship the other ten and say so |
-| **The game's save format may be unreadable** | Investigate in a timebox before committing to R13's second bullet |
-| **Verification without divergence reporting is useless** | A pass/fail boolean would technically satisfy R11 and help nobody. The first divergence is the deliverable |
+| **The game's save format may be unreadable** | Investigate in a timebox before committing to R14's second bullet |
+| **Verification without divergence reporting is useless** | A pass/fail boolean would technically satisfy R12 and help nobody. The first divergence is the deliverable |
 | **NLP2 needs invented content** | Mark it as invented on the page. The rest of this site is a faithful transcription and should not quietly stop being one |
 | **Sim file size** | `sim.js` is 620 lines and will roughly double. Split device behaviours into `devices.js` before it gets there, not after |
 
