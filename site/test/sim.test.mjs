@@ -218,6 +218,42 @@ test('slx waits for data instead of spinning', () => {
   assert.equal(m.output('lamp'), 60)
 })
 
+// --------------------------------------------------------- clock and rng
+
+test('Machine.timeOfDay defaults to 0 and does not move on its own', () => {
+  const m = new Machine({ parts: [], wires: [] })
+  assert.equal(m.timeOfDay, 0)
+  m.run(5)
+  assert.equal(m.timeOfDay, 0, 'advancing the clock does not touch it - only a caller sets it')
+})
+
+test('Machine.timeOfDay is settable', () => {
+  const m = new Machine({ parts: [], wires: [] })
+  m.timeOfDay = 90
+  assert.equal(m.timeOfDay, 90)
+})
+
+test('Machine.random is seeded: two machines with the same seed agree', () => {
+  const a = new Machine({ parts: [], wires: [], seed: 12345 })
+  const b = new Machine({ parts: [], wires: [], seed: 12345 })
+  const seqA = Array.from({ length: 5 }, () => a.random())
+  const seqB = Array.from({ length: 5 }, () => b.random())
+  assert.deepEqual(seqA, seqB)
+  assert.ok(seqA.every((v) => v >= 0 && v < 1), 'a PRNG draw is a float in [0, 1)')
+})
+
+test('Machine.random is reproducible unseeded, too, so an unseeded test never flakes', () => {
+  const a = new Machine({ parts: [], wires: [] })
+  const b = new Machine({ parts: [], wires: [] })
+  assert.equal(a.random(), b.random(), 'both fall back to the same fixed default seed')
+})
+
+test('Machine.random gives different values with different seeds', () => {
+  const a = new Machine({ parts: [], wires: [], seed: 1 })
+  const b = new Machine({ parts: [], wires: [], seed: 2 })
+  assert.notEqual(a.random(), b.random())
+})
+
 // ------------------------------------------------------ non-blocking XBus
 
 // Proves the blocking: false machinery generically. No real part sets the

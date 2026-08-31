@@ -10,18 +10,27 @@
    Every key is optional; a device implements only what it needs.
 
      DEVICES['dx-300'] = {
-       init(ctx, part) {},                        // per-build state, once
-       refresh(ctx, part) {},                     // drive nets each settle
-       canServe(ctx, part, pin) { return true },  // answer an xbus read without blocking?
-       serve(ctx, part, pin) { return 0 },        // the value to supply
-       accept(ctx, part, pin, value) {},          // take an xbus write
-       afterRead(ctx, part, pin) {},              // pointer moves, etc
-       tick(ctx, part) {},                        // once per time unit
+       init(ctx, part) {},                          // per-build state, once
+       refresh(ctx, part) {},                       // drive nets each settle
+       canServe(ctx, part, pin) { return true },    // answer an xbus READ without blocking?
+       canAccept(ctx, part, pin) { return true },    // will this pin take a WRITE?
+       serve(ctx, part, pin) { return 0 },          // the value to supply
+       accept(ctx, part, pin, value) {},            // take an xbus write
+       afterRead(ctx, part, pin) {},                // pointer moves, etc
+       tick(ctx, part) {},                          // once per time unit
      }
 
+   canServe and canAccept answer two different questions: canServe is "can
+   this pin be read", canAccept is "will this pin take a write". Most parts
+   read and write on the same pins and need only canServe - the machine falls
+   back to it for canAccept when a device does not define one. A pin that is
+   write-only (e.g. a radio's `transmit`) must return false from canServe and
+   true from canAccept; a read-only pin the reverse. Never let a pin claim
+   canServe for a read that serve() has no branch for.
+
    ctx is the Machine. Devices may call ctx.net(part.id, pin),
-   ctx.refreshDevices() and clamp (imported from sim.js). Devices must not
-   reach into chip internals.
+   ctx.refreshDevices(), ctx.random() and clamp (imported from sim.js).
+   Devices must not reach into chip internals.
    ========================================================================= */
 
 import { clamp } from './sim.js'
@@ -368,6 +377,71 @@ DEVICES['lx-910c'] = {
 
   afterRead(ctx, part, pin) {
     if (pin === 't0') part.touches.shift()
+  },
+}
+
+// ------------------------------------------------------------------ dt-2415
+
+/**
+ * Wall clock. Drives its one simple pin with the 15-minute index (0-95)
+ * derived from `ctx.timeOfDay` (minutes past midnight, clock.md's own
+ * table). timeOfDay does not advance on its own - refresh() just reads
+ * whatever it currently is, every time it is asked, so setting it and
+ * calling ctx.refreshDevices() (or advancing the clock) is enough to move
+ * the reading. The modulo guards a timeOfDay of 1440 or more (a whole day
+ * or past it) or negative; the datasheet doesn't need this since its table
+ * never leaves 0-1439, so it is defensive, not a documented wraparound rule.
+ */
+DEVICES['dt-2415'] = {
+  refresh(ctx, part) {
+    const net = ctx.net(part.id, 'time')
+    if (!net) return
+    const minutes = ((ctx.timeOfDay % 1440) + 1440) % 1440
+    net.drivers.set(part.id, Math.floor(minutes / 15))
+  },
+}
+
+// ----------------------------------------------------------------- kuji-ek1
+
+/**
+ * Oracle engine. `button` going high starts a divination: six values on
+ * `oracle`, one per time unit, starting with the lowermost line (100 solid,
+ * 0 broken - specialist-parts.md's own wording). Driven from ctx.time rather
+ * than a private counter, so refresh() answers the same way no matter how
+ * many times a settle() calls it within one unit, and Machine.settle() asks
+ * it at least once per unit even when nothing else does.
+ *
+ * The page says nothing about `button` going high again while a divination
+ * is already running (specialist-parts.md gives only "starts a
+ * divination"). This does not invent a queue or a restart for that case: a
+ * rising edge is ignored while one is still in progress, so the run in
+ * progress finishes exactly as it started - the least behaviour beyond what
+ * the page states. Flagged, not silently decided; see the R11 Task 5 report.
+ */
+DEVICES['kuji-ek1'] = {
+  init(ctx, part) {
+    part.wasHigh = false
+    part.values = null      // six 0/100 values, chosen once per divination
+    part.triggeredAt = null // ctx.time of the rising edge that started it
+  },
+
+  refresh(ctx, part) {
+    const buttonNet = ctx.net(part.id, 'button')
+    const high = buttonNet ? buttonNet.level >= 50 : false
+    const running = part.triggeredAt !== null && ctx.time - part.triggeredAt < 6
+    if (high && !part.wasHigh && !running) {
+      part.values = Array.from({ length: 6 }, () => (ctx.random() < 0.5 ? 0 : 100))
+      part.triggeredAt = ctx.time
+    }
+    part.wasHigh = high
+
+    if (!part.values) return
+    const oracleNet = ctx.net(part.id, 'oracle')
+    if (!oracleNet) return
+    // Once past the sixth unit, hold the topmost (last) line rather than
+    // going undriven - the page says nothing past the sixth value either.
+    const index = Math.min(ctx.time - part.triggeredAt, 5)
+    oracleNet.drivers.set(part.id, part.values[index])
   },
 }
 

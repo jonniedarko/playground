@@ -29,6 +29,28 @@ const BLOCKED = Symbol('blocked')
 /** A chip that never sleeps would spin forever; stop and report instead of hanging. */
 const INSTRUCTIONS_PER_TIME_UNIT = 10000
 
+// -------------------------------------------------------------------- rng
+
+/**
+ * KUJI-EK1 needs a source of randomness the tests can still pin down, so
+ * Machine.random is a seeded PRNG rather than Math.random. An unseeded RNG
+ * makes every test that touches it flaky, which is the only reason it is
+ * seeded at all - nothing about the algorithm or the default seed comes from
+ * a datasheet. mulberry32: small, dependency-free, good enough for a coin
+ * flip per hexagram line.
+ */
+const DEFAULT_SEED = 1
+
+function mulberry32(seed) {
+  let a = seed >>> 0
+  return function random() {
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
 // ------------------------------------------------------------------ parsing
 
 const PIN_NAME = /^[px]\d$/
@@ -141,6 +163,11 @@ export class Machine {
     this.time = 0
     this.deadlock = null
     this.error = null
+    // Wall clock for DT2415: minutes past midnight. Does not advance on its
+    // own in R11 - nothing here ticks it, only a test (or a caller) sets it.
+    this.timeOfDay = 0
+    // Seeded once per build so a reset() re-seeds deterministically too.
+    this.random = mulberry32(this.spec.seed ?? DEFAULT_SEED)
     this.parts = this.spec.parts.map((p, id) => {
       const meta = PART_META[p.t]
       if (!meta) throw new Error(`unknown part: ${p.t}`)
@@ -245,13 +272,23 @@ export class Machine {
 
   // ----------------------------------------------------------- devices
 
-  /** Terminals and gates are continuous: recompute what they drive. */
+  /** Terminals, gates and a few standalone devices are continuous: recompute what they drive. */
   refreshDevices() {
+    // True sources first: what an io-terminal presents to the board. Other
+    // devices with a refresh (dt-2415, kuji-ek1) may read a net an io-terminal
+    // drives in the very same pass, so the source has to go first.
     for (const part of this.parts) {
-      if (part.tag === 'io-terminal') {
-        const device = DEVICES[part.tag]
-        if (device && device.refresh) device.refresh(this, part)
-      }
+      if (part.tag !== 'io-terminal') continue
+      const device = DEVICES[part.tag]
+      if (device && device.refresh) device.refresh(this, part)
+    }
+    // Everything else that drives continuously but is not a gate (dt-2415's
+    // time index, kuji-ek1's oracle stream). Gates get their own fixed-point
+    // pass below because they may depend on each other; these do not.
+    for (const part of this.parts) {
+      if (part.tag === 'io-terminal' || part.meta.op) continue
+      const device = DEVICES[part.tag]
+      if (device && device.refresh) device.refresh(this, part)
     }
     // Gates settle after their inputs, so run them to a fixed point.
     for (let pass = 0; pass < 8; pass += 1) {
@@ -560,6 +597,10 @@ export class Machine {
 
   /** Run every chip until they are all sleeping or blocked. */
   settle() {
+    // A device whose output depends on the current time unit (kuji-ek1) must
+    // be asked at least once per unit even if no chip touches a pin that
+    // unit - otherwise a board with no chip at all never advances it.
+    this.refreshDevices()
     let budget = INSTRUCTIONS_PER_TIME_UNIT
     for (;;) {
       let progressed = false

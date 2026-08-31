@@ -375,6 +375,77 @@ test('a write-only pin still accepts a write', () => {
   assert.equal(writePin('lx-910c', 'c0').regs.dat, 99, 'the write went through')
 })
 
+// ------------------------------------------------------------------ dt-2415
+
+test('DT2415 gives the 15-minute index for a given time of day (clock.md\'s own table)', () => {
+  const build = () => new Machine({
+    parts: [
+      { t: 'dt-2415', x: 0, y: 0 },
+      { t: 'io-terminal', x: 4, y: 0, label: 'clock', type: 'simple', side: 'left' },
+    ],
+    wires: [['0:time', '1:clock']],
+  })
+  const at = (minutes) => {
+    const m = build()
+    m.timeOfDay = minutes
+    m.refreshDevices()
+    return m.output('clock')
+  }
+
+  // Both ends of each window the table names, not just the opening minute.
+  // The table is written as ranges precisely because the index holds across
+  // one: 00:14 is still 0. Testing only 00:00, 00:30 and 23:45 - all exact
+  // multiples of 15 - cannot tell floor from round, and passes either way.
+  assert.equal(at(0), 0, '00:00 -> 0')
+  assert.equal(at(14), 0, '00:14 is still 0, the index holds across the window')
+  assert.equal(at(15), 1, '00:15 -> 1')
+  assert.equal(at(29), 1, '00:29 is still 1')
+  assert.equal(at(30), 2, '00:30 -> 2')
+  assert.equal(at(44), 2, '00:44 is still 2')
+  assert.equal(at(45), 3, '00:45 -> 3')
+  assert.equal(at(23 * 60 + 45), 95, '23:45 -> 95, the table\'s last row')
+  assert.equal(at(23 * 60 + 59), 95, '23:59 is still 95: the index tops out, it does not reach 96')
+})
+
+// ----------------------------------------------------------------- kuji-ek1
+
+/** Button io-terminal on the left, KUJI-EK1, oracle io-terminal on the right. */
+const kujiRig = (seed) => new Machine({
+  parts: [
+    { t: 'io-terminal', x: 0, y: 0, label: 'button', type: 'simple', side: 'right' },
+    { t: 'kuji-ek1', x: 4, y: 0 },
+    { t: 'io-terminal', x: 8, y: 0, label: 'oracle', type: 'simple', side: 'left' },
+  ],
+  wires: [['0:button', '1:button'], ['1:oracle', '2:oracle']],
+  seed,
+})
+
+test('KUJI-EK1 emits exactly six values on oracle, one per time unit', () => {
+  const m = kujiRig(7)
+  m.setInput('button', 100)
+  const seen = []
+  for (let i = 0; i < 6; i += 1) {
+    m.advance()
+    seen.push(m.output('oracle'))
+  }
+  assert.equal(seen.length, 6)
+  assert.ok(seen.every((v) => v === 0 || v === 100), 'every line is solid (100) or broken (0)')
+})
+
+test('two KUJI-EK1 machines with the same seed emit the same six values', () => {
+  const run = (seed) => {
+    const m = kujiRig(seed)
+    m.setInput('button', 100)
+    const seen = []
+    for (let i = 0; i < 6; i += 1) {
+      m.advance()
+      seen.push(m.output('oracle'))
+    }
+    return seen
+  }
+  assert.deepEqual(run(99), run(99))
+})
+
 test('a radio broadcast reaches every other radio and not the sender', () => {
   const m = new Machine({
     parts: [
@@ -389,4 +460,76 @@ test('a radio broadcast reaches every other radio and not the sender', () => {
   assert.deepEqual(m.parts[1].buffer, [], 'a radio does not hear itself')
   assert.deepEqual(m.parts[2].buffer, [9])
   assert.deepEqual(m.parts[3].buffer, [9])
+})
+
+/* The page describes one divination. These pin what happens either side of
+   it, which the page does not state - so a later change has to be deliberate
+   rather than accidental. */
+
+const oracleRig = (seed) => new Machine({
+  seed,
+  parts: [
+    { t: 'io-terminal', x: 0, y: 0, label: 'go', type: 'simple', side: 'right' },
+    { t: 'kuji-ek1', x: 6, y: 0 },
+    { t: 'io-terminal', x: 14, y: 0, label: 'line', type: 'simple', side: 'left' },
+  ],
+  wires: [['0:go', '1:button'], ['1:oracle', '2:line']],
+})
+
+/** Run `n` time units, collecting what the oracle drives each one. */
+const collect = (m, n) => {
+  const out = []
+  for (let i = 0; i < n; i += 1) { m.advance(); out.push(m.output('line')) }
+  return out
+}
+
+test('KUJI-EK1 draws again on a second press, after a release', () => {
+  const m = oracleRig(99)
+  m.setInput('go', 100)
+  const first = collect(m, 6)
+  m.setInput('go', 0)
+  m.advance()
+  m.setInput('go', 100)
+  const second = collect(m, 6)
+  assert.notDeepEqual(second, first, 'a fresh press is a fresh hexagram, not a replay')
+})
+
+test('KUJI-EK1 does not re-trigger while the button is simply held', () => {
+  // It starts on a rising edge. Holding the button down is one press, so the
+  // six values must not roll over into a seventh and an eighth.
+  const m = oracleRig(99)
+  m.setInput('go', 100)
+  const run = collect(m, 12)
+  assert.deepEqual(run.slice(6), Array(6).fill(run[5]), 'past the sixth line it holds, it does not redraw')
+})
+
+test('KUJI-EK1 finishes the hexagram it started if pressed again mid-way', () => {
+  // The page says only that the button "starts a divination" and is silent on
+  // a press arriving mid-stream. The choice made here is to ignore it.
+  const uninterrupted = collect((() => { const m = oracleRig(99); m.setInput('go', 100); return m })(), 6)
+
+  const m = oracleRig(99)
+  m.setInput('go', 100)
+  const seen = collect(m, 2)
+  m.setInput('go', 0)
+  m.advance()
+  seen.push(m.output('line'))
+  m.setInput('go', 100)
+  seen.push(...collect(m, 3))
+
+  assert.deepEqual(seen.slice(0, 6), uninterrupted, 'the run in progress is unaffected')
+})
+
+test('KUJI-EK1 emits its six lines in order, lowermost first, one per unit', () => {
+  // "One per time unit, starting with the lowermost line" is the whole
+  // contract, and it is not tested by checking that six reads each returned
+  // 0 or 100: driving the same line six times over passes that.
+  const m = kujiRig(7)
+  m.setInput('button', 100)
+  const seen = []
+  for (let i = 0; i < 6; i += 1) { m.advance(); seen.push(m.output('oracle')) }
+
+  const drawn = m.parts.find((p) => p.tag === 'kuji-ek1').values
+  assert.deepEqual(seen, drawn, 'the stream is the hexagram in order, one line per unit')
+  assert.ok(new Set(seen).size > 1 || seen.length === 6, 'sanity: six values collected')
 })
