@@ -1061,8 +1061,24 @@ class ScopeTrace extends HTMLElement {
 
   connectedCallback() {
     if (!this.shadowRoot) this.attachShadow({ mode: 'open' });
-    if (!this._built) { this._built = true; this.series = new Map(); this._render(); }
+    if (!this._built) {
+      this._built = true;
+      this.series = new Map();
+      this.width = this.clientWidth || 260;
+      // The plot is drawn in real pixels, so it has to be redrawn when the
+      // element is resized rather than stretched to fit.
+      this._ro = new ResizeObserver(() => {
+        const w = this.clientWidth || 260;
+        if (Math.abs(w - this.width) < 1) return;
+        this.width = w;
+        this._render();
+      });
+      this._ro.observe(this);
+      this._render();
+    }
   }
+
+  disconnectedCallback() { this._ro?.disconnect(); }
 
   /** Record one sample per named signal. */
   record(values) {
@@ -1079,14 +1095,20 @@ class ScopeTrace extends HTMLElement {
 
   _render() {
     const names = [...this.series.keys()];
-    const w = 100;
-    const rowH = 26;
+    // One user unit is one CSS pixel. The viewBox used to be a fixed 100 wide
+    // and stretched to fit with preserveAspectRatio="none", which scaled x by
+    // ~3 and y by 1 - the waveform did not care, but it left the row labels
+    // three times too wide. Drawing at the element's real width keeps text at
+    // its true proportions.
+    const w = Math.max(120, Math.round(this.width || this.clientWidth || 260));
+    const rowH = 30;
     const h = Math.max(rowH, names.length * rowH);
     const rows = names.map((name, row) => {
       const values = this.series.get(name);
-      // Leave headroom for the row label so its ascenders are not clipped.
-      const top = row * rowH + 10;
-      const bottom = top + rowH - 18;
+      // Baseline for the row label, then the band the wave swings inside it.
+      const label = row * rowH + 11;
+      const top = row * rowH + 17;
+      const bottom = row * rowH + 28;
       // Step plot: hold each sample for its whole time unit.
       const step = w / Math.max(1, ScopeTrace.SAMPLES);
       let d = '';
@@ -1099,17 +1121,17 @@ class ScopeTrace extends HTMLElement {
           if (next !== y) d += ` L${x + step} ${next}`;
         }
       });
-      return `<g><text x="1" y="${top - 3}">${name}</text>
+      return `<g><text x="0" y="${label}">${name}</text>
         <path d="${d || `M0 ${bottom} L${w} ${bottom}`}"/></g>`;
     }).join('');
 
     this.shadowRoot.innerHTML = `<style>
       :host { display: block; }
       svg { display: block; width: 100%; height: ${h}px; }
-      path { fill: none; stroke: ${PALETTE.trace}; stroke-width: 1.4; vector-effect: non-scaling-stroke; }
-      text { fill: ${PALETTE.comment}; font: 400 5px var(--mono, monospace); }
+      path { fill: none; stroke: ${PALETTE.trace}; stroke-width: 1.5; }
+      text { fill: ${PALETTE.comment}; font: 400 10px var(--mono, monospace); letter-spacing: .04em; }
     </style>
-    <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img"
+    <svg viewBox="0 0 ${w} ${h}" role="img"
          aria-label="${names.join(' and ')} over time">${rows || ''}</svg>`;
   }
 }
