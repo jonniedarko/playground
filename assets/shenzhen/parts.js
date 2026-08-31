@@ -10,6 +10,13 @@
    An 'nc' pin is a real, drawn pin that is not connected to anything inside
    the part. The manual shows them, so the components do too, but nothing may
    wire to one and the simulator never puts one in a net.
+
+   An xbus pin may also carry `blocking: false`. Absent (or true) is today's
+   behaviour: a chip reading that pin over the bus with no writer present
+   parks until one arrives. `blocking: false` means the *other* side of the
+   net — the device wired to that pin — never makes a reader wait: with no
+   writer present the read yields -999 at once instead of blocking. No part
+   sets this yet; see sim.js's readPin.
    ========================================================================= */
 
 export const PART_META = {
@@ -110,7 +117,7 @@ export const PART_META = {
   'c2s-rf901': {
     name: 'C2S-RF901', kind: 'radio', cost: 6, cols: 4, rows: 3,
     pins: [
-      { name: 'receive', type: 'xbus', side: 'left', at: 0.28 },
+      { name: 'receive', type: 'xbus', side: 'left', at: 0.28, blocking: false },
       { name: 'transmit', type: 'xbus', side: 'left', at: 0.72 },
     ],
   },
@@ -126,10 +133,10 @@ export const PART_META = {
   'n4pb-8000': {
     name: 'N4PB-8000', kind: 'buttons', cost: 3, cols: 3, rows: 4,
     pins: [
-      { name: 'x0', type: 'xbus', side: 'left', at: 0.25 },
-      { name: 'x1', type: 'xbus', side: 'left', at: 0.75 },
-      { name: 'x2', type: 'xbus', side: 'right', at: 0.25 },
-      { name: 'x3', type: 'xbus', side: 'right', at: 0.75 },
+      { name: 'x0', type: 'xbus', side: 'left', at: 0.25, blocking: false },
+      { name: 'x1', type: 'xbus', side: 'left', at: 0.75, blocking: false },
+      { name: 'x2', type: 'xbus', side: 'right', at: 0.25, blocking: false },
+      { name: 'x3', type: 'xbus', side: 'right', at: 0.75, blocking: false },
     ],
   },
 
@@ -142,7 +149,7 @@ export const PART_META = {
     name: 'LX910C', kind: 'LCD', cost: 8, cols: 4, rows: 4,
     pins: [
       { name: 'c0', type: 'xbus', side: 'left', at: 0.2 },
-      { name: 't0', type: 'xbus', side: 'left', at: 0.5 },
+      { name: 't0', type: 'xbus', side: 'left', at: 0.5, blocking: false },
       { name: 'q0', type: 'xbus', side: 'left', at: 0.8 },
     ],
   },
@@ -179,7 +186,7 @@ export const PART_META = {
   'nlp-2': {
     name: 'NLP2', kind: 'language', cost: 8, cols: 4, rows: 4,
     pins: [
-      { name: 'keywords', type: 'xbus', side: 'left', at: 0.28 },
+      { name: 'keywords', type: 'xbus', side: 'left', at: 0.28, blocking: false },
       { name: 'nc0', type: 'nc', side: 'left', at: 0.72 },
       { name: 'audio', type: 'simple', side: 'right', at: 0.5 },
     ],

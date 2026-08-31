@@ -15,6 +15,8 @@
    ========================================================================= */
 
 import { PART_META } from './parts.js'
+import { DEVICES } from './devices.js'
+import { keywordHash } from './keywords.js'
 
 export const MIN = -999
 export const MAX = 999
@@ -27,6 +29,28 @@ const BLOCKED = Symbol('blocked')
 
 /** A chip that never sleeps would spin forever; stop and report instead of hanging. */
 const INSTRUCTIONS_PER_TIME_UNIT = 10000
+
+// -------------------------------------------------------------------- rng
+
+/**
+ * KUJI-EK1 needs a source of randomness the tests can still pin down, so
+ * Machine.random is a seeded PRNG rather than Math.random. An unseeded RNG
+ * makes every test that touches it flaky, which is the only reason it is
+ * seeded at all - nothing about the algorithm or the default seed comes from
+ * a datasheet. mulberry32: small, dependency-free, good enough for a coin
+ * flip per hexagram line.
+ */
+const DEFAULT_SEED = 1
+
+function mulberry32(seed) {
+  let a = seed >>> 0
+  return function random() {
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
 
 // ------------------------------------------------------------------ parsing
 
@@ -140,6 +164,11 @@ export class Machine {
     this.time = 0
     this.deadlock = null
     this.error = null
+    // Wall clock for DT2415: minutes past midnight. Does not advance on its
+    // own in R11 - nothing here ticks it, only a test (or a caller) sets it.
+    this.timeOfDay = 0
+    // Seeded once per build so a reset() re-seeds deterministically too.
+    this.random = mulberry32(this.spec.seed ?? DEFAULT_SEED)
     this.parts = this.spec.parts.map((p, id) => {
       const meta = PART_META[p.t]
       if (!meta) throw new Error(`unknown part: ${p.t}`)
@@ -173,9 +202,10 @@ export class Machine {
     }
     this.netOf = netOf
 
-    // Input terminals drive their net; everything else starts undriven.
+    // Per-build device state, once — e.g. an input terminal's starting value.
     for (const part of this.parts) {
-      if (part.tag === 'io-terminal') part.value = 0
+      const device = DEVICES[part.tag]
+      if (device && device.init) device.init(this, part)
     }
     this.refreshDevices()
   }
@@ -222,42 +252,87 @@ export class Machine {
     return net ? net.level : 0
   }
 
+  /** Find an N4PB-8000 by its label, the same way terminal() finds an io-terminal. */
+  buttonController(label) {
+    const part = this.parts.find((p) => p.tag === 'n4pb-8000' && p.label === label)
+    if (!part) throw new Error(`no N4PB-8000 labelled "${label}"`)
+    return part
+  }
+
+  /** Queue a button-down event: the next read of any of its pins yields n. */
+  pressButton(label, n) {
+    this.buttonController(label).events.push(n)
+    return this
+  }
+
+  /** Queue a button-up event: the next read of any of its pins yields -n. */
+  releaseButton(label, n) {
+    this.buttonController(label).events.push(-n)
+    return this
+  }
+
+  /** Find an NLP2, by label when there is more than one. */
+  recogniser(label) {
+    const found = this.parts.filter((p) => p.tag === 'nlp-2' && (label === undefined || p.label === label))
+    if (!found.length) throw new Error(label === undefined ? 'no NLP2 on this board' : `no NLP2 labelled "${label}"`)
+    return found[0]
+  }
+
+  /**
+   * Queue a keyword the manual publishes a hash for. The pair is sent as two
+   * 3-digit values, so this pushes both halves in order.
+   *
+   * A word the manual does not list is refused rather than hashed: the hash
+   * function is not in the manual, and guessing one would put invented data
+   * on a page that is otherwise a transcription.
+   */
+  hearKeyword(word, label) {
+    const pair = keywordHash(word)
+    if (!pair) {
+      throw new Error(
+        `the manual publishes no hash for "${word}". Use Machine.hear(a, b) with a known pair, ` +
+        'or add it to keywords.js only if the manual actually lists it.')
+    }
+    return this.hear(pair[0], pair[1], label)
+  }
+
+  /** Queue a hash pair directly, for a keyword that has one but no name here. */
+  hear(a, b, label) {
+    this.recogniser(label).heard.push(a, b)
+    return this
+  }
+
   // ----------------------------------------------------------- devices
 
-  /** Terminals and gates are continuous: recompute what they drive. */
+  /** Terminals, gates and a few standalone devices are continuous: recompute what they drive. */
   refreshDevices() {
+    // True sources first: what an io-terminal presents to the board. Other
+    // devices with a refresh (dt-2415, kuji-ek1) may read a net an io-terminal
+    // drives in the very same pass, so the source has to go first.
     for (const part of this.parts) {
-      if (part.tag === 'io-terminal') {
-        const net = this.net(part.id, part.label)
-        // Only an input terminal drives; an output one is driven by the chip.
-        if (net && part.spec.side === 'right') net.drivers.set(part.id, part.value || 0)
-      }
+      if (part.tag !== 'io-terminal') continue
+      const device = DEVICES[part.tag]
+      if (device && device.refresh) device.refresh(this, part)
+    }
+    // Everything else that drives continuously but is not a gate (dt-2415's
+    // time index, kuji-ek1's oracle stream). Gates get their own fixed-point
+    // pass below because they may depend on each other; these do not.
+    for (const part of this.parts) {
+      if (part.tag === 'io-terminal' || part.meta.op) continue
+      const device = DEVICES[part.tag]
+      if (device && device.refresh) device.refresh(this, part)
     }
     // Gates settle after their inputs, so run them to a fixed point.
     for (let pass = 0; pass < 8; pass += 1) {
       let changed = false
       for (const part of this.parts) {
         if (!part.meta.op) continue
-        const read = (pin) => {
-          const net = this.net(part.id, pin)
-          return net ? net.level : 0
-        }
-        const on = (v) => v >= 50
-        const a = on(read('a'))
-        const b = part.meta.inputs === 2 ? on(read('b')) : false
-        const result =
-          part.meta.op === 'NOT' ? !a
-            : part.meta.op === 'AND' ? a && b
-            : part.meta.op === 'OR' ? a || b
-            : a !== b
+        const device = DEVICES[part.tag]
+        if (!device || !device.refresh) continue
         const out = this.net(part.id, 'out')
-        if (out) {
-          const value = result ? 100 : 0
-          if (out.drivers.get(part.id) !== value) {
-            out.drivers.set(part.id, value)
-            changed = true
-          }
-        }
+        const before = out ? out.drivers.get(part.id) : undefined
+        device.refresh(this, part)
+        if (out && out.drivers.get(part.id) !== before) changed = true
       }
       if (!changed) break
     }
@@ -280,6 +355,12 @@ export class Machine {
     if (!net) throw BLOCKED // an unwired XBus pin waits forever
     const pending = net.writes.find((w) => w.id !== chip.id)
     if (!pending) {
+      // A pin marked blocking: false never makes a reader wait. But a device
+      // that has something to hand over must still be asked first, or a part
+      // whose whole contract is "a value if there is one, -999 if not" would
+      // answer -999 forever. deviceReaderOn is that question; when it says no,
+      // there is nothing to wait for and the read yields -999 at once.
+      if (!this.deviceReaderOn(net, chip.id) && this.deviceSideNonBlocking(net, chip.id)) return MIN
       if (!net.reads.some((r) => r.id === chip.id)) net.reads.push({ id: chip.id })
       throw BLOCKED
     }
@@ -302,7 +383,7 @@ export class Machine {
 
     if (!net) throw BLOCKED
     const waiting = net.reads.find((r) => r.id !== chip.id)
-    const device = this.deviceReaderOn(net, chip.id)
+    const device = this.deviceAcceptorOn(net, chip.id)
     if (!waiting && !device) {
       if (!net.writes.some((w) => w.id === chip.id)) net.writes.push({ id: chip.id, value })
       throw BLOCKED
@@ -318,46 +399,55 @@ export class Machine {
     net.writes = net.writes.filter((w) => w.id !== chip.id)
   }
 
+  /** True if some other pin on this net is explicitly marked blocking: false. */
+  deviceSideNonBlocking(net, exceptId) {
+    return net.members.some((m) => m.id !== exceptId && this.pinMeta(m.id, m.pin).blocking === false)
+  }
+
   /** XBus devices are always ready, so a chip talking to one never blocks. */
   deviceReaderOn(net, exceptId) {
     for (const member of net.members) {
       if (member.id === exceptId) continue
       const part = this.parts[member.id]
-      if (part && (part.tag === 'dx-300' || part.cells)) return { part, pin: member.pin }
+      const device = part && DEVICES[part.tag]
+      if (device && device.canServe && device.canServe(this, part, member.pin)) return { part, pin: member.pin }
     }
     return null
   }
 
-  deviceAccept(device, net, value) {
-    const { part, pin } = device
-    if (part.tag === 'dx-300') {
-      // Digits of the value drive p0 (ones), p1 (tens), p2 (hundreds).
-      const v = Math.abs(value)
-      for (const [n, name] of [[0, 'p0'], [1, 'p1'], [2, 'p2']]) {
-        const out = this.net(part.id, name)
-        if (out) out.drivers.set(part.id, Math.floor(v / 10 ** n) % 10 ? 100 : 0)
-      }
-      this.refreshDevices()
-      return
+  /**
+   * A device that will take a write on this pin.
+   *
+   * Reading and writing are two different questions, and a write-only pin
+   * answers them differently: `transmit` on a radio takes a write and has
+   * nothing to read back. Asking canServe for both made such a pin either
+   * refuse the write or answer a read it could not honour - a radio handed
+   * back a packet from its receive buffer, an LCD handed back undefined. A
+   * device says canAccept when the two differ; most parts read and write on
+   * the same pins and need only canServe.
+   */
+  deviceAcceptorOn(net, exceptId) {
+    for (const member of net.members) {
+      if (member.id === exceptId) continue
+      const part = this.parts[member.id]
+      const device = part && DEVICES[part.tag]
+      const can = device && (device.canAccept || device.canServe)
+      if (can && can.call(device, this, part, member.pin)) return { part, pin: member.pin }
     }
-    if (part.cells) {
-      if (part.meta.readOnly) return // ROM ignores writes
-      if (pin === 'a0' || pin === 'a1') part.ptr[pin] = ((value % part.cells.length) + part.cells.length) % part.cells.length
-      else {
-        const which = pin === 'd0' ? 'a0' : 'a1'
-        part.cells[part.ptr[which]] = clamp(value)
-        part.ptr[which] = (part.ptr[which] + 1) % part.cells.length
-      }
-    }
+    return null
+  }
+
+  deviceAccept(reader, net, value) {
+    const { part, pin } = reader
+    const device = DEVICES[part.tag]
+    if (device && device.accept) device.accept(this, part, pin, value)
   }
 
   /** A device that supplied a value may need to move its pointer on. */
   afterDeviceRead(pending) {
     const part = this.parts[pending.id]
-    if (part && part.cells && pending.pin && pending.pin.startsWith('d')) {
-      const which = pending.pin === 'd0' ? 'a0' : 'a1'
-      part.ptr[which] = (part.ptr[which] + 1) % part.cells.length
-    }
+    const device = part && DEVICES[part.tag]
+    if (device && device.afterRead) device.afterRead(this, part, pending.pin)
   }
 
   /** Offer whatever the XBus devices on a net can supply to a waiting reader. */
@@ -368,27 +458,13 @@ export class Machine {
       for (const member of net.members) {
         const part = this.parts[member.id]
         if (!part) continue
-        if (part.cells && member.pin.startsWith('d')) {
-          const which = member.pin === 'd0' ? 'a0' : 'a1'
-          net.writes.push({ id: part.id, value: part.cells[part.ptr[which]], pin: member.pin })
-          served = true
-          break
-        }
-        if (part.cells && member.pin.startsWith('a')) {
-          net.writes.push({ id: part.id, value: part.ptr[member.pin], pin: member.pin })
-          served = true
-          break
-        }
-        if (part.tag === 'dx-300') {
-          let v = 0
-          for (const [n, name] of [[0, 'p0'], [1, 'p1'], [2, 'p2']]) {
-            const src = this.net(part.id, name)
-            v += (src && src.level >= 50 ? 1 : 0) * 10 ** n
-          }
-          net.writes.push({ id: part.id, value: v, pin: member.pin })
-          served = true
-          break
-        }
+        const device = DEVICES[part.tag]
+        if (!device || !device.canServe || !device.canServe(this, part, member.pin)) continue
+        if (!device.serve) continue
+        const value = device.serve(this, part, member.pin)
+        net.writes.push({ id: part.id, value, pin: member.pin })
+        served = true
+        break
       }
     }
     return served
@@ -553,6 +629,10 @@ export class Machine {
 
   /** Run every chip until they are all sleeping or blocked. */
   settle() {
+    // A device whose output depends on the current time unit (kuji-ek1) must
+    // be asked at least once per unit even if no chip touches a pin that
+    // unit - otherwise a board with no chip at all never advances it.
+    this.refreshDevices()
     let budget = INSTRUCTIONS_PER_TIME_UNIT
     for (;;) {
       let progressed = false
