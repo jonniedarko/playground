@@ -34,6 +34,8 @@
     <span class="brand-text">Field Notes</span>
   </a>
   <div class="topbar-actions">
+    <a class="build-stamp" href="https://github.com/jonniedarko/playground/commit/9e22b6747d08b022ba1397ea8afbe0f9d959b154" title="Show &quot;2 hours ago&quot; on a build less than a week old - 9e22b67 - 2026-08-31T04:22:48+00:00"
+     aria-label="Last updated 2026-08-31 at 04:22 UTC. Opens the commit on GitHub." rel="noopener" target="_blank"><time datetime="2026-08-31T04:22:48+00:00">2026-08-31</time><span class="stamp-time">04:22</span><span class="stamp-sha">9e22b67</span></a>
     <button class="icon-btn search-btn" type="button" aria-label="Search" data-open-search>
       <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     </button>
@@ -67,14 +69,35 @@
 <ul><li>Push-button array controller with support for up to 8 buttons</li><li>4 non-blocking XBus pins</li></ul>
 <div class="table-wrap"><table><thead><tr><th>Direction</th><th>Value</th><th>Result</th></tr></thead><tbody><tr><td>Read</td><td><code>[button]</code></td><td><code>[button]</code> down event</td></tr><tr><td>Read</td><td><code>-[button]</code></td><td><code>[button]</code> up event</td></tr><tr><td>Read</td><td><code>-999</code></td><td>No new button events</td></tr></tbody></table></div>
 <p>A press produces the button&#39;s number; a release produces its negation. Polling returns <code>-999</code> between events.</p>
+<div class="chip-figure" data-part="n4pb-8000" aria-label="N4PB-8000 pin layout: four non-blocking XBus pins, two on each side.">
+<div class="pinout" role="img" aria-label="N4PB-8000 pin layout: four non-blocking XBus pins, two on each side.">
+<div class="pinout-col"><span class="pin pin-x">x0</span><span class="pin pin-x">x1</span></div>
+<div class="pinout-chip"><span class="pinout-name">N4PB-8000</span></div>
+<div class="pinout-col"><span class="pin pin-x">x2</span><span class="pin pin-x">x3</span></div>
+</div>
+</div>
 <h2 id="lx700-numeric-display">LX700 numeric display<a class="anchor" href="#lx700-numeric-display" aria-label="Link to this section">#</a></h2>
 <p><em>LuX Industry.</em> ¥4 each.</p>
 <ul><li>7-segment numerical display with 2.5 digits and bonus minus sign</li><li>Displays the full range of XBus values from -199 to 199</li></ul>
 <div class="table-wrap"><table><thead><tr><th>Direction</th><th>Value</th><th>Result</th></tr></thead><tbody><tr><td>Write</td><td><code>-199</code> to <code>199</code></td><td>Display the value</td></tr><tr><td>Write</td><td><code>-999</code></td><td>Turn off all segments</td></tr></tbody></table></div>
+<div class="chip-figure" data-part="lx-700" aria-label="LX700 pin layout: one XBus input pin.">
+<div class="pinout" role="img" aria-label="LX700 pin layout: one XBus input pin.">
+<div class="pinout-col"><span class="pin pin-x">x0</span></div>
+<div class="pinout-chip"><span class="pinout-name">LX700</span></div>
+<div class="pinout-col"></div>
+</div>
+</div>
 <h2 id="lx910c-custom-lcd">LX910C custom LCD<a class="anchor" href="#lx910c-custom-lcd" aria-label="Link to this section">#</a></h2>
 <p><em>LuX Industry.</em> ¥8 each.</p>
 <ul><li>Custom-manufactured for your unique application&#39;s display needs</li><li>Integrated segment-based touchscreen controller</li></ul>
 <p>The part exposes four kinds of pin. <code>cN</code> drives segments, <code>tN</code> reports touches, <code>qN</code> queries a segment&#39;s state, and each is addressed by segment number.</p>
+<div class="chip-figure" data-part="lx-910c" aria-label="LX910C pin layout: control, touch and query XBus pins on the left.">
+<div class="pinout" role="img" aria-label="LX910C pin layout: control, touch and query XBus pins on the left.">
+<div class="pinout-col"><span class="pin pin-x">c0</span><span class="pin pin-x">t0</span><span class="pin pin-x">q0</span></div>
+<div class="pinout-chip"><span class="pinout-name">LX910C</span></div>
+<div class="pinout-col"></div>
+</div>
+</div>
 <div class="table-wrap"><table><thead><tr><th>Pin</th><th>Direction</th><th>Value</th><th>Result</th></tr></thead><tbody><tr><td><code>cN</code></td><td>Write</td><td><code>[segment]</code></td><td>Turn on <code>[segment]</code></td></tr><tr><td><code>cN</code></td><td>Write</td><td><code>-[segment]</code></td><td>Turn off <code>[segment]</code></td></tr><tr><td><code>cN</code></td><td>Write</td><td><code>999</code></td><td>Turn on all segments</td></tr><tr><td><code>cN</code></td><td>Write</td><td><code>-999</code></td><td>Turn off all segments</td></tr><tr><td><code>tN</code></td><td>Read</td><td><code>[segment]</code></td><td><code>[segment]</code> touch event</td></tr><tr><td><code>tN</code></td><td>Read</td><td><code>-[segment]</code></td><td><code>[segment]</code> release event</td></tr><tr><td><code>tN</code></td><td>Read</td><td><code>-999</code></td><td>No new touch events</td></tr><tr><td><code>qN</code></td><td>Write / Read</td><td><code>[segment]</code></td><td>Query <code>[segment]</code> state; the subsequent read yields <code>1</code> or <code>0</code> depending on whether the segment is on</td></tr></tbody></table></div>
 <blockquote class="callout callout-note"><p class="callout-title">Note</p><p>The <code>qN</code> pins are used as a pair of operations: write the segment number you want to ask about, then read back the <code>1</code> or <code>0</code> answer.</p></blockquote>
 <h3 id="custom-display-template">Custom display template<a class="anchor" href="#custom-display-template" aria-label="Link to this section">#</a></h3>
@@ -85,6 +108,8 @@
     </article>
     <footer class="site-footer">
       <p>Field Notes - built as a static site. Source notes are kept as Markdown.</p>
+      <a class="build-stamp build-stamp-footer" href="https://github.com/jonniedarko/playground/commit/9e22b6747d08b022ba1397ea8afbe0f9d959b154" title="Show &quot;2 hours ago&quot; on a build less than a week old - 9e22b67 - 2026-08-31T04:22:48+00:00"
+     aria-label="Last updated 2026-08-31 at 04:22 UTC. Opens the commit on GitHub." rel="noopener" target="_blank">Updated <time datetime="2026-08-31T04:22:48+00:00">2026-08-31 04:22 UTC</time> &middot; <span class="stamp-sha">9e22b67</span></a>
     </footer>
   </main>
 </div>
@@ -101,6 +126,6 @@
 </div>
 
 <script src="/playground/assets/app.js" defer></script>
-
+<script type="module" src="/playground/assets/shenzhen/embed.js"></script>
 </body>
 </html>

@@ -5,7 +5,11 @@
    to agree. Keeping the data here means there is one copy rather than two that
    drift, and it lets the simulator be tested under plain Node.
 
-   pins: name, type ('xbus' | 'simple'), side ('left' | 'right'), at (0..1)
+   pins: name, type ('xbus' | 'simple' | 'nc'), side ('left' | 'right'), at (0..1)
+
+   An 'nc' pin is a real, drawn pin that is not connected to anything inside
+   the part. The manual shows them, so the components do too, but nothing may
+   wire to one and the simulator never puts one in a net.
    ========================================================================= */
 
 export const PART_META = {
@@ -76,6 +80,108 @@ export const PART_META = {
       { name: 'd0', type: 'xbus', side: 'left', at: 0.75 },
       { name: 'd1', type: 'xbus', side: 'right', at: 0.25 },
       { name: 'a1', type: 'xbus', side: 'right', at: 0.75 },
+    ],
+  },
+
+  /* ---- parts with a face and pins but no program of their own ----
+     Every one of these is a name, a footprint and a pin list, so they are
+     built from data rather than a class each. The `kind` is the small line
+     under the name on the face. */
+
+  'mc-4010': {
+    name: 'MC4010', kind: 'math', cost: 5, cols: 4, rows: 4,
+    pins: [
+      { name: 'x0', type: 'xbus', side: 'left', at: 0.25 },
+      { name: 'x1', type: 'xbus', side: 'left', at: 0.75 },
+      { name: 'x2', type: 'xbus', side: 'right', at: 0.25 },
+      { name: 'x3', type: 'xbus', side: 'right', at: 0.75 },
+    ],
+  },
+
+  'dt-2415': {
+    name: 'DT2415', kind: 'clock', cost: 5, cols: 3, rows: 3,
+    pins: [
+      { name: 'nc0', type: 'nc', side: 'left', at: 0.28 },
+      { name: 'nc1', type: 'nc', side: 'left', at: 0.72 },
+      { name: 'time', type: 'simple', side: 'right', at: 0.5 },
+    ],
+  },
+
+  'c2s-rf901': {
+    name: 'C2S-RF901', kind: 'radio', cost: 6, cols: 4, rows: 3,
+    pins: [
+      { name: 'receive', type: 'xbus', side: 'left', at: 0.28 },
+      { name: 'transmit', type: 'xbus', side: 'left', at: 0.72 },
+    ],
+  },
+
+  'fm-blaster': {
+    name: 'FM Blaster', kind: 'sound', cost: 5, cols: 4, rows: 3,
+    pins: [
+      { name: 'note', type: 'xbus', side: 'left', at: 0.28 },
+      { name: 'instrument', type: 'xbus', side: 'left', at: 0.72 },
+    ],
+  },
+
+  'n4pb-8000': {
+    name: 'N4PB-8000', kind: 'buttons', cost: 3, cols: 3, rows: 4,
+    pins: [
+      { name: 'x0', type: 'xbus', side: 'left', at: 0.25 },
+      { name: 'x1', type: 'xbus', side: 'left', at: 0.75 },
+      { name: 'x2', type: 'xbus', side: 'right', at: 0.25 },
+      { name: 'x3', type: 'xbus', side: 'right', at: 0.75 },
+    ],
+  },
+
+  'lx-700': {
+    name: 'LX700', kind: 'display', cost: 4, cols: 3, rows: 3,
+    pins: [{ name: 'x0', type: 'xbus', side: 'left', at: 0.5 }],
+  },
+
+  'lx-910c': {
+    name: 'LX910C', kind: 'LCD', cost: 8, cols: 4, rows: 4,
+    pins: [
+      { name: 'c0', type: 'xbus', side: 'left', at: 0.2 },
+      { name: 't0', type: 'xbus', side: 'left', at: 0.5 },
+      { name: 'q0', type: 'xbus', side: 'left', at: 0.8 },
+    ],
+  },
+
+  'd80c010-f': {
+    name: 'D80C010-F', kind: 'security', cost: 5, cols: 3, rows: 3,
+    pins: [
+      { name: 'read0', type: 'xbus', side: 'left', at: 0.5 },
+      { name: 'read1', type: 'xbus', side: 'right', at: 0.5 },
+    ],
+  },
+
+  'kuji-ek1': {
+    name: 'KUJI-EK1', kind: 'oracle', cost: 5, cols: 3, rows: 4,
+    pins: [
+      { name: 'nc0', type: 'nc', side: 'left', at: 0.5 },
+      { name: 'button', type: 'simple', side: 'right', at: 0.25 },
+      { name: 'oracle', type: 'simple', side: 'right', at: 0.75 },
+    ],
+  },
+
+  'pga-33x6': {
+    name: 'PGA33X6', kind: 'logic array', cost: 8, cols: 4, rows: 5,
+    pins: [
+      { name: 'i0', type: 'simple', side: 'left', at: 0.2 },
+      { name: 'i1', type: 'simple', side: 'left', at: 0.5 },
+      { name: 'i2', type: 'simple', side: 'left', at: 0.8 },
+      { name: 'o0', type: 'simple', side: 'right', at: 0.2 },
+      { name: 'o1', type: 'simple', side: 'right', at: 0.5 },
+      { name: 'o2', type: 'simple', side: 'right', at: 0.8 },
+    ],
+  },
+
+  'nlp-2': {
+    name: 'NLP2', kind: 'language', cost: 8, cols: 4, rows: 4,
+    pins: [
+      { name: 'keywords', type: 'xbus', side: 'left', at: 0.28 },
+      { name: 'nc0', type: 'nc', side: 'left', at: 0.72 },
+      { name: 'audio', type: 'simple', side: 'right', at: 0.5 },
     ],
   },
 

@@ -34,6 +34,8 @@
     <span class="brand-text">Field Notes</span>
   </a>
   <div class="topbar-actions">
+    <a class="build-stamp" href="https://github.com/jonniedarko/playground/commit/9e22b6747d08b022ba1397ea8afbe0f9d959b154" title="Show &quot;2 hours ago&quot; on a build less than a week old - 9e22b67 - 2026-08-31T04:22:48+00:00"
+     aria-label="Last updated 2026-08-31 at 04:22 UTC. Opens the commit on GitHub." rel="noopener" target="_blank"><time datetime="2026-08-31T04:22:48+00:00">2026-08-31</time><span class="stamp-time">04:22</span><span class="stamp-sha">9e22b67</span></a>
     <button class="icon-btn search-btn" type="button" aria-label="Search" data-open-search>
       <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     </button>
@@ -68,10 +70,12 @@
 <blockquote class="callout callout-warning"><p class="callout-title">Warning</p><p>Reading from the C2S-RF901 when no data is available yields a value of <strong><code>-999</code></strong> instead of blocking until data arrives, which is the usual <a href="/playground/shenzhen-io/application-notes/an268-interfaces/">XBus behaviour</a>. Your program must check for <code>-999</code> rather than assuming every read produced a real packet.</p></blockquote>
 <h2 id="pin-configuration">Pin configuration<a class="anchor" href="#pin-configuration" aria-label="Link to this section">#</a></h2>
 <p>Transmit and receive pins are located on the same side of the part, so the component does not have to be rotated awkwardly to fit a design.</p>
+<div class="chip-figure" data-part="c2s-rf901" aria-label="C2S-RF901 pin layout: receive and transmit XBus pins, both on the same side.">
 <div class="pinout" role="img" aria-label="C2S-RF901 pin layout: receive and transmit XBus pins, both on the same side.">
 <div class="pinout-col"><span class="pin pin-x">receive</span><span class="pin pin-x">transmit</span></div>
 <div class="pinout-chip"><span class="pinout-name">C2S-RF901</span></div>
 <div class="pinout-col"></div>
+</div>
 </div>
 <div class="table-wrap"><table><thead><tr><th>Pin</th><th>Type</th><th>Direction</th></tr></thead><tbody><tr><td><code>receive</code></td><td>XBus</td><td>Read; yields <code>-999</code> when the buffer is empty</td></tr><tr><td><code>transmit</code></td><td>XBus</td><td>Write</td></tr></tbody></table></div>
 <h2 id="usage-pattern">Usage pattern<a class="anchor" href="#usage-pattern" aria-label="Link to this section">#</a></h2>
@@ -84,6 +88,8 @@
     </article>
     <footer class="site-footer">
       <p>Field Notes - built as a static site. Source notes are kept as Markdown.</p>
+      <a class="build-stamp build-stamp-footer" href="https://github.com/jonniedarko/playground/commit/9e22b6747d08b022ba1397ea8afbe0f9d959b154" title="Show &quot;2 hours ago&quot; on a build less than a week old - 9e22b67 - 2026-08-31T04:22:48+00:00"
+     aria-label="Last updated 2026-08-31 at 04:22 UTC. Opens the commit on GitHub." rel="noopener" target="_blank">Updated <time datetime="2026-08-31T04:22:48+00:00">2026-08-31 04:22 UTC</time> &middot; <span class="stamp-sha">9e22b67</span></a>
     </footer>
   </main>
 </div>
@@ -100,6 +106,6 @@
 </div>
 
 <script src="/playground/assets/app.js" defer></script>
-
+<script type="module" src="/playground/assets/shenzhen/embed.js"></script>
 </body>
 </html>
