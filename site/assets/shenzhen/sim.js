@@ -15,6 +15,7 @@
    ========================================================================= */
 
 import { PART_META } from './parts.js'
+import { DEVICES } from './devices.js'
 
 export const MIN = -999
 export const MAX = 999
@@ -173,9 +174,10 @@ export class Machine {
     }
     this.netOf = netOf
 
-    // Input terminals drive their net; everything else starts undriven.
+    // Per-build device state, once — e.g. an input terminal's starting value.
     for (const part of this.parts) {
-      if (part.tag === 'io-terminal') part.value = 0
+      const device = DEVICES[part.tag]
+      if (device && device.init) device.init(this, part)
     }
     this.refreshDevices()
   }
@@ -228,9 +230,8 @@ export class Machine {
   refreshDevices() {
     for (const part of this.parts) {
       if (part.tag === 'io-terminal') {
-        const net = this.net(part.id, part.label)
-        // Only an input terminal drives; an output one is driven by the chip.
-        if (net && part.spec.side === 'right') net.drivers.set(part.id, part.value || 0)
+        const device = DEVICES[part.tag]
+        if (device && device.refresh) device.refresh(this, part)
       }
     }
     // Gates settle after their inputs, so run them to a fixed point.
@@ -238,26 +239,12 @@ export class Machine {
       let changed = false
       for (const part of this.parts) {
         if (!part.meta.op) continue
-        const read = (pin) => {
-          const net = this.net(part.id, pin)
-          return net ? net.level : 0
-        }
-        const on = (v) => v >= 50
-        const a = on(read('a'))
-        const b = part.meta.inputs === 2 ? on(read('b')) : false
-        const result =
-          part.meta.op === 'NOT' ? !a
-            : part.meta.op === 'AND' ? a && b
-            : part.meta.op === 'OR' ? a || b
-            : a !== b
+        const device = DEVICES[part.tag]
+        if (!device || !device.refresh) continue
         const out = this.net(part.id, 'out')
-        if (out) {
-          const value = result ? 100 : 0
-          if (out.drivers.get(part.id) !== value) {
-            out.drivers.set(part.id, value)
-            changed = true
-          }
-        }
+        const before = out ? out.drivers.get(part.id) : undefined
+        device.refresh(this, part)
+        if (out && out.drivers.get(part.id) !== before) changed = true
       }
       if (!changed) break
     }
@@ -323,41 +310,23 @@ export class Machine {
     for (const member of net.members) {
       if (member.id === exceptId) continue
       const part = this.parts[member.id]
-      if (part && (part.tag === 'dx-300' || part.cells)) return { part, pin: member.pin }
+      const device = part && DEVICES[part.tag]
+      if (device && device.canServe && device.canServe(this, part, member.pin)) return { part, pin: member.pin }
     }
     return null
   }
 
-  deviceAccept(device, net, value) {
-    const { part, pin } = device
-    if (part.tag === 'dx-300') {
-      // Digits of the value drive p0 (ones), p1 (tens), p2 (hundreds).
-      const v = Math.abs(value)
-      for (const [n, name] of [[0, 'p0'], [1, 'p1'], [2, 'p2']]) {
-        const out = this.net(part.id, name)
-        if (out) out.drivers.set(part.id, Math.floor(v / 10 ** n) % 10 ? 100 : 0)
-      }
-      this.refreshDevices()
-      return
-    }
-    if (part.cells) {
-      if (part.meta.readOnly) return // ROM ignores writes
-      if (pin === 'a0' || pin === 'a1') part.ptr[pin] = ((value % part.cells.length) + part.cells.length) % part.cells.length
-      else {
-        const which = pin === 'd0' ? 'a0' : 'a1'
-        part.cells[part.ptr[which]] = clamp(value)
-        part.ptr[which] = (part.ptr[which] + 1) % part.cells.length
-      }
-    }
+  deviceAccept(reader, net, value) {
+    const { part, pin } = reader
+    const device = DEVICES[part.tag]
+    if (device && device.accept) device.accept(this, part, pin, value)
   }
 
   /** A device that supplied a value may need to move its pointer on. */
   afterDeviceRead(pending) {
     const part = this.parts[pending.id]
-    if (part && part.cells && pending.pin && pending.pin.startsWith('d')) {
-      const which = pending.pin === 'd0' ? 'a0' : 'a1'
-      part.ptr[which] = (part.ptr[which] + 1) % part.cells.length
-    }
+    const device = part && DEVICES[part.tag]
+    if (device && device.afterRead) device.afterRead(this, part, pending.pin)
   }
 
   /** Offer whatever the XBus devices on a net can supply to a waiting reader. */
@@ -368,27 +337,13 @@ export class Machine {
       for (const member of net.members) {
         const part = this.parts[member.id]
         if (!part) continue
-        if (part.cells && member.pin.startsWith('d')) {
-          const which = member.pin === 'd0' ? 'a0' : 'a1'
-          net.writes.push({ id: part.id, value: part.cells[part.ptr[which]], pin: member.pin })
-          served = true
-          break
-        }
-        if (part.cells && member.pin.startsWith('a')) {
-          net.writes.push({ id: part.id, value: part.ptr[member.pin], pin: member.pin })
-          served = true
-          break
-        }
-        if (part.tag === 'dx-300') {
-          let v = 0
-          for (const [n, name] of [[0, 'p0'], [1, 'p1'], [2, 'p2']]) {
-            const src = this.net(part.id, name)
-            v += (src && src.level >= 50 ? 1 : 0) * 10 ** n
-          }
-          net.writes.push({ id: part.id, value: v, pin: member.pin })
-          served = true
-          break
-        }
+        const device = DEVICES[part.tag]
+        if (!device || !device.canServe || !device.canServe(this, part, member.pin)) continue
+        if (!device.serve) continue
+        const value = device.serve(this, part, member.pin)
+        net.writes.push({ id: part.id, value, pin: member.pin })
+        served = true
+        break
       }
     }
     return served
