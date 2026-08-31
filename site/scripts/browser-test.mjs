@@ -252,6 +252,34 @@ async function main() {
       for (const r of routing) failures.push(`${width}px ${route} ${r}`)
       routingChecked += circuits.length
 
+      // preserveAspectRatio="none" stretches an SVG's contents by different
+      // factors on each axis. That is fine for a waveform and wrong for
+      // lettering: the scope trace shipped with its row labels 3x too wide.
+      // Any such SVG that holds text must scale equally on both axes.
+      const stretched = await page.evaluate(() => {
+        const svgs = []
+        const collect = (root) => {
+          for (const svg of root.querySelectorAll('svg')) svgs.push(svg)
+          for (const el of root.querySelectorAll('*')) if (el.shadowRoot) collect(el.shadowRoot)
+        }
+        collect(document)
+        const bad = []
+        for (const svg of svgs) {
+          if (svg.getAttribute('preserveAspectRatio') !== 'none') continue
+          if (!svg.querySelector('text')) continue
+          const vb = (svg.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number)
+          const r = svg.getBoundingClientRect()
+          if (vb.length !== 4 || !vb[2] || !vb[3] || !r.width || !r.height) continue
+          const sx = r.width / vb[2]
+          const sy = r.height / vb[3]
+          if (Math.abs(sx - sy) / Math.max(sx, sy) > 0.02) {
+            bad.push(`text in a non-uniformly scaled svg (x${sx.toFixed(2)} vs y${sy.toFixed(2)})`)
+          }
+        }
+        return [...new Set(bad)]
+      })
+      for (const b of stretched) failures.push(`${width}px ${route} ${b}`)
+
       // Runnable figures: controls present, and stepping actually moves the clock.
       for (const el of await page.$$('.circuit-figure[data-run]')) {
         const name = await el.evaluate((n) => n.dataset.circuit)

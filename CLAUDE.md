@@ -216,6 +216,11 @@ Base CSS = phone. Media queries add desktop. Not the reverse.
   computed `display`, never the attribute.
 - Floating `.toc` needs `.content`'s 15rem gutter. `wide` removes it, so the
   TOC goes inline there or the page scrolls sideways.
+- `preserveAspectRatio="none"` scales x and y by different factors. Fine for a
+  waveform, wrong for lettering — it left `scope-trace`'s row labels 3x too
+  wide. Draw text-bearing SVG at real pixel size (`scope-trace` tracks its own
+  width with a ResizeObserver). DX300's face keeps `none` legitimately: its
+  60x100 viewBox matches its 3x5 footprint, so both axes scale the same.
 - Network is locked down: no npm, no PyPI. Stdlib only, both languages.
 - Playwright is a system install at `/opt/node22/lib/node_modules`, not a dep.
 
