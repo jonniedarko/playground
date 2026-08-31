@@ -186,7 +186,7 @@ export const PART_META = {
   'nlp-2': {
     name: 'NLP2', kind: 'language', cost: 8, cols: 4, rows: 4,
     pins: [
-      { name: 'keywords', type: 'xbus', side: 'left', at: 0.28 },
+      { name: 'keywords', type: 'xbus', side: 'left', at: 0.28, blocking: false },
       { name: 'nc0', type: 'nc', side: 'left', at: 0.72 },
       { name: 'audio', type: 'simple', side: 'right', at: 0.5 },
     ],

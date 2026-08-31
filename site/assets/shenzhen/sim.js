@@ -16,6 +16,7 @@
 
 import { PART_META } from './parts.js'
 import { DEVICES } from './devices.js'
+import { keywordHash } from './keywords.js'
 
 export const MIN = -999
 export const MAX = 999
@@ -267,6 +268,37 @@ export class Machine {
   /** Queue a button-up event: the next read of any of its pins yields -n. */
   releaseButton(label, n) {
     this.buttonController(label).events.push(-n)
+    return this
+  }
+
+  /** Find an NLP2, by label when there is more than one. */
+  recogniser(label) {
+    const found = this.parts.filter((p) => p.tag === 'nlp-2' && (label === undefined || p.label === label))
+    if (!found.length) throw new Error(label === undefined ? 'no NLP2 on this board' : `no NLP2 labelled "${label}"`)
+    return found[0]
+  }
+
+  /**
+   * Queue a keyword the manual publishes a hash for. The pair is sent as two
+   * 3-digit values, so this pushes both halves in order.
+   *
+   * A word the manual does not list is refused rather than hashed: the hash
+   * function is not in the manual, and guessing one would put invented data
+   * on a page that is otherwise a transcription.
+   */
+  hearKeyword(word, label) {
+    const pair = keywordHash(word)
+    if (!pair) {
+      throw new Error(
+        `the manual publishes no hash for "${word}". Use Machine.hear(a, b) with a known pair, ` +
+        'or add it to keywords.js only if the manual actually lists it.')
+    }
+    return this.hear(pair[0], pair[1], label)
+  }
+
+  /** Queue a hash pair directly, for a keyword that has one but no name here. */
+  hear(a, b, label) {
+    this.recogniser(label).heard.push(a, b)
     return this
   }
 
