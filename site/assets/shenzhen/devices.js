@@ -144,4 +144,91 @@ for (const tag of ['lc-70g04', 'lc-70g08', 'lc-70g32', 'lc-70g86']) {
   DEVICES[tag] = logicGate
 }
 
+// -------------------------------------------------------------- d80c010-f
+
+DEVICES['d80c010-f'] = {
+  // The datasheet says both pins return "the stored identification value" but
+  // never gives that value. 1000 is used here arbitrarily, per instruction —
+  // it is not taken from the page and carries no other meaning.
+  init(ctx, part) {
+    part.identification = 1000
+  },
+
+  // Read-only XBus: always has the value ready, on either pin.
+  canServe(ctx, part, pin) {
+    return true
+  },
+
+  serve(ctx, part, pin) {
+    return part.identification
+  },
+}
+
+// ----------------------------------------------------------------- mc-4010
+
+/**
+ * Math co-processor. A command sequence — an opcode then one or two operand
+ * values — is written a value at a time to any pin; once the sequence is
+ * complete the `result` register updates and is readable from any pin, any
+ * number of times, until the next command completes.
+ *
+ * Sign rules for remainder and modulus are the datasheet's own, verbatim:
+ * remainder takes the sign of A (truncating division's remainder), modulus
+ * the sign of B (floored division's remainder). These are two distinct
+ * conventions by design, not JS `%` — hence the explicit formulas below
+ * rather than the `%` operator.
+ */
+const MC4010_ARITY = { 10: 1, 20: 2, 30: 2, 40: 2, 50: 2, 51: 2, 60: 2, 70: 2, 80: 1, 90: 2, 91: 2 }
+
+DEVICES['mc-4010'] = {
+  init(ctx, part) {
+    part.result = 0
+    part.pending = []
+  },
+
+  // Always has a result ready, on any pin.
+  canServe(ctx, part, pin) {
+    return true
+  },
+
+  serve(ctx, part, pin) {
+    return part.result
+  },
+
+  // Any pin accepts the next value of the in-progress command sequence.
+  accept(ctx, part, pin, value) {
+    part.pending.push(value)
+    const op = part.pending[0]
+    const arity = MC4010_ARITY[op]
+    if (arity === undefined) {
+      // Not an opcode this datasheet defines. Start the sequence over on the
+      // next value rather than let a bad first value jam the buffer forever.
+      part.pending = []
+      return
+    }
+    if (part.pending.length < arity + 1) return // sequence still incomplete
+
+    const [, a, b] = part.pending
+    const result =
+      op === 10 ? a
+        : op === 20 ? a + b
+        : op === 30 ? a - b
+        : op === 40 ? a * b
+        : op === 50 ? a / b
+        : op === 51 ? a - b * Math.trunc(a / b) // negative if A was negative
+        : op === 60 ? a - b * Math.floor(a / b) // negative if B was negative
+        : op === 70 ? a ** b
+        : op === 80 ? Math.floor(Math.sqrt(a)) // rounded down
+        : op === 90 ? Math.min(a, b)
+        : Math.max(a, b) // 91: Max
+    // Divide by zero, 0/0 and the square root of a negative are cases the
+    // datasheet does not cover. They arrive here as Infinity or NaN, and a NaN
+    // reaching a register poisons every comparison made on it afterwards, so
+    // they all settle to 0. That value is a safe default, not the page's.
+    // `+ 0` folds the -0 a fractional exponent truncates to back into 0.
+    part.result = Number.isFinite(result) ? clamp(result) + 0 : 0
+    part.pending = []
+  },
+}
+
 export default DEVICES
