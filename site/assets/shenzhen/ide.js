@@ -40,6 +40,17 @@ const PALETTE = [
   { tag: 'io-terminal', name: 'Motor', attrs: { label: 'motor', type: 'simple', side: 'left' } },
   { tag: 'io-terminal', name: 'Keypad', attrs: { label: 'keypad', type: 'xbus', side: 'right' } },
   { tag: 'io-terminal', name: 'Display', attrs: { label: 'display', type: 'xbus', side: 'left' } },
+  { tag: 'mc-4010', name: 'MC4010' },
+  { tag: 'dt-2415', name: 'DT2415' },
+  { tag: 'c2s-rf901', name: 'Radio' },
+  { tag: 'fm-blaster', name: 'FM Blaster' },
+  { tag: 'n4pb-8000', name: 'N4PB-8000' },
+  { tag: 'lx-700', name: 'LX700' },
+  { tag: 'lx-910c', name: 'LX910C' },
+  { tag: 'd80c010-f', name: 'D80C010-F' },
+  { tag: 'kuji-ek1', name: 'KUJI-EK1' },
+  { tag: 'pga-33x6', name: 'PGA33X6' },
+  { tag: 'nlp-2', name: 'NLP2' },
 ]
 
 /** Circuits offered as starting points, by their circuits.js key. */

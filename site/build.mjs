@@ -15,6 +15,7 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import http from 'node:http'
+import { execFileSync } from 'node:child_process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseFrontMatter, renderMarkdown, escapeHtml, slugify } from './lib/markdown.mjs'
 
@@ -31,6 +32,39 @@ const SITE = {
 
 /** Normalised base path: '' for a root site, '/name' for a GitHub project page. */
 export const BASE = (process.env.BASE_PATH || '').replace(/\/+$/, '')
+
+/* ------------------------------------------------------------- build stamp
+   What the site was built from, shown in the top bar and linked to the commit
+   on GitHub. Derived from git rather than the clock so it reports the content,
+   not the moment `npm run build` happened to run. Every part is optional: a
+   tarball with no .git, or a remote that is not GitHub, simply gets less. */
+function gitStamp() {
+  const git = (args) => {
+    try {
+      return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+    } catch {
+      return ''
+    }
+  }
+
+  const sha = git(['rev-parse', 'HEAD'])
+  if (!sha) return null
+
+  // Committer date of the newest commit that touched the site, so editing the
+  // unrelated starter in this repo does not move the stamp. `.` is site/,
+  // because git runs with cwd = ROOT.
+  const iso = git(['log', '-1', '--format=%cI', '--', '.']) || git(['log', '-1', '--format=%cI'])
+  const subject = git(['log', '-1', '--format=%s', '--', '.']) || git(['log', '-1', '--format=%s'])
+  const dirty = Boolean(git(['status', '--porcelain', '--', '.']))
+
+  const remote = git(['remote', 'get-url', 'origin'])
+  const match = /github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?$/.exec(remote)
+  const url = match ? `https://github.com/${match[1]}/${match[2]}/commit/${sha}` : ''
+
+  return { sha, short: sha.slice(0, 7), iso, subject, dirty, url }
+}
+
+export const STAMP = gitStamp()
 
 const url = (p) => {
   if (!p) return BASE + '/'
@@ -233,6 +267,36 @@ function renderPager(prev, next) {
   return '<nav class="pager" aria-label="Pagination">' + link(prev, 'prev', 'Previous') + link(next, 'next', 'Next') + '</nav>'
 }
 
+/**
+ * The build stamp for the top bar: when the site was last changed, linking to
+ * the commit it came from. Collapses to just the date on a narrow screen, and
+ * to nothing at all when there is no git to ask.
+ */
+function renderStamp(where = 'topbar') {
+  if (!STAMP) return ''
+  const date = STAMP.iso ? STAMP.iso.slice(0, 10) : ''
+  const time = STAMP.iso ? STAMP.iso.slice(11, 16) : ''
+  const title = [
+    STAMP.subject,
+    STAMP.short + (STAMP.dirty ? ' (plus uncommitted changes)' : ''),
+    STAMP.iso,
+  ].filter(Boolean).join(' - ')
+  const label = `Last updated ${date}${time ? ' at ' + time + ' UTC' : ''}. Opens the commit on GitHub.`
+  // The top bar shows what fits; the footer always spells it out, which is
+  // also where a phone reads it, since the bar has no room to spare there.
+  const inner = where === 'footer'
+    ? `Updated <time datetime="${escapeHtml(STAMP.iso || '')}">${escapeHtml(date)}${time ? ' ' + escapeHtml(time) + ' UTC' : ''}</time>` +
+      ` &middot; <span class="stamp-sha">${escapeHtml(STAMP.short)}${STAMP.dirty ? '+' : ''}</span>`
+    : `<time datetime="${escapeHtml(STAMP.iso || '')}">${escapeHtml(date)}</time>` +
+      `<span class="stamp-time">${escapeHtml(time)}</span>` +
+      `<span class="stamp-sha">${escapeHtml(STAMP.short)}${STAMP.dirty ? '+' : ''}</span>`
+
+  const cls = 'build-stamp' + (where === 'footer' ? ' build-stamp-footer' : '')
+  if (!STAMP.url) return `<span class="${cls}" title="${escapeHtml(title)}">${inner}</span>`
+  return `<a class="${cls}" href="${escapeHtml(STAMP.url)}" title="${escapeHtml(title)}"
+     aria-label="${escapeHtml(label)}" rel="noopener" target="_blank">${inner}</a>`
+}
+
 function layout({ title, description, content, nav, breadcrumbs, pager, isHome, board = false, wide = false }) {
   const pageTitle = isHome ? SITE.title + ' - ' + SITE.tagline : title + ' - ' + SITE.title
   return `<!doctype html>
@@ -271,6 +335,7 @@ function layout({ title, description, content, nav, breadcrumbs, pager, isHome, 
     <span class="brand-text">${escapeHtml(SITE.title)}</span>
   </a>
   <div class="topbar-actions">
+    ${renderStamp()}
     <button class="icon-btn search-btn" type="button" aria-label="Search" data-open-search>
       <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     </button>
@@ -302,6 +367,7 @@ function layout({ title, description, content, nav, breadcrumbs, pager, isHome, 
     </article>
     <footer class="site-footer">
       <p>${escapeHtml(SITE.title)} - built as a static site. Source notes are kept as Markdown.</p>
+      ${renderStamp('footer')}
     </footer>
   </main>
 </div>

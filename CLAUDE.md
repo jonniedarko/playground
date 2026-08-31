@@ -103,21 +103,29 @@ executing line and a toggle per input terminal. Add `data-scope` for a rolling
 `<scope-trace>` of its outputs. Without `data-run` a figure stays a still
 illustration — that is the default.
 
-Parts: `mc-4000` `mc-4000x` `mc-6000` `dx-300` `io-terminal` `p-100p14`
-`p-200p14` `lc-70g04` `lc-70g08` `lc-70g32` `lc-70g86`.
-**No component yet** — these keep their CSS `.pinout` markup until built:
-MC4010, DT2415, C2S-RF901, FM Blaster, N4PB-8000, LX700, LX910C, D80C010-F,
-KUJI-EK1, PGA33X6, NLP2. All are the same shape (a face plus pins, no code),
-so a declarative factory beats a class each. Two need work first: a `nc` pin
-type for N/C pins, and per-instance pin overrides like `io-terminal` has.
-When one lands, swap its `.pinout` for a `.chip-figure` and add it to the
-`catalogue` circuit.
+**Every part in the manual now has a component.** 22 tags.
+
+Behaviour — a class each: `mc-4000` `mc-4000x` `mc-6000` (SzMcu) `dx-300`
+`io-terminal` `p-100p14` `p-200p14` (SzMemory) `lc-70g04/08/32/86` (SzGate).
+
+Face plus pins, no code — built from `PART_META` by `definePart`, listed in
+`FIXED_PARTS`: `mc-4010` `dt-2415` `c2s-rf901` `fm-blaster` `n4pb-8000`
+`lx-700` `lx-910c` `d80c010-f` `kuji-ek1` `pga-33x6` `nlp-2`. Adding one is a
+`PART_META` entry plus its tag in `FIXED_PARTS` — no class.
+**These draw and wire but do not run.** The sim treats them as inert.
+
+Pin types: `xbus` `simple` `nc`. An `nc` pin is drawn (the manual draws them)
+but is inert: no tap target, and `tryConnect` refuses it.
+
 `io-terminal` takes `label` / `type` / `side` and resolves its pin per
 instance, so one part covers button, lamp, motor-N, trigger, output.
 
-New part = add to `PART_META` in `parts.js`, then `bodyHTML` in
-`components.js`. Copy `DX300`. Never redeclare pins in `components.js` —
-one source or they drift.
+New part = add to `PART_META` in `parts.js`. If it has no behaviour, add the
+tag to `FIXED_PARTS` and stop. If it does, write a class with `bodyHTML` —
+copy `DX300`. Never redeclare pins in `components.js` — one source or they
+drift. **A custom element name must contain a hyphen** (`lx-700`, not
+`lx700`): the registry throws mid-module and every part on the page silently
+stays a fallback. `definePart` checks this now.
 
 ## Workbench
 
@@ -196,6 +204,11 @@ Base CSS = phone. Media queries add desktop. Not the reverse.
 - **No hover on touch.** Never hide an affordance behind `:hover` alone.
   Bit us twice: `.copy-btn`, and the POC's `.expand`.
 - Verify at 320px, not just 390px.
+- Components read `--sz-*` tokens from `style.css` (custom properties inherit
+  into shadow DOM). Both schemes must define every token — a token added to
+  one side only falls back to the dark literal and lands dark-on-light. The
+  browser test measures contrast in both schemes, but it cannot read through a
+  gradient, so it skips those rather than guessing.
 - Pointer coords are viewport-relative and Playwright's `click` auto-scrolls.
   Re-scroll and re-measure immediately before a synthetic drag, or it silently
   lands off-screen and the assertion "passes".
@@ -221,6 +234,8 @@ Base CSS = phone. Media queries add desktop. Not the reverse.
   wide. Draw text-bearing SVG at real pixel size (`scope-trace` tracks its own
   width with a ResizeObserver). DX300's face keeps `none` legitimately: its
   60x100 viewBox matches its 3x5 footprint, so both axes scale the same.
+- SVG presentation attributes (`fill="..."`) do resolve `var()` in Chromium,
+  but support is not universal. Colour SVG from CSS classes instead.
 - Network is locked down: no npm, no PyPI. Stdlib only, both languages.
 - Playwright is a system install at `/opt/node22/lib/node_modules`, not a dep.
 

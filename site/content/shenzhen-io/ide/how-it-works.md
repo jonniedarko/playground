@@ -86,11 +86,24 @@ forever, so it is caught and reported rather than locking up the page.
 | The campaign, the story, the emails | Read those in [Story documents](/shenzhen-io/story/) |
 | Solitaire | Sorry |
 | Analogue timing, noise, propagation delay | Time is whole units. Signals are exact |
-| Parts with no component yet | The palette holds what has been built. The rest are in the [datasheets](/shenzhen-io/parts/) |
+| Most parts' behaviour | Every part in the manual is now drawable and wireable, but only the MCxxxx chips, DX300, memory and gates actually *do* anything when you press Run |
 
-The last one is the practical limit: the workbench offers the MCxxxx chips, the
-DX300, Pingda memory, the LC70Gxx gates and generic I/O terminals. Everything
-else in the manual is documented but not yet buildable here.
+The last one is the practical limit, and it is worth being precise about.
+Every part in the manual can be placed and wired here. Only some of them are
+*simulated*:
+
+| Part | Placed and wired | Runs |
+| --- | --- | --- |
+| MC4000, MC4000X, MC6000 | yes | yes |
+| DX300, 100P-14, 200P-14, LC70Gxx | yes | yes |
+| I/O terminals | yes | yes |
+| MC4010, DT2415, C2S-RF901, FM Blaster | yes | not yet |
+| N4PB-8000, LX700, LX910C | yes | not yet |
+| D80C010-F, KUJI-EK1, PGA33X6, NLP2 | yes | not yet |
+
+A part in the second group is a real component on the board - correct
+footprint, correct pins, correct pin types, and a wire to it is checked the
+same way. It simply sits there when the clock runs.
 
 ---
 

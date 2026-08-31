@@ -204,6 +204,14 @@ async function main() {
             x1: r.right - origin.left, y1: r.bottom - origin.top,
           })
           const parts = [...board.children].filter((e) => e.shadowRoot).map((e) => local(e.getBoundingClientRect()))
+          // A part laid out past the board's own box is cut off. The board
+          // sizes itself from the part list, so this catches a circuit whose
+          // parts outgrew it.
+          for (const r of parts) {
+            if (r.x1 > origin.width + 1 || r.y1 > origin.height + 1) {
+              problems.push(`${fig.dataset.circuit}: a part is outside the board at ${Math.round(r.x1)},${Math.round(r.y1)}`)
+            }
+          }
           // The visible body is inset a few px from the host box; allow for it
           // so a wire hugging a chip edge is not reported.
           const inset = 6
@@ -223,7 +231,7 @@ async function main() {
                 }
               }
               // A wire drawn outside the board reads as a rendering bug even
-              // though it clears every part.
+              // though it clears every part. Parts are checked below.
               if (!escaped && (pt.x < -1 || pt.y < -1 || pt.x > origin.width + 1 || pt.y > origin.height + 1)) {
                 escaped = true
                 problems.push(`${fig.dataset.circuit}: wire leaves the board at ${Math.round(pt.x)},${Math.round(pt.y)}`)
@@ -318,6 +326,85 @@ async function main() {
           failures.push(`${at}: placed ${c.parts} of ${spec.parts.length} parts`)
         } else if (c.wires !== spec.wires.length) {
           failures.push(`${at}: connected ${c.wires} of ${spec.wires.length} wires`)
+        }
+      }
+    }
+    await context.close()
+  }
+
+  // Colour schemes. The components draw from --sz-* tokens that the site
+  // redefines per theme, so a token added on one side and forgotten on the
+  // other leaves text sitting on its own colour. Check what is painted.
+  let themesChecked = 0
+  const THEME_ROUTES = ['/shenzhen-io/quick-start/', '/shenzhen-io/ide/', '/shenzhen-io/parts/mc6000/']
+  for (const scheme of ['light', 'dark']) {
+    const context = await browser.newContext({ viewport: { width: 900, height: 1000 }, colorScheme: scheme })
+    const page = await context.newPage()
+    for (const route of THEME_ROUTES) {
+      // Both routes to a theme: the OS preference above, and the explicit
+      // toggle, which is a different selector and has been forgotten before.
+      for (const explicit of [false, true]) {
+        const at = `${scheme}${explicit ? ' (toggled)' : ''} ${route}`
+        try {
+          await page.goto(`http://localhost:${port}${BASE}${route}`, { waitUntil: 'networkidle' })
+          if (explicit) await page.evaluate((t) => { document.documentElement.dataset.theme = t }, scheme)
+          await page.waitForTimeout(400)
+          const bad = await page.evaluate(() => {
+            const lum = (c) => {
+              const [r, g, b] = c.map((v) => {
+                const x = v / 255
+                return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4
+              })
+              return 0.2126 * r + 0.7152 * g + 0.0722 * b
+            }
+            const parse = (s) => {
+              const m = (s || '').match(/[\d.]+/g)
+              return m && m.length >= 3 ? m.slice(0, 3).map(Number) : null
+            }
+            const opaque = (s) => {
+              const m = (s || '').match(/[\d.]+/g)
+              return m && (m.length < 4 || Number(m[3]) > 0.9)
+            }
+            // Effective background: walk up until something paints. A gradient
+            // has no readable backgroundColor, so stop and report nothing
+            // rather than measuring against whatever is behind it - that
+            // false-flagged the amber register readouts at 1.14.
+            const bgOf = (el) => {
+              for (let n = el; n; n = n.parentElement || n.getRootNode().host) {
+                const style = getComputedStyle(n)
+                if (style.backgroundImage && style.backgroundImage !== 'none') return null
+                const c = style.backgroundColor
+                if (parse(c) && opaque(c)) return parse(c)
+              }
+              return [255, 255, 255]
+            }
+            const ratio = (fg, bg) => {
+              const a = lum(fg), b = lum(bg)
+              return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+            }
+            const out = []
+            const check = (el, label, min) => {
+              if (!el) return
+              const fg = parse(getComputedStyle(el).color)
+              const bg = fg && bgOf(el)
+              if (!fg || !bg) return
+              const r = ratio(fg, bg)
+              if (r < min) out.push(`${label} contrast ${r.toFixed(2)} (needs ${min})`)
+            }
+            const chip = document.querySelector('mc-4000, mc-6000')
+            if (chip) {
+              check(chip.shadowRoot.querySelector('.hl'), 'chip code', 4)
+              check(chip.shadowRoot.querySelector('.reg span'), 'chip register', 4)
+            }
+            for (const sel of ['.sim-readout', '.sim-btn', '.ide-chip', '.build-stamp']) {
+              check(document.querySelector(sel), sel, 3)
+            }
+            return out
+          })
+          for (const b of bad) failures.push(`${at} ${b}`)
+          themesChecked += 1
+        } catch (err) {
+          failures.push(`${at}: ${err.message.split('\n')[0]}`)
         }
       }
     }
@@ -485,7 +572,7 @@ async function main() {
     return
   }
   process.stdout.write(
-    `browser-test: ${all.length} routes x ${widths.join('/')}px, ${figuresChecked} chip figures, ${circuitsChecked} circuits, ${runnableChecked} runnable, ${routingChecked} routed, ${ideChecked} ide` +
+    `browser-test: ${all.length} routes x ${widths.join('/')}px, ${figuresChecked} chip figures, ${circuitsChecked} circuits, ${runnableChecked} runnable, ${routingChecked} routed, ${ideChecked} ide, ${themesChecked} theme` +
     ' - no overflow, no console errors\n'
   )
 }

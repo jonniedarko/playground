@@ -22,20 +22,44 @@
 
 import { PART_META } from './parts.js'
 
+/* Every colour is a site token with the dark, authentic value as its fallback,
+   so a component follows the page's colour scheme where the site defines
+   --sz-*, and still renders correctly standing on its own. Custom properties
+   inherit into shadow DOM, which is what makes this reach inside a part. */
 const PALETTE = {
-  bezelTop: '#525d67',
-  bezelBottom: '#232a31',
-  bodyTop: '#1d232a',
-  bodyBottom: '#12171c',
-  edge: '#05080a',
-  amber: '#f3c46f',
-  amberDeep: '#b8862f',
-  trace: '#2f9c85',
-  ink: '#241d14',
-  code: '#e4e0d5',
-  comment: '#8b9189',
-  metal: '#b7c1c8',
-  execBar: '#5a2a20'
+  bezelTop: 'var(--sz-bezel-top, #525d67)',
+  bezelMid: 'var(--sz-bezel-mid, #303841)',
+  bezelBottom: 'var(--sz-bezel-bottom, #232a31)',
+  bodyTop: 'var(--sz-body-top, #1d232a)',
+  bodyBottom: 'var(--sz-body-bottom, #12171c)',
+  edge: 'var(--sz-edge, #05080a)',
+  amber: 'var(--sz-amber, #f3c46f)',
+  amberDeep: 'var(--sz-amber-deep, #b8862f)',
+  amberLitTop: 'var(--sz-amber-lit-top, #f9d491)',
+  amberLitBottom: 'var(--sz-amber-lit-bottom, #e5b559)',
+  trace: 'var(--sz-trace, #2f9c85)',
+  ink: 'var(--sz-ink, #241d14)',
+  code: 'var(--sz-code, #e4e0d5)',
+  comment: 'var(--sz-comment, #8b9189)',
+  metal: 'var(--sz-metal, #b7c1c8)',
+  metalLit: 'var(--sz-metal-lit, #e2cb96)',
+  execBar: 'var(--sz-exec-bar, #5a2a20)',
+  board: 'var(--sz-board, #0b1114)',
+  boardGrid: 'var(--sz-board-grid, rgb(52 116 106 / .20))',
+  boardShadow: 'var(--sz-board-shadow, inset 0 0 70px rgb(0 0 0 / .75))',
+  codeBg: 'var(--sz-code-bg, #0c1215)',
+  mnemonic: 'var(--sz-mnemonic, #ffffff)',
+  btnTop: 'var(--sz-btn-top, #2e363f)',
+  btnEdge: 'var(--sz-btn-edge, #0d1116)',
+  btnText: 'var(--sz-btn-text, #aeb9c2)',
+  alert: 'var(--sz-alert, #f0a598)',
+  alertBg: 'var(--sz-alert-bg, #2a1614)',
+  alertEdge: 'var(--sz-alert-edge, #7a2f27)',
+  wireEnd: 'var(--sz-wire-end, #06110e)',
+  wireCase: 'var(--sz-wire-case, #06110e)',
+  wireBody: 'var(--sz-wire-body, #3fae93)',
+  wireGroove: 'var(--sz-wire-groove, #24705f)',
+  wireCore: 'var(--sz-wire-core, #8fe4cf)'
 };
 
 const CHAMFER = v => `polygon(${v} 0, calc(100% - ${v}) 0, 100% ${v},
@@ -62,7 +86,7 @@ const PART_CSS = `
 }
 :host([dragging]) { z-index: 40; }
 :host([dragging]) .frame { box-shadow: 0 6px 14px rgba(0,0,0,.7); }
-:host([selected]) .frame { background: linear-gradient(180deg, #8a7a4e, #4a4230); }
+:host([selected]) .frame { background: linear-gradient(180deg, ${PALETTE.amberDeep}, ${PALETTE.bezelBottom}); }
 
 /* ---- board traces behind the pins ---- */
 .trace {
@@ -83,7 +107,7 @@ const PART_CSS = `
   left: 2px; top: 50%;
   transform: translateY(-50%);
   padding: 0 1px;
-  background: #0c1215;
+  background: ${PALETTE.codeBg};
   color: ${PALETTE.trace};
   font: 400 calc(var(--cell) * .2)/1 var(--mono);
   font-style: normal;
@@ -98,7 +122,7 @@ const PART_CSS = `
   position: absolute;
   inset: 0 5px;
   clip-path: ${CHAMFER('var(--ch)')};
-  background: linear-gradient(168deg, ${PALETTE.bezelTop}, #303841 40%, ${PALETTE.bezelBottom});
+  background: linear-gradient(168deg, ${PALETTE.bezelTop}, ${PALETTE.bezelMid} 40%, ${PALETTE.bezelBottom});
   box-shadow: 0 2px 4px rgba(0,0,0,.75);
 }
 .body {
@@ -144,7 +168,7 @@ const PART_CSS = `
 }
 .pin[data-side="left"][data-type="xbus"]::after  { right: -6px; }
 .pin[data-side="right"][data-type="xbus"]::after { left: -6px; }
-.pin:hover, .pin[data-armed] { background: linear-gradient(90deg,#fff,#e2cb96 60%,#a98a45); }
+.pin:hover, .pin[data-armed] { background: linear-gradient(90deg,#fff,${PALETTE.metalLit} 60%,${PALETTE.amberDeep}); }
 .pin:focus-visible { outline: 2px solid ${PALETTE.amber}; outline-offset: 2px; }
 .pin[data-reject] { animation: reject .32s linear 2; }
 @keyframes reject { 50% { background: #d0554a; } }
@@ -172,7 +196,7 @@ const PART_CSS = `
   overflow: hidden;
 }
 .hl { color: ${PALETTE.code}; pointer-events: none; z-index: 2; }
-.hl .m { color: #ffffff; }
+.hl .m { color: ${PALETTE.mnemonic}; }
 .hl .c { color: ${PALETTE.comment}; }
 textarea {
   width: 100%; height: 100%;
@@ -201,10 +225,10 @@ textarea::selection { background: #6d3a2d; }
   width: 15px; height: 15px;
   display: grid; place-items: center;
   padding: 0;
-  border: 1px solid #0d1116;
+  border: 1px solid ${PALETTE.btnEdge};
   border-radius: 2px;
-  background: #2e363f;
-  color: #aeb9c2;
+  background: ${PALETTE.btnTop};
+  color: ${PALETTE.btnText};
   font: 600 9px/1 var(--mono);
   cursor: pointer;
   opacity: 0;
@@ -237,7 +261,7 @@ textarea::selection { background: #6d3a2d; }
   display: block;
   text-align: center;
   border: 1px solid ${PALETTE.amberDeep};
-  background: linear-gradient(180deg, #f9d491, ${PALETTE.amber} 60%, #e5b559);
+  background: linear-gradient(180deg, ${PALETTE.amberLitTop}, ${PALETTE.amber} 60%, ${PALETTE.amberLitBottom});
   color: ${PALETTE.ink};
   font: 700 calc(var(--cell) * .26)/1.5 var(--mono);
   border-radius: 2px;
@@ -254,6 +278,10 @@ textarea::selection { background: #6d3a2d; }
   height: calc(var(--cell) * var(--rows));
 }
 .face { flex: 1; display: block; min-width: 0; }
+/* Face artwork, coloured from the scheme rather than from attributes. */
+.face .ink-line { stroke: ${PALETTE.amber}; }
+.face .lit { fill: ${PALETTE.amber}; }
+.face .lit-text { fill: ${PALETTE.ink}; }
 
 /* ---- palette thumbnail mode ---- */
 :host([thumb]) { pointer-events: none; }
@@ -272,7 +300,7 @@ textarea::selection { background: #6d3a2d; }
   display: block;
   height: calc(var(--line) * .42);
   margin-bottom: calc(var(--line) * .58);
-  background: #4d5560;
+  background: ${PALETTE.metal};
   text-decoration: none;
 }
 
@@ -313,6 +341,19 @@ textarea::selection { background: #6d3a2d; }
 :host([lit]) .face-label b { color: #ffe6ad; }
 .face-label .level { display: block; color: ${PALETTE.comment}; }
 :host([lit]) .face-label .level { color: #f3c46f; }
+
+/* ---- not-connected pins ----
+   Drawn because the manual draws them, but they go nowhere: no metal, no tap
+   target, and tryConnect refuses them. */
+.pin[data-type="nc"] {
+  background: none;
+  border-color: transparent;
+  border-left: 2px dotted ${PALETTE.metal};
+  opacity: .5;
+  cursor: default;
+  pointer-events: none;
+}
+.pin[data-type="nc"]::before { content: none; }
 
 /* ---- touch targets ----
    The visible pin tab is 9px wide, far below a usable tap size. Grow the hit
@@ -481,24 +522,26 @@ class DX300 extends SzPart {
   static meta = PART_META['dx-300'];
 
   bodyHTML() {
-    const A = PALETTE.amber;
     /* full-bleed 60 x 100 viewBox == the 3 x 5 footprint, so the three rows
-       land exactly on the pins; the artwork is inset inside the viewBox. */
+       land exactly on the pins; the artwork is inset inside the viewBox.
+       Colours come from classes rather than presentation attributes: browsers
+       differ on whether var() resolves in an attribute, and the scheme has to
+       reach this drawing like everything else. */
     const rows = [20, 50, 80];
     const flags = rows.map(y => `<path d="M40 ${y - 6} h9 l4 6 -4 6 H40 z"/>`).join('');
     const digits = rows.map(y => `<text x="44.5" y="${y + 3.2}">0</text>`).join('');
     return `<svg class="face" viewBox="0 0 60 100" preserveAspectRatio="none" aria-hidden="true">
-      <g fill="none" stroke="${A}" stroke-width="1.4" stroke-linecap="butt">
+      <g class="ink-line" fill="none" stroke-width="1.4" stroke-linecap="butt">
         <path d="M0 20 H10 M0 80 H10 M10 20 V80 M0 50 H17"/>
         <path d="M25 50 H34 M34 20 V80 M34 20 H40 M34 80 H40"/>
         <path d="M53 20 H60 M53 50 H60 M53 80 H60"/>
         <path d="M39 37 h3 v-6 h4 v6 h3"/>
         <path d="M39 67 h3 v-6 h4 v6 h3"/>
       </g>
-      <circle cx="10" cy="50" r="1.8" fill="${A}"/>
-      <rect x="17" y="46" width="8" height="8" fill="${A}"/>
-      <g fill="${A}">${flags}</g>
-      <g fill="${PALETTE.ink}" font-family="monospace" font-size="8.5" font-weight="700"
+      <circle class="lit" cx="10" cy="50" r="1.8"/>
+      <rect class="lit" x="17" y="46" width="8" height="8"/>
+      <g class="lit">${flags}</g>
+      <g class="lit-text" font-family="monospace" font-size="8.5" font-weight="700"
          text-anchor="middle">${digits}</g>
     </svg>`;
   }
@@ -588,6 +631,42 @@ class LC70G86 extends SzGate {
   static meta = PART_META['lc-70g86'];
 }
 
+/* ---------- parts that are a face and pins, nothing more -----------------
+   Eleven of the manual's components are the same shape: a name, a footprint
+   and a pin list, with no program and no readouts. A class each would be
+   eleven copies of one method, so they are built from PART_META instead.
+   Anything with behaviour - a program, cells, a per-instance pin - still gets
+   a real class above.
+   ------------------------------------------------------------------------ */
+class SzFixed extends SzPart {
+  bodyHTML() {
+    const kind = this.meta.kind ? `<small>${esc(this.meta.kind)}</small>` : '';
+    return `<div class="face-label"><b>${esc(this.meta.name)}</b>${kind}</div>`;
+  }
+}
+
+/** Register one data-only part. Returns the class, for the export list. */
+function definePart(tag) {
+  const meta = PART_META[tag];
+  if (!meta) throw new Error(`definePart: no PART_META for ${tag}`);
+  // A custom element name must contain a hyphen. Without this the registry
+  // throws mid-module and every part on the page silently stays a fallback,
+  // which is a long way from the actual mistake.
+  if (!/^[a-z][a-z0-9]*(-[a-z0-9]+)+$/.test(tag)) {
+    throw new Error(`definePart: "${tag}" is not a valid custom element name (needs a hyphen)`);
+  }
+  const cls = class extends SzFixed { static meta = meta; };
+  Object.defineProperty(cls, 'name', { value: tag });
+  customElements.define(tag, cls);
+  return cls;
+}
+
+/** Every part built from data alone. */
+const FIXED_PARTS = [
+  'mc-4010', 'dt-2415', 'c2s-rf901', 'fm-blaster', 'n4pb-8000',
+  'lx-700', 'lx-910c', 'd80c010-f', 'kuji-ek1', 'pga-33x6', 'nlp-2',
+];
+
 /* ---------- board ------------------------------------------------------- */
 const BOARD_CSS = `
 circuit-board {
@@ -597,13 +676,13 @@ circuit-board {
   display: block;
   overflow: auto;
   touch-action: pan-x pan-y;
-  background-color: #0b1114;
+  background-color: ${PALETTE.board};
   background-image:
-    linear-gradient(45deg, rgba(52,116,106,.20) 25%, transparent 25%, transparent 75%, rgba(52,116,106,.20) 75%),
-    linear-gradient(45deg, rgba(52,116,106,.20) 25%, transparent 25%, transparent 75%, rgba(52,116,106,.20) 75%);
+    linear-gradient(45deg, ${PALETTE.boardGrid} 25%, transparent 25%, transparent 75%, ${PALETTE.boardGrid} 75%),
+    linear-gradient(45deg, ${PALETTE.boardGrid} 25%, transparent 25%, transparent 75%, ${PALETTE.boardGrid} 75%);
   background-size: 4px 4px, 4px 4px;
   background-position: 0 0, 2px 2px;
-  box-shadow: inset 0 0 70px rgba(0,0,0,.75);
+  box-shadow: ${PALETTE.boardShadow};
 }
 circuit-board > svg.wires {
   position: absolute;
@@ -617,8 +696,14 @@ circuit-board[static] { overflow: visible; touch-action: auto; box-shadow: none;
 circuit-board[static] .wire-hit { pointer-events: none; cursor: default; }
 circuit-board .wire-hit { stroke: transparent; fill: none; pointer-events: stroke; cursor: pointer; }
 circuit-board g.wire path { fill: none; stroke-linejoin: miter; stroke-linecap: butt; }
+/* Conductor stack, outermost first. Widths are set in script because they
+   scale with the cell; the colours live here so they follow the scheme. */
+circuit-board g.wire .w-case   { stroke: ${PALETTE.wireCase}; }
+circuit-board g.wire .w-body   { stroke: ${PALETTE.wireBody}; }
+circuit-board g.wire .w-groove { stroke: ${PALETTE.wireGroove}; }
+circuit-board g.wire .w-core   { stroke: ${PALETTE.wireCore}; }
 circuit-board g.wire:hover .w-body { stroke: ${PALETTE.amber}; }
-circuit-board g.wire .w-end { stroke: #06110e; }
+circuit-board g.wire .w-end { stroke: ${PALETTE.wireEnd}; }
 circuit-board path.draft { stroke: ${PALETTE.amber}; stroke-width: 2; stroke-dasharray: 5 4; fill: none; }
 circuit-board .toast {
   position: absolute;
@@ -626,10 +711,10 @@ circuit-board .toast {
   transform: translateX(-50%);
   z-index: 60;
   padding: 6px 12px;
-  border: 1px solid #7a2f27;
+  border: 1px solid ${PALETTE.alertEdge};
   border-radius: 3px;
-  background: #2a1614;
-  color: #f0a598;
+  background: ${PALETTE.alertBg};
+  color: ${PALETTE.alert};
   font: 500 12px/1.3 var(--mono);
   pointer-events: none;
   opacity: 0;
@@ -639,14 +724,15 @@ circuit-board .toast[open] { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { circuit-board .toast { transition: none; } }
 `;
 
-/* conductor stack, outermost first: [class, width factor, colour] */
-/* Conductor stack, outermost first: [class, width factor, colour].
-   Green to read as a board trace rather than a bare metal jumper. */
+/* Conductor stack, outermost first: [class, width factor]. Green, to read as a
+   board trace rather than a bare metal jumper. The colours are in BOARD_CSS,
+   keyed on these classes, so they follow the page's colour scheme - setting
+   them as presentation attributes here would pin them to one theme. */
 const RIBBON = [
-  ['w-case', 1.00, '#06110e'],
-  ['w-body', 0.86, '#3fae93'],
-  ['w-groove', 0.52, '#24705f'],
-  ['w-core', 0.20, '#8fe4cf']
+  ['w-case', 1.00],
+  ['w-body', 0.86],
+  ['w-groove', 0.52],
+  ['w-core', 0.20]
 ];
 
 class CircuitBoard extends HTMLElement {
@@ -803,6 +889,9 @@ class CircuitBoard extends HTMLElement {
     if (partA === partB) return reject('A part cannot wire to itself.', pinB);
 
     const ta = pinA.dataset.type, tb = pinB.dataset.type;
+    if (ta === 'nc' || tb === 'nc') {
+      return reject('That pin is not connected to anything inside the part.', pinB);
+    }
     if (ta !== tb) {
       const label = t => (t === 'xbus' ? 'XBus' : 'simple I/O');
       return reject(`${label(ta)} connects only to ${label(ta)} — ${pinB.dataset.pin} is ${label(tb)}.`, pinB);
@@ -887,7 +976,6 @@ class CircuitBoard extends HTMLElement {
 
     wire.layers.forEach((p, i) => {
       p.setAttribute('d', d);
-      p.setAttribute('stroke', RIBBON[i][2]);
       p.setAttribute('stroke-width', (gauge * RIBBON[i][1]).toFixed(2));
     });
     wire.hit.setAttribute('d', d);
@@ -896,7 +984,6 @@ class CircuitBoard extends HTMLElement {
     const stub = Math.max(4, cell * 0.13);
     [[a, wire.ends[0]], [b, wire.ends[1]]].forEach(([pt, el]) => {
       el.setAttribute('d', `M${pt.x} ${pt.y} H${pt.x + pt.dir * stub}`);
-      el.setAttribute('stroke', '#1a2229');
       el.setAttribute('stroke-width', (gauge * 1.3).toFixed(2));
     });
   }
@@ -1052,6 +1139,8 @@ customElements.define('lc-70g08', LC70G08);
 customElements.define('lc-70g32', LC70G32);
 customElements.define('lc-70g86', LC70G86);
 
+const FIXED = Object.fromEntries(FIXED_PARTS.map(tag => [tag, definePart(tag)]));
+
 /* ---------- scope trace -------------------------------------------------
    A rolling plot of what a pin has been doing, one step per time unit. The
    manual prints this as a screenshot; here it is drawn from the run.
@@ -1156,6 +1245,10 @@ export {
   LC70G08,
   LC70G32,
   LC70G86,
+  SzFixed,
+  definePart,
+  FIXED_PARTS,
+  FIXED,
   PALETTE,
   highlight,
   routeAvoiding,

@@ -1,6 +1,7 @@
 ---
 title: C2S-RF901 radio
 description: Chennai Comms wireless transceiver with a non-blocking receive buffer.
+board: true
 order: 8
 ---
 
@@ -28,10 +29,12 @@ All data received is passed through an internal non-blocking buffer.
 Transmit and receive pins are located on the same side of the part, so the
 component does not have to be rotated awkwardly to fit a design.
 
+<div class="chip-figure" data-part="c2s-rf901" aria-label="C2S-RF901 pin layout: receive and transmit XBus pins, both on the same side.">
 <div class="pinout" role="img" aria-label="C2S-RF901 pin layout: receive and transmit XBus pins, both on the same side.">
 <div class="pinout-col"><span class="pin pin-x">receive</span><span class="pin pin-x">transmit</span></div>
 <div class="pinout-chip"><span class="pinout-name">C2S-RF901</span></div>
 <div class="pinout-col"></div>
+</div>
 </div>
 
 | Pin | Type | Direction |

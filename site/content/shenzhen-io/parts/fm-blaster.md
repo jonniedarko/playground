@@ -1,6 +1,7 @@
 ---
 title: FM Blaster sound module
 description: FM/iX tone generator - one voice, ten preset instruments, MIDI-style note numbers.
+board: true
 order: 9
 ---
 
@@ -22,10 +23,12 @@ consumer keyboards.
 
 ## Pin configuration
 
+<div class="chip-figure" data-part="fm-blaster" aria-label="FM Blaster pin layout: a note input pin and an instrument input pin.">
 <div class="pinout" role="img" aria-label="FM Blaster pin layout: a note input pin and an instrument input pin.">
 <div class="pinout-col"><span class="pin pin-x">note</span><span class="pin pin-x">instrument</span></div>
 <div class="pinout-chip"><span class="pinout-name">FM Blaster</span></div>
 <div class="pinout-col"></div>
+</div>
 </div>
 
 | Pin | Purpose |

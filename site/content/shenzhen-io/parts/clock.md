@@ -1,6 +1,7 @@
 ---
 title: DT2415 incremental clock
 description: Denver Timekeeping's real-time clock - emits the number of 15-minute increments since midnight.
+board: true
 order: 7
 ---
 
@@ -15,10 +16,12 @@ order: 7
 
 ## Pin configuration
 
+<div class="chip-figure" data-part="dt-2415" aria-label="DT2415 pin layout: two unconnected pins on the left, one time index simple I/O output on the right.">
 <div class="pinout" role="img" aria-label="DT2415 pin layout: two unconnected pins on the left, one time index simple I/O output on the right.">
 <div class="pinout-col"><span class="pin pin-nc">N/C</span><span class="pin pin-nc">N/C</span></div>
 <div class="pinout-chip"><span class="pinout-name">DT2415</span></div>
 <div class="pinout-col"><span class="pin pin-s">time index</span></div>
+</div>
 </div>
 
 | Pin | Type | Purpose |

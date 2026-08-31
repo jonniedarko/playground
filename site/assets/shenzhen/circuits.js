@@ -247,23 +247,45 @@ const mcuCompare = {
 const catalogue = {
   cell: 26,
   label:
-    'The component catalogue: MC4000, MC4000X and MC6000 microcontrollers; the ' +
-    'DX300 expander, 100P-14 RAM, 200P-14 ROM and a generic I/O terminal; and ' +
-    'the four LC70Gxx logic gates.',
+    'The component catalogue: MC4000, MC4000X, MC6000 and MC4010 processors; ' +
+    'the DX300 expander, 100P-14 RAM, 200P-14 ROM and a generic I/O terminal; ' +
+    'the four LC70Gxx logic gates; and the specialist parts - DT2415 clock, ' +
+    'C2S-RF901 radio, FM Blaster, N4PB-8000 buttons, LX700 and LX910C ' +
+    'displays, D80C010-F security key, KUJI-EK1 oracle, PGA33X6 logic array ' +
+    'and Raven NLP2.',
+  // Columns are spaced by footprint plus three cells: a pin's trace label
+  // sticks out past the part, so parts packed to their own width collide at
+  // the labels rather than at the bodies.
   parts: [
-    // The three microcontrollers look alike at a glance, so name each one in
-    // its own code panel rather than leaving three blank boxes.
+    // The microcontrollers look alike at a glance, so name each one in its own
+    // code panel rather than leaving four blank boxes.
     { t: 'mc-4000', x: 0, y: 0, code: '# MC4000\n# 9 lines\n# acc' },
-    { t: 'mc-4000x', x: 7, y: 0, code: '# MC4000X\n# XBus only\n# 9 lines' },
-    { t: 'mc-6000', x: 14, y: 0, code: '# MC6000\n# 14 lines\n# acc + dat' },
+    { t: 'mc-4000x', x: 9, y: 0, code: '# MC4000X\n# XBus only\n# 9 lines' },
+    { t: 'mc-6000', x: 18, y: 0, code: '# MC6000\n# 14 lines\n# acc + dat' },
+
     { t: 'dx-300', x: 0, y: 7 },
-    { t: 'p-100p14', x: 4, y: 7 },
-    { t: 'p-200p14', x: 9, y: 7 },
-    { t: 'io-terminal', x: 14, y: 8, label: 'button', type: 'simple', side: 'right' },
+    { t: 'p-100p14', x: 6, y: 7 },
+    { t: 'p-200p14', x: 13, y: 7 },
+    { t: 'io-terminal', x: 20, y: 8, label: 'button', type: 'simple', side: 'right' },
+
     { t: 'lc-70g04', x: 0, y: 13 },
-    { t: 'lc-70g08', x: 3, y: 13 },
-    { t: 'lc-70g32', x: 6, y: 13 },
-    { t: 'lc-70g86', x: 9, y: 13 },
+    { t: 'lc-70g08', x: 5, y: 13 },
+    { t: 'lc-70g32', x: 10, y: 13 },
+    { t: 'lc-70g86', x: 15, y: 13 },
+    { t: 'mc-4010', x: 20, y: 13 },
+
+    { t: 'dt-2415', x: 0, y: 19 },
+    { t: 'c2s-rf901', x: 6, y: 19 },
+    { t: 'fm-blaster', x: 13, y: 19 },
+    { t: 'n4pb-8000', x: 20, y: 19 },
+
+    { t: 'lx-700', x: 0, y: 24 },
+    { t: 'lx-910c', x: 6, y: 24 },
+    { t: 'd80c010-f', x: 13, y: 24 },
+    { t: 'kuji-ek1', x: 19, y: 24 },
+
+    { t: 'pga-33x6', x: 0, y: 30 },
+    { t: 'nlp-2', x: 8, y: 30 },
   ],
   wires: [],
 }

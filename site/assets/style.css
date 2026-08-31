@@ -28,6 +28,61 @@
 
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
+  /* ---- hardware palette ----
+     One set of tokens for everything that draws a circuit: the components in
+     assets/shenzhen/, the frames around them, and the simulator chrome.
+     Custom properties inherit into shadow DOM, so defining them here reaches
+     inside every part without the components knowing the site exists.
+
+     This block is the daylight scheme. The dark scheme below is the authentic
+     one - a board really is near-black - so light is a deliberate translation
+     rather than an inversion: the same object photographed on a bright bench.
+     Lit surfaces (the amber readouts) stay amber in both, because a lit
+     display does not change colour with the room. */
+  --sz-board: #e9ece6;
+  --sz-board-grid: rgb(52 116 106 / 0.18);
+  --sz-board-shadow: inset 0 0 60px rgb(90 100 96 / 0.16);
+  --sz-frame: #f1f3ee;
+
+  --sz-bezel-top: #ced4db;
+  --sz-bezel-mid: #aeb7c1;
+  --sz-bezel-bottom: #8d97a3;
+  --sz-body-top: #fbfcfd;
+  --sz-body-bottom: #e6eaef;
+  --sz-edge: #98a3ae;
+
+  --sz-amber: #e0a52a;
+  --sz-amber-deep: #96690f;
+  --sz-amber-lit-top: #f7dda4;
+  --sz-amber-lit-bottom: #d29b28;
+
+  --sz-trace: #1f7a66;
+  --sz-ink: #241d14;
+  --sz-code: #262a31;
+  --sz-comment: #6a727c;
+  --sz-metal: #9aa5b0;
+  --sz-metal-lit: #d8b45f;
+  --sz-exec-bar: #f7ddcf;
+  --sz-code-bg: #f4f6f8;
+  --sz-mnemonic: #10141a;
+  --sz-alert-bg: #fbe9e6;
+  --sz-alert-edge: #d3a49c;
+
+  --sz-wire-case: #cdd4d9;
+  --sz-wire-body: #2f9c85;
+  --sz-wire-groove: #17604f;
+  --sz-wire-core: #7fd8c0;
+  --sz-wire-end: #b6bfc7;
+
+  --sz-panel: #eef0ec;
+  --sz-panel-line: #d4d8d2;
+  --sz-btn-top: #fdfdfc;
+  --sz-btn-bottom: #e7e9e5;
+  --sz-btn-edge: #c4c9c2;
+  --sz-btn-text: #363b41;
+  --sz-readout: #5f6771;
+  --sz-alert: #a8372a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -45,6 +100,52 @@
     --accent-text: #f4a077;
     --code-bg: #14171c;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px rgb(0 0 0 / 0.35);
+
+    /* Hardware, dark scheme: the authentic look - a board really is
+       near-black. See the daylight values on :root for the reasoning. */
+    --sz-board: #0b1114;
+    --sz-board-grid: rgb(52 116 106 / 0.20);
+    --sz-board-shadow: inset 0 0 70px rgb(0 0 0 / 0.75);
+    --sz-frame: #0b1114;
+
+    --sz-bezel-top: #525d67;
+    --sz-bezel-mid: #303841;
+    --sz-bezel-bottom: #232a31;
+    --sz-body-top: #1d232a;
+    --sz-body-bottom: #12171c;
+    --sz-edge: #05080a;
+
+    --sz-amber: #f3c46f;
+    --sz-amber-deep: #b8862f;
+    --sz-amber-lit-top: #f9d491;
+    --sz-amber-lit-bottom: #e5b559;
+
+    --sz-trace: #2f9c85;
+    --sz-ink: #241d14;
+    --sz-code: #e4e0d5;
+    --sz-comment: #8b9189;
+    --sz-metal: #b7c1c8;
+    --sz-metal-lit: #e2cb96;
+    --sz-exec-bar: #5a2a20;
+    --sz-code-bg: #0c1215;
+    --sz-mnemonic: #ffffff;
+    --sz-alert-bg: #2a1614;
+    --sz-alert-edge: #7a2f27;
+
+    --sz-wire-case: #06110e;
+    --sz-wire-body: #3fae93;
+    --sz-wire-groove: #24705f;
+    --sz-wire-core: #8fe4cf;
+    --sz-wire-end: #06110e;
+
+    --sz-panel: #0d151a;
+    --sz-panel-line: #1e2a30;
+    --sz-btn-top: #2a343d;
+    --sz-btn-bottom: #1b232a;
+    --sz-btn-edge: #0a0f13;
+    --sz-btn-text: #cfd9e0;
+    --sz-readout: #7f8d98;
+    --sz-alert: #f0a598;
   }
 }
 
@@ -62,6 +163,52 @@
   --accent-text: #f4a077;
   --code-bg: #14171c;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px rgb(0 0 0 / 0.35);
+
+  /* Hardware, dark scheme: the authentic look - a board really is
+     near-black. See the daylight values on :root for the reasoning. */
+  --sz-board: #0b1114;
+  --sz-board-grid: rgb(52 116 106 / 0.20);
+  --sz-board-shadow: inset 0 0 70px rgb(0 0 0 / 0.75);
+  --sz-frame: #0b1114;
+
+  --sz-bezel-top: #525d67;
+  --sz-bezel-mid: #303841;
+  --sz-bezel-bottom: #232a31;
+  --sz-body-top: #1d232a;
+  --sz-body-bottom: #12171c;
+  --sz-edge: #05080a;
+
+  --sz-amber: #f3c46f;
+  --sz-amber-deep: #b8862f;
+  --sz-amber-lit-top: #f9d491;
+  --sz-amber-lit-bottom: #e5b559;
+
+  --sz-trace: #2f9c85;
+  --sz-ink: #241d14;
+  --sz-code: #e4e0d5;
+  --sz-comment: #8b9189;
+  --sz-metal: #b7c1c8;
+  --sz-metal-lit: #e2cb96;
+  --sz-exec-bar: #5a2a20;
+  --sz-code-bg: #0c1215;
+  --sz-mnemonic: #ffffff;
+  --sz-alert-bg: #2a1614;
+  --sz-alert-edge: #7a2f27;
+
+  --sz-wire-case: #06110e;
+  --sz-wire-body: #3fae93;
+  --sz-wire-groove: #24705f;
+  --sz-wire-core: #8fe4cf;
+  --sz-wire-end: #06110e;
+
+  --sz-panel: #0d151a;
+  --sz-panel-line: #1e2a30;
+  --sz-btn-top: #2a343d;
+  --sz-btn-bottom: #1b232a;
+  --sz-btn-edge: #0a0f13;
+  --sz-btn-text: #cfd9e0;
+  --sz-readout: #7f8d98;
+  --sz-alert: #f0a598;
 }
 
 *,
@@ -174,8 +321,71 @@ a:hover { text-decoration-thickness: 2px; }
 .topbar-actions {
   margin-left: auto;
   display: flex;
+  align-items: center;
   gap: 0.25rem;
 }
+
+/* ---- build stamp ----
+   When the site was last changed, linking to the commit. On a phone there is
+   no room beside the menu and search, so only the date survives; the width
+   earns back the time and the short SHA. */
+
+.build-stamp {
+  display: flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  /* A 44px tap target without a 44px-tall box pushing the bar around. */
+  min-height: 2.75rem;
+  padding: 0 0.5rem;
+  align-self: stretch;
+  align-items: center;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  white-space: nowrap;
+  border-radius: var(--radius);
+}
+
+.build-stamp:hover,
+.build-stamp:focus-visible { color: var(--accent-text); }
+
+/* On a phone the bar has no room for this without squeezing the site name to
+   an ellipsis, so it drops out and the footer carries it instead. */
+.topbar-actions .build-stamp { display: none; }
+.stamp-time,
+.topbar-actions .stamp-sha { display: none; }
+
+/* 27rem is where the date fits without the site name losing characters -
+   measured, not guessed. */
+@media (min-width: 27rem) {
+  .topbar-actions .build-stamp { display: flex; }
+}
+
+@media (min-width: 34rem) {
+  .stamp-time { display: inline; }
+}
+
+@media (min-width: 46rem) {
+  .topbar-actions .stamp-sha {
+    display: inline;
+    padding: 0.1rem 0.3rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-muted);
+  }
+}
+
+/* The footer copy is always present and always complete. */
+.build-stamp-footer {
+  display: inline-flex;
+  min-height: 0;
+  padding: 0;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+}
+.build-stamp-footer .stamp-sha { display: inline; }
 
 .icon-btn {
   display: grid;
@@ -918,7 +1128,7 @@ td code { white-space: nowrap; }
   padding: 0.75rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: #0b1114;
+  background: var(--sz-frame);
   /* The widest part is ~340px with its pin labels; scroll inside the frame
      rather than pushing the page sideways on a narrow phone. */
   overflow-x: auto;
@@ -971,16 +1181,16 @@ td code { white-space: nowrap; }
   gap: 0.375rem;
   margin-top: 0.75rem;
   padding-top: 0.75rem;
-  border-top: 1px solid #1e2a30;
+  border-top: 1px solid var(--sz-panel-line);
 }
 
 .sim-btn {
   min-height: 2.75rem;
   padding: 0.4rem 0.9rem;
-  border: 1px solid #0a0f13;
+  border: 1px solid var(--sz-btn-edge);
   border-radius: 5px;
-  background: linear-gradient(180deg, #2a343d, #1b232a);
-  color: #cfd9e0;
+  background: linear-gradient(180deg, var(--sz-btn-top), var(--sz-btn-bottom));
+  color: var(--sz-btn-text);
   font-family: var(--font-mono);
   font-size: 0.78rem;
   font-weight: 600;
@@ -989,33 +1199,33 @@ td code { white-space: nowrap; }
   cursor: pointer;
 }
 
-.sim-btn:hover { color: #f3c46f; border-color: #3d4a55; }
-.sim-btn:focus-visible { outline: 2px solid #f3c46f; outline-offset: 2px; }
+.sim-btn:hover { color: var(--sz-amber-deep); border-color: var(--sz-bezel-mid); }
+.sim-btn:focus-visible { outline: 2px solid var(--sz-amber-deep); outline-offset: 2px; }
 .sim-play { min-width: 5.5rem; }
 
 /* An input toggle reads as a switch: lit when it is feeding the circuit. */
 .sim-input[aria-pressed='true'] {
-  background: linear-gradient(180deg, #b8862f, #6d4f1c);
-  border-color: #f3c46f;
-  color: #ffe6ad;
+  background: linear-gradient(180deg, var(--sz-amber), var(--sz-amber-deep));
+  border-color: var(--sz-amber-deep);
+  color: var(--sz-ink);
 }
 
 .sim-readout {
   flex: 1 1 100%;
   margin: 0.25rem 0 0;
-  color: #7f8d98;
+  color: var(--sz-readout);
   font-family: var(--font-mono);
   font-size: 0.75rem;
   line-height: 1.5;
 }
 
 .circuit-figure[data-sim-state='deadlock'] .sim-readout,
-.circuit-figure[data-sim-state='error'] .sim-readout { color: #f0a598; }
+.circuit-figure[data-sim-state='error'] .sim-readout { color: var(--sz-alert); }
 
 .sim-scope {
   margin-top: 0.75rem;
   padding-top: 0.5rem;
-  border-top: 1px solid #1e2a30;
+  border-top: 1px solid var(--sz-panel-line);
 }
 
 @media (min-width: 48rem) {
@@ -1032,7 +1242,7 @@ td code { white-space: nowrap; }
   margin: 0 0 1.5rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: #0b1114;
+  background: var(--sz-frame);
   /* On a phone the workbench is a panel that fits one screen: palette at the
      top, board taking whatever is left, controls at the bottom in thumb reach.
      Capping the height here is what keeps the controls reachable - a sticky bar
@@ -1061,7 +1271,7 @@ td code { white-space: nowrap; }
   padding: 0.625rem;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  border-bottom: 1px solid #1e2a30;
+  border-bottom: 1px solid var(--sz-panel-line);
   scrollbar-width: thin;
 }
 
@@ -1071,10 +1281,10 @@ td code { white-space: nowrap; }
   /* A short name like OR would otherwise land just under the 44px minimum. */
   min-width: 2.75rem;
   padding: 0.4rem 0.8rem;
-  border: 1px solid #0a0f13;
+  border: 1px solid var(--sz-btn-edge);
   border-radius: 5px;
-  background: linear-gradient(180deg, #2a343d, #1b232a);
-  color: #cfd9e0;
+  background: linear-gradient(180deg, var(--sz-btn-top), var(--sz-btn-bottom));
+  color: var(--sz-btn-text);
   font-family: var(--font-mono);
   font-size: 0.75rem;
   font-weight: 600;
@@ -1082,7 +1292,7 @@ td code { white-space: nowrap; }
   white-space: nowrap;
   cursor: pointer;
 }
-.ide-chip:focus-visible { outline: 2px solid #f3c46f; outline-offset: 2px; }
+.ide-chip:focus-visible { outline: 2px solid var(--sz-amber-deep); outline-offset: 2px; }
 
 .ide-stage {
   flex: 1 1 auto;
@@ -1107,12 +1317,12 @@ td code { white-space: nowrap; }
   align-items: center;
   gap: 0.375rem;
   padding: 0.625rem;
-  border-top: 1px solid #1e2a30;
+  border-top: 1px solid var(--sz-panel-line);
 }
 
 /* The bar people poke at constantly. It sits directly above the file bar at
    the bottom of the panel, which the height cap keeps within thumb reach. */
-.ide-bar-sim { background: #0d151a; }
+.ide-bar-sim { background: var(--sz-panel); }
 .ide-palette, .ide-bar { flex: 0 0 auto; }
 
 .ide-zoom { display: flex; gap: 0.25rem; }
@@ -1121,15 +1331,15 @@ td code { white-space: nowrap; }
 .ide-inputs { display: flex; flex-wrap: wrap; gap: 0.375rem; }
 
 .ide-danger[disabled] { opacity: 0.4; cursor: default; }
-.ide-danger:not([disabled]) { border-color: #7d3b34; color: #f0a598; }
+.ide-danger:not([disabled]) { border-color: var(--sz-alert-edge); color: var(--sz-alert); }
 
 .ide-select {
   min-height: 2.75rem;
   padding: 0.4rem 0.6rem;
-  border: 1px solid #0a0f13;
+  border: 1px solid var(--sz-btn-edge);
   border-radius: 5px;
-  background: #1b232a;
-  color: #cfd9e0;
+  background: var(--sz-btn-bottom);
+  color: var(--sz-btn-text);
   font-family: var(--font-mono);
   font-size: 0.78rem;
 }
@@ -1138,7 +1348,7 @@ td code { white-space: nowrap; }
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #7f8d98;
+  color: var(--sz-readout);
   font-family: var(--font-mono);
   font-size: 0.7rem;
   text-transform: uppercase;
@@ -1149,13 +1359,13 @@ td code { white-space: nowrap; }
   flex: 1 1 100%;
   margin: 0.25rem 0 0;
   min-height: 1.1em;
-  color: #7f8d98;
+  color: var(--sz-readout);
   font-family: var(--font-mono);
   font-size: 0.72rem;
 }
 
 .ide[data-sim-state='deadlock'] .sim-readout,
-.ide[data-sim-state='error'] .sim-readout { color: #f0a598; }
+.ide[data-sim-state='error'] .sim-readout { color: var(--sz-alert); }
 
 /* ---- full-screen program editor ----
    Sized in dvh, not vh: on a phone the on-screen keyboard shrinks the visual
@@ -1169,7 +1379,7 @@ td code { white-space: nowrap; }
   align-items: flex-end;
   justify-content: center;
   padding: 0.75rem;
-  background: rgba(4, 8, 10, 0.72);
+  background: rgb(10 14 16 / 0.68);
 }
 /* A class-level `display` outranks the UA rule for [hidden], so say it here or
    the editor is open on load. */
@@ -1182,14 +1392,14 @@ td code { white-space: nowrap; }
   width: min(40rem, 100%);
   max-height: 92dvh;
   padding: 0.875rem;
-  border: 1px solid #24313a;
+  border: 1px solid var(--sz-bezel-mid);
   border-radius: var(--radius);
-  background: #0d151a;
+  background: var(--sz-panel);
 }
 
 .ide-modal-title {
   margin: 0;
-  color: #cfd9e0;
+  color: var(--sz-btn-text);
   font-family: var(--font-mono);
   font-size: 0.85rem;
   font-weight: 600;
@@ -1203,10 +1413,10 @@ td code { white-space: nowrap; }
   /* Shrinks with the visual viewport instead of hiding behind the keyboard. */
   height: 38dvh;
   padding: 0.625rem;
-  border: 1px solid #24313a;
+  border: 1px solid var(--sz-bezel-mid);
   border-radius: 5px;
-  background: #060b0e;
-  color: #d8e2e8;
+  background: var(--sz-code-bg);
+  color: var(--sz-code);
   font-family: var(--font-mono);
   font-size: 0.85rem;
   line-height: 1.55;
@@ -1215,17 +1425,17 @@ td code { white-space: nowrap; }
 
 .ide-modal-count {
   margin: 0;
-  color: #7f8d98;
+  color: var(--sz-readout);
   font-family: var(--font-mono);
   font-size: 0.72rem;
 }
-.ide-modal-count.over { color: #f0a598; }
+.ide-modal-count.over { color: var(--sz-alert); }
 
 .ide-primary {
   align-self: stretch;
-  background: linear-gradient(180deg, #b8862f, #6d4f1c);
-  border-color: #f3c46f;
-  color: #ffe6ad;
+  background: linear-gradient(180deg, var(--sz-amber), var(--sz-amber-deep));
+  border-color: var(--sz-amber-deep);
+  color: var(--sz-ink);
 }
 
 @media (min-width: 48rem) {

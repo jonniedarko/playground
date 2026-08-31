@@ -1,6 +1,7 @@
 ---
 title: Displays and inputs
 description: The PartsPlus+ catalogue page - N4PB-8000 buttons, LX700 numeric display and LX910C custom LCD.
+board: true
 order: 10
 ---
 
@@ -25,6 +26,15 @@ return `-999` when there is no event waiting.
 A press produces the button's number; a release produces its negation. Polling
 returns `-999` between events.
 
+<div class="chip-figure" data-part="n4pb-8000" aria-label="N4PB-8000 pin layout: four non-blocking XBus pins, two on each side.">
+<div class="pinout" role="img" aria-label="N4PB-8000 pin layout: four non-blocking XBus pins, two on each side.">
+<div class="pinout-col"><span class="pin pin-x">x0</span><span class="pin pin-x">x1</span></div>
+<div class="pinout-chip"><span class="pinout-name">N4PB-8000</span></div>
+<div class="pinout-col"><span class="pin pin-x">x2</span><span class="pin pin-x">x3</span></div>
+</div>
+</div>
+
+
 ## LX700 numeric display
 
 *LuX Industry.* ¥4 each.
@@ -37,6 +47,15 @@ returns `-999` between events.
 | Write | `-199` to `199` | Display the value |
 | Write | `-999` | Turn off all segments |
 
+<div class="chip-figure" data-part="lx-700" aria-label="LX700 pin layout: one XBus input pin.">
+<div class="pinout" role="img" aria-label="LX700 pin layout: one XBus input pin.">
+<div class="pinout-col"><span class="pin pin-x">x0</span></div>
+<div class="pinout-chip"><span class="pinout-name">LX700</span></div>
+<div class="pinout-col"></div>
+</div>
+</div>
+
+
 ## LX910C custom LCD
 
 *LuX Industry.* ¥8 each.
@@ -46,6 +65,15 @@ returns `-999` between events.
 
 The part exposes four kinds of pin. `cN` drives segments, `tN` reports touches,
 `qN` queries a segment's state, and each is addressed by segment number.
+
+<div class="chip-figure" data-part="lx-910c" aria-label="LX910C pin layout: control, touch and query XBus pins on the left.">
+<div class="pinout" role="img" aria-label="LX910C pin layout: control, touch and query XBus pins on the left.">
+<div class="pinout-col"><span class="pin pin-x">c0</span><span class="pin pin-x">t0</span><span class="pin pin-x">q0</span></div>
+<div class="pinout-chip"><span class="pinout-name">LX910C</span></div>
+<div class="pinout-col"></div>
+</div>
+</div>
+
 
 | Pin | Direction | Value | Result |
 | --- | --- | --- | --- |
