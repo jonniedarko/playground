@@ -235,21 +235,43 @@ export class Machine {
     return this.parts.find((p) => p.tag === 'io-terminal' && p.label === label)
   }
 
-  /** Set the level an input terminal presents to the circuit. */
+  /**
+   * Set what an input terminal presents to the circuit.
+   *
+   * A simple terminal is a level, so this replaces it. An XBus one is a
+   * stream, so this hands it one more value to be read: the two pin types
+   * are different contracts, and a queue is what "a chip reads a packet"
+   * means.
+   */
   setInput(label, value) {
     const part = this.terminal(label)
     if (!part) throw new Error(`no terminal labelled "${label}"`)
+    if (part.spec.type === 'xbus') {
+      part.queue.push(clamp(value))
+      return this
+    }
     part.value = clamp(value)
     this.refreshDevices()
     return this
   }
 
-  /** Read the level on a terminal, whoever is driving it. */
+  /**
+   * Read a terminal: the level on it for a simple one, and for an XBus one
+   * the last value it was handed, since a stream has no level to read.
+   */
   output(label) {
     const part = this.terminal(label)
     if (!part) throw new Error(`no terminal labelled "${label}"`)
+    if (part.spec.type === 'xbus') return part.value || 0
     const net = this.net(part.id, part.label)
     return net ? net.level : 0
+  }
+
+  /** Everything an XBus output terminal has been handed, in order. */
+  received(label) {
+    const part = this.terminal(label)
+    if (!part) throw new Error(`no terminal labelled "${label}"`)
+    return part.received || []
   }
 
   /** Find an N4PB-8000 by its label, the same way terminal() finds an io-terminal. */
@@ -654,11 +676,37 @@ export class Machine {
     const describe = (c) => `${c.meta.name} blocked on ${c.blocked.op} ${c.blocked.args.join(' ')}`
 
     // Everyone waiting on everyone: nothing can ever move again.
-    if (chips.length && chips.every((c) => c.blocked)) this.deadlock = chips.map(describe)
+    //
+    // Except a chip waiting on the board edge. An XBus input terminal is fed
+    // from outside the machine, so an empty one may simply not have been
+    // handed its next value yet - the packet reverser reads a value per time
+    // unit and blocks in between, which is the circuit working, not failing.
+    // Deadlock has to mean provably fatal or it is worthless as a signal, so
+    // an edge-waiter downgrades the verdict to stalled.
+    const onEdge = chips.some((c) => this.waitingOnEdge(c.id))
+    if (chips.length && chips.every((c) => c.blocked) && !onEdge) this.deadlock = chips.map(describe)
 
     // Blocked while others merely sleep is not provably fatal, but it is the
     // symptom players actually hit, so surface it rather than sitting silent.
     this.stalled = chips.filter((c) => c.blocked).map(describe)
+  }
+
+  /**
+   * Is this chip blocked reading from an XBus input terminal - the board's
+   * edge - rather than from another part of the circuit? Only the edge can
+   * be refilled from outside, so only the edge makes a block survivable.
+   */
+  waitingOnEdge(chipId) {
+    for (const net of this.nets) {
+      if (!net.reads.some((r) => r.id === chipId)) continue
+      for (const member of net.members) {
+        const part = this.parts[member.id]
+        if (part && part.tag === 'io-terminal' && part.spec.type === 'xbus' && part.spec.side === 'right') {
+          return true
+        }
+      }
+    }
+    return false
   }
 
   /** Advance the clock by one time unit. Returns false if it cannot. */

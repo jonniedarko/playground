@@ -2,6 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { Machine } from '../assets/shenzhen/sim.js'
 import { verify } from '../assets/shenzhen/verify.js'
+import { CIRCUITS } from '../assets/shenzhen/circuits.js'
+import { an650Spec, dx300StepperSpec, packetReverserSpec } from '../assets/shenzhen/specs.js'
 
 /*
  * verify() is driven with hand-built Machines here, not circuits.js/specs.js
@@ -163,4 +165,46 @@ test('a failing run still reports the full requested unit count, not how far it 
   const result = verify(m, spec)
   assert.equal(result.ok, false)
   assert.equal(result.units, 12, 'units is the run length asked for, not the stopping point')
+})
+
+// ------------------------------------------------ shipped circuits (12.2)
+//
+// specs.js derives each expect array from the circuit's own content page,
+// not from running the circuit and recording what came out - see the
+// comment on each spec there for the sentence(s) it comes from and why each
+// `null` was unavoidable.
+
+test('AN650: the shipped circuit passes its derived spec (edge, not level)', () => {
+  const m = new Machine(CIRCUITS.an650)
+  const result = verify(m, an650Spec)
+  assert.equal(result.ok, true, JSON.stringify(result.divergence))
+})
+
+test('DX300 stepper: the shipped circuit passes its derived spec', () => {
+  const m = new Machine(CIRCUITS['dx300-stepper'])
+  const result = verify(m, dx300StepperSpec)
+  assert.equal(result.ok, true, JSON.stringify(result.divergence))
+})
+
+// packet-reverser does NOT pass its derived spec. Per the standing rule
+// ("if a shipped circuit fails a spec you derived from its page, STOP AND
+// REPORT - do not adjust the spec until it passes"), the spec in specs.js
+// is left as derived from memory.md, and this test documents today's ACTUAL
+// behaviour instead of asserting the (currently false) claim that it works.
+// This keeps `npm test` green while being honest that verification did not
+// complete for this circuit - see the task report for the root cause.
+test('packet-reverser: the shipped circuit passes its spec', () => {
+  const result = verify(new Machine(CIRCUITS['packet-reverser']), packetReverserSpec)
+  assert.equal(result.ok, true, result.divergence && JSON.stringify(result.divergence))
+})
+
+test('packet-reverser really reverses, rather than passing values straight through', () => {
+  // The spec asserts the last value out is the first value in, which is what
+  // reversal means for a terminal showing its latest write. This checks the
+  // whole packet, so a circuit that merely echoed in order - and would still
+  // end on the wrong value - cannot hide.
+  const m = new Machine(CIRCUITS['packet-reverser'])
+  for (const v of [11, 22, 33]) m.setInput('input', v)
+  m.run(3)
+  assert.deepEqual(m.received('output'), [33, 22, 11])
 })

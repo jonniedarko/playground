@@ -116,16 +116,65 @@ DEVICES['p-200p14'] = memory
 
 // ------------------------------------------------------------- io-terminal
 
+/**
+ * The board's edge: a button, a lamp, a motor line, a packet source, a
+ * display. `label`/`type`/`side` come from the instance, so one part covers
+ * all of them.
+ *
+ * A simple terminal is a level. An input one drives its net with whatever
+ * setInput last set; an output one is driven by the chip.
+ *
+ * An XBus terminal is a stream, and that is a different contract: an input
+ * one holds a queue of values a chip reads one at a time, and an output one
+ * accepts writes and keeps what it was given. Until R12 this half did not
+ * exist at all - an XBus terminal drove `drivers` like a simple one, which
+ * the XBus path never reads, so a chip reading one blocked forever. The
+ * packet reverser has never run for this reason.
+ *
+ * How a queue is fed and read back is not in the manual, which describes
+ * puzzle edges rather than a simulator. The choice here is the one that
+ * keeps a single mental model: setInput hands a terminal one more value,
+ * output reads back the last one it took, exactly as for a level.
+ */
+const isXbus = (part) => (part.spec && part.spec.type) === 'xbus'
+
 DEVICES['io-terminal'] = {
-  // Input terminals drive their net; everything else starts undriven.
   init(ctx, part) {
     part.value = 0
+    part.queue = [] // xbus input: values waiting to be read
+    part.received = [] // xbus output: everything written to it, in order
   },
 
-  // Only an input terminal drives; an output one is driven by the chip.
+  // Only a simple input terminal drives a level. An XBus one hands its
+  // values over through serve() instead, and driving `drivers` as well would
+  // put a phantom level on a net nothing reads it from.
   refresh(ctx, part) {
+    if (isXbus(part)) return
     const net = ctx.net(part.id, part.label)
     if (net && part.spec.side === 'right') net.drivers.set(part.id, part.value || 0)
+  },
+
+  // Read side: an input terminal with something queued.
+  canServe(ctx, part, pin) {
+    return isXbus(part) && part.spec.side === 'right' && part.queue.length > 0
+  },
+
+  serve(ctx, part, pin) {
+    return part.queue[0] // peek; afterRead consumes
+  },
+
+  afterRead(ctx, part, pin) {
+    if (isXbus(part) && part.spec.side === 'right') part.queue.shift()
+  },
+
+  // Write side: an output terminal takes whatever the chip sends it.
+  canAccept(ctx, part, pin) {
+    return isXbus(part) && part.spec.side === 'left'
+  },
+
+  accept(ctx, part, pin, value) {
+    part.received.push(value)
+    part.value = value
   },
 }
 

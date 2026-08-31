@@ -88,11 +88,28 @@ export function verify(machine, spec) {
 
     machine.advance()
 
-    // Three early-stop cases. Each is a failure naming the time unit it
-    // happened at, with the reason in `signal` rather than a signal name -
-    // there is no expected/actual pair for "the machine broke", so
-    // `expected` is null and `actual` carries whatever detail the machine
-    // itself recorded.
+    // Sample AFTER advance() has completed this unit - see the module doc.
+    //
+    // This happens before the early-stop checks below, and the order is
+    // deliberate: what should have happened by now is a different question
+    // from whether the machine can go on. A one-shot circuit does all its
+    // work in a single unit and then blocks waiting for input that never
+    // comes - the packet reverser is exactly this - and reporting that as a
+    // failure would mark a circuit wrong for having finished.
+    for (const signal of expectLabels) {
+      const expected = at(expect[signal], t)
+      if (expected === null) continue // don't care
+      const actual = machine.output(signal)
+      if (Math.abs(actual - expected) > tolerance) {
+        return report(machine, spec, { time: t, signal, expected, actual })
+      }
+    }
+
+    // Three early-stop cases, checked once this unit's expectations are
+    // satisfied. Each is a failure naming the time unit it happened at, with
+    // the reason in `signal` rather than a signal name - there is no
+    // expected/actual pair for "the machine broke", so `expected` is null
+    // and `actual` carries whatever detail the machine itself recorded.
     if (machine.error) {
       return report(machine, spec, { time: t, signal: 'error', expected: null, actual: machine.error })
     }
@@ -102,16 +119,6 @@ export function verify(machine, spec) {
     const chips = machine.parts.filter((p) => p.chip)
     if (chips.length && chips.every((p) => p.chip.halted)) {
       return report(machine, spec, { time: t, signal: 'halted', expected: null, actual: 'every chip halted' })
-    }
-
-    // Sample AFTER advance() has completed this unit - see the module doc.
-    for (const signal of expectLabels) {
-      const expected = at(expect[signal], t)
-      if (expected === null) continue // don't care
-      const actual = machine.output(signal)
-      if (Math.abs(actual - expected) > tolerance) {
-        return report(machine, spec, { time: t, signal, expected, actual })
-      }
     }
   }
 
