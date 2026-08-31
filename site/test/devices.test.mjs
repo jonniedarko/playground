@@ -533,3 +533,126 @@ test('KUJI-EK1 emits its six lines in order, lowermost first, one per unit', () 
   assert.deepEqual(seen, drawn, 'the stream is the hexagram in order, one line per unit')
   assert.ok(new Set(seen).size > 1 || seen.length === 6, 'sanity: six values collected')
 })
+
+// -------------------------------------------------------------------- lx-700
+
+test('LX700 holds a written value between -199 and 199 as part.display', () => {
+  const m = new Machine({ parts: [{ t: 'lx-700', x: 0, y: 0 }] })
+  const [dev, part] = [DEVICES['lx-700'], m.parts[0]]
+  assert.equal(part.display, null, 'nothing shown before any write')
+  dev.accept(m, part, 'x0', 42)
+  assert.equal(part.display, 42)
+  dev.accept(m, part, 'x0', -199)
+  assert.equal(part.display, -199, 'the low end of the declared range')
+  dev.accept(m, part, 'x0', 199)
+  assert.equal(part.display, 199, 'the high end of the declared range')
+})
+
+test('LX700 blanks on -999', () => {
+  const m = new Machine({ parts: [{ t: 'lx-700', x: 0, y: 0 }] })
+  const [dev, part] = [DEVICES['lx-700'], m.parts[0]]
+  dev.accept(m, part, 'x0', 77)
+  assert.equal(part.display, 77)
+  dev.accept(m, part, 'x0', -999)
+  assert.equal(part.display, null, '-999 turns off all segments')
+})
+
+test('LX700 canServe is false on its only pin - it never has anything to serve', () => {
+  const m = new Machine({ parts: [{ t: 'lx-700', x: 0, y: 0 }] })
+  assert.equal(DEVICES['lx-700'].canServe(m, m.parts[0], 'x0'), false)
+})
+
+test('LX700 never answers a read - a write-only pin waits, it does not hand back garbage', () => {
+  const m = new Machine({
+    parts: [{ t: 'mc-6000', x: 0, y: 0, code: '  mov x0 dat\n  slp 9' }, { t: 'lx-700', x: 8, y: 0 }],
+    wires: [['0:x0', '1:x0']],
+  })
+  m.advance()
+  assert.equal(m.parts[0].chip.state, 'block', 'nothing to read there, so the chip waits')
+})
+
+test('LX700 still accepts a write over an actual wire', () => {
+  const m = new Machine({
+    parts: [{ t: 'mc-6000', x: 0, y: 0, code: '  mov 55 x0\n  slp 9' }, { t: 'lx-700', x: 8, y: 0 }],
+    wires: [['0:x0', '1:x0']],
+  })
+  m.advance()
+  assert.equal(m.parts[1].display, 55, 'the write went through and is exposed on the part')
+})
+
+// -------------------------------------------------------------- fm-blaster
+
+test('FM Blaster holds the last note and instrument written, one per pin', () => {
+  const m = new Machine({ parts: [{ t: 'fm-blaster', x: 0, y: 0 }] })
+  const [dev, part] = [DEVICES['fm-blaster'], m.parts[0]]
+  assert.equal(part.note, null, 'nothing held before any write')
+  assert.equal(part.instrument, null, 'nothing held before any write')
+  dev.accept(m, part, 'instrument', 9)
+  dev.accept(m, part, 'note', 60)
+  assert.equal(part.note, 60, 'middle C, the page\'s own worked example')
+  assert.equal(part.instrument, 9, 'Bass Drum, the last preset in the table')
+  // Order matters: the page gives the part one voice, so an instrument
+  // change stops the note. Setting the instrument first is the sequence that
+  // leaves both held, and it is the sequence a program would use anyway.
+})
+
+test('FM Blaster canServe is false on both pins', () => {
+  const m = new Machine({ parts: [{ t: 'fm-blaster', x: 0, y: 0 }] })
+  assert.equal(DEVICES['fm-blaster'].canServe(m, m.parts[0], 'note'), false)
+  assert.equal(DEVICES['fm-blaster'].canServe(m, m.parts[0], 'instrument'), false)
+})
+
+test('FM Blaster never answers a read on either pin', () => {
+  const readState = (pin) => {
+    const m = new Machine({
+      parts: [{ t: 'mc-6000', x: 0, y: 0, code: '  mov x0 dat\n  slp 9' }, { t: 'fm-blaster', x: 8, y: 0 }],
+      wires: [['0:x0', `1:${pin}`]],
+    })
+    m.advance()
+    return m.parts[0].chip.state
+  }
+  assert.equal(readState('note'), 'block', 'nothing to read there, so the chip waits')
+  assert.equal(readState('instrument'), 'block', 'nothing to read there, so the chip waits')
+})
+
+test('FM Blaster still accepts writes on both pins over actual wires', () => {
+  const m = new Machine({
+    parts: [
+      { t: 'mc-6000', x: 0, y: 0, code: '  mov 5 x2\n  mov 67 x0\n  slp 9' },
+      { t: 'fm-blaster', x: 8, y: 0 },
+    ],
+    wires: [['0:x0', '1:note'], ['0:x2', '1:instrument']],
+  })
+  m.advance()
+  assert.equal(m.parts[1].instrument, 5, 'instrument pin holds the instrument')
+  assert.equal(m.parts[1].note, 67, 'note pin holds the note, and the pins do not cross')
+})
+
+test('FM Blaster has one voice: an instrument change stops the current note', () => {
+  // fm-blaster.md: "1 voice of polyphony - a new note or instrument change
+  // will stop the current note." Nothing is audible here, so the observable
+  // form of a stopped note is that no note is sounding.
+  const m = new Machine({
+    parts: [
+      { t: 'mc-6000', x: 0, y: 0, code: '  mov 60 x0\n  mov 3 x1\n  slp 9' },
+      { t: 'fm-blaster', x: 8, y: 0 },
+    ],
+    wires: [['0:x0', '1:note'], ['0:x1', '1:instrument']],
+  })
+  m.advance()
+  const blaster = m.parts[1]
+  assert.equal(blaster.instrument, 3, 'the instrument change landed')
+  assert.equal(blaster.note, null, 'and it stopped the note that was playing')
+})
+
+test('FM Blaster: a new note replaces the one before it', () => {
+  const m = new Machine({
+    parts: [
+      { t: 'mc-6000', x: 0, y: 0, code: '  mov 60 x0\n  mov 72 x0\n  slp 9' },
+      { t: 'fm-blaster', x: 8, y: 0 },
+    ],
+    wires: [['0:x0', '1:note']],
+  })
+  m.advance()
+  assert.equal(m.parts[1].note, 72, 'one voice: the later note is the one sounding')
+})

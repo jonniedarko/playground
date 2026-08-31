@@ -445,4 +445,80 @@ DEVICES['kuji-ek1'] = {
   },
 }
 
+// -------------------------------------------------------------------- lx-700
+
+/**
+ * Numeric display. One XBus pin, write-only: displays-and-inputs.md's table
+ * has only Write rows, so nothing here is ever read back - canServe is
+ * false, matching Task 6's "output sink" framing and the standing rule that
+ * a pin claiming a read serve() cannot honour should block, not hand back
+ * garbage.
+ *
+ * The page states two write cases: -199 to 199 displays the value, -999
+ * blanks it. It is silent on a value outside -199..199 that is not -999 (a
+ * "2.5 digit plus bonus minus sign" display cannot physically show one) -
+ * this is a genuine gap, not covered by either the page or the task. Rather
+ * than invent a clamp or a second blank case neither states, that third case
+ * is treated as the same "display the value" the table already gives every
+ * write but -999: part.display simply holds whatever was last written,
+ * unclamped. Flagged, not silently decided; see the R11 Task 6 report. The
+ * `null` starting value (same sentinel a -999 blank uses) is likewise this
+ * file's own choice for "nothing shown yet" - the page does not describe a
+ * power-on state either.
+ */
+DEVICES['lx-700'] = {
+  init(ctx, part) {
+    part.display = null // nothing shown yet; same sentinel as a -999 blank
+  },
+
+  canServe(ctx, part, pin) {
+    return false
+  },
+
+  canAccept(ctx, part, pin) {
+    return pin === 'x0'
+  },
+
+  accept(ctx, part, pin, value) {
+    if (pin !== 'x0') return
+    part.display = value === -999 ? null : value
+  },
+}
+
+// -------------------------------------------------------------- fm-blaster
+
+/**
+ * Sound module. `note` and `instrument` are both write-only XBus pins -
+ * fm-blaster.md gives no read behaviour for either - so canServe is false
+ * throughout; a device with nothing to serve blocks a read rather than
+ * answer it (see the standing note at the top of this file). No audio: this
+ * only holds the two last-written values for the workbench to read later.
+ */
+DEVICES['fm-blaster'] = {
+  init(ctx, part) {
+    part.note = null
+    part.instrument = null
+  },
+
+  canServe(ctx, part, pin) {
+    return false
+  },
+
+  canAccept(ctx, part, pin) {
+    return pin === 'note' || pin === 'instrument'
+  },
+
+  // "1 voice of polyphony - a new note or instrument change will stop the
+  // current note." With no audio, the observable form of stopping a note is
+  // that there is no longer a note sounding, so an instrument change clears
+  // it. A new note simply replaces the old one, which is the same rule.
+  accept(ctx, part, pin, value) {
+    if (pin === 'note') part.note = value
+    else if (pin === 'instrument') {
+      part.instrument = value
+      part.note = null
+    }
+  },
+}
+
 export default DEVICES
