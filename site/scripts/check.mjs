@@ -17,6 +17,11 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { buildSite, OUT_DIR, BASE } from '../build.mjs'
+import { PART_META } from '../assets/shenzhen/parts.js'
+import CIRCUITS from '../assets/shenzhen/circuits.js'
+import {
+  registeredTags, auditParts, auditCircuits, auditFigures,
+} from './lib/parts-audit.mjs'
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 
@@ -140,9 +145,36 @@ async function main() {
     }
   }
 
+  // ---- the component catalogue, the circuits, and the figures ----
+  // These need no browser, and until now none of them was caught without one.
+  const componentsSource = await fs.readFile(
+    path.join(ROOT, 'assets/shenzhen/components.js'), 'utf8')
+  const tags = registeredTags(componentsSource)
+
+  // Not every custom element is a part: the board and the scope are chrome.
+  const NOT_PARTS = ['circuit-board', 'scope-trace']
+
+  const contentFiles = (await walk(path.join(ROOT, 'content'))).filter((f) => f.endsWith('.md'))
+  const sources = await Promise.all(contentFiles.map(async (f) => ({
+    file: path.relative(ROOT, f),
+    text: await fs.readFile(f, 'utf8'),
+  })))
+
+  for (const detail of auditParts({ meta: PART_META, tags, ignore: NOT_PARTS })) {
+    problems.push({ file: 'assets/shenzhen/parts.js', kind: 'part catalogue', detail })
+  }
+  for (const detail of auditCircuits({ circuits: CIRCUITS, meta: PART_META })) {
+    problems.push({ file: 'assets/shenzhen/circuits.js', kind: 'circuit wiring', detail })
+  }
+  for (const detail of auditFigures({ sources, tags, circuits: CIRCUITS })) {
+    problems.push({ file: detail.split(':')[0], kind: 'figure', detail })
+  }
+
   const pages = files.length
   if (!problems.length) {
-    process.stdout.write(`check: ${pages} pages, ${routes.size} routes - clean\n`)
+    process.stdout.write(
+      `check: ${pages} pages, ${routes.size} routes, ` +
+      `${Object.keys(PART_META).length} parts, ${Object.keys(CIRCUITS).length} circuits - clean\n`)
     return
   }
 

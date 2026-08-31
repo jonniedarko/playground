@@ -17,8 +17,16 @@ Site excluded from starter tooling via `.eslintignore`, `.prettierignore`.
 | `npm test` | `node:test` units. no deps |
 | `npm run test:browser` | Playwright sweep 320/390px. skips clean if absent |
 | `npm run ship` | build + replace `pages` branch + push |
+| `npm run shot` | screenshots. `--route --select --widths --theme --age` |
+| `npm run new-part` | scaffolds a part across all four files. `--dry-run` first |
 
 Gate before any commit: `npm run check && npm test`.
+
+`check` is not only markup: it also audits the part catalogue, every circuit's
+wire endpoints and every figure's `data-part`/`data-circuit`, headlessly. Those
+three were browser-only until R10 and one was caught by nothing. Logic lives in
+`scripts/lib/parts-audit.mjs`, unit-tested — `components.js` cannot be imported
+under node (it touches `document`), so it is read as source.
 
 ## Layout
 
@@ -28,7 +36,8 @@ site/
   lib/markdown.mjs    renderer. no deps
   assets/             copied verbatim to dist/assets
   content/            markdown source
-  scripts/            check, browser-test, deploy, extract-manual-images
+  scripts/            check, browser-test, deploy, screenshot, new-part
+  scripts/lib/        parts-audit (pure, tested), preview (serve + playwright)
   test/               node:test
   dist/               output. gitignored
 ```
@@ -120,8 +129,10 @@ but is inert: no tap target, and `tryConnect` refuses it.
 `io-terminal` takes `label` / `type` / `side` and resolves its pin per
 instance, so one part covers button, lamp, motor-N, trigger, output.
 
-New part = add to `PART_META` in `parts.js`. If it has no behaviour, add the
-tag to `FIXED_PARTS` and stop. If it does, write a class with `bodyHTML` —
+New part = `npm run new-part -- --tag x-y --pins 'x0:xbus:left,...'`, which
+writes all four edits (`PART_META`, `FIXED_PARTS`, datasheet page, catalogue).
+`--dry-run` shows them first. By hand: add to `PART_META` in `parts.js`. If it
+has no behaviour, add the tag to `FIXED_PARTS` and stop. If it does, write a class with `bodyHTML` —
 copy `DX300`. Never redeclare pins in `components.js` — one source or they
 drift. **A custom element name must contain a hyphen** (`lx-700`, not
 `lx700`): the registry throws mid-module and every part on the page silently

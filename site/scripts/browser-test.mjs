@@ -10,77 +10,9 @@
  *   node scripts/browser-test.mjs --widths 320,390,1440
  */
 
-import { promises as fs } from 'node:fs'
-import path from 'node:path'
-import http from 'node:http'
-import { buildSite, OUT_DIR, BASE } from '../build.mjs'
+import { buildSite, BASE } from '../build.mjs'
+import { loadPlaywright, startServer, launchBrowser, routes } from './lib/preview.mjs'
 import { CIRCUITS } from '../assets/shenzhen/circuits.js'
-
-/** Playwright lives outside the project here, so try the usual places before giving up. */
-const CANDIDATES = [
-  'playwright',
-  '/opt/node22/lib/node_modules/playwright/index.mjs',
-  '/usr/lib/node_modules/playwright/index.mjs',
-  '/usr/local/lib/node_modules/playwright/index.mjs',
-]
-
-async function loadPlaywright() {
-  for (const spec of CANDIDATES) {
-    try {
-      return await import(spec)
-    } catch {
-      /* try the next one */
-    }
-  }
-  return null
-}
-
-const MIME = {
-  '.html': 'text/html; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.mjs': 'text/javascript; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.svg': 'image/svg+xml',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-}
-
-function startServer(port) {
-  const server = http.createServer(async (req, res) => {
-    // Parse the path by hand: `new URL()` rejects request targets like "//".
-    let pathname = decodeURIComponent((req.url || '/').split(/[?#]/)[0]).replace(/\/{2,}/g, '/')
-    if (BASE && pathname.startsWith(BASE)) pathname = pathname.slice(BASE.length) || '/'
-    let file = path.join(OUT_DIR, pathname)
-    try {
-      const stat = await fs.stat(file).catch(() => null)
-      if (!stat || stat.isDirectory()) file = path.join(file, 'index.html')
-      const data = await fs.readFile(file)
-      res.writeHead(200, { 'content-type': MIME[path.extname(file)] || 'application/octet-stream' })
-      res.end(data)
-    } catch {
-      res.writeHead(404, { 'content-type': 'text/html; charset=utf-8' })
-      res.end('not found')
-    }
-  })
-  return new Promise((resolve) => server.listen(port, () => resolve(server)))
-}
-
-async function routes() {
-  const found = []
-  const walk = async (dir) => {
-    for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
-      const abs = path.join(dir, entry.name)
-      if (entry.isDirectory()) await walk(abs)
-      else if (entry.name === 'index.html') {
-        const rel = path.relative(OUT_DIR, path.dirname(abs)).split(path.sep).join('/')
-        found.push(BASE + '/' + (rel === '.' ? '' : rel + '/'))
-      }
-    }
-  }
-  await walk(OUT_DIR)
-  return found.sort()
-}
 
 async function main() {
   const pw = await loadPlaywright()
@@ -100,11 +32,7 @@ async function main() {
   const server = await startServer(port)
   const all = await routes()
 
-  const launch = { }
-  if (await fs.stat('/opt/pw-browsers/chromium').then(() => true).catch(() => false)) {
-    launch.executablePath = '/opt/pw-browsers/chromium'
-  }
-  const browser = await pw.chromium.launch(launch)
+  const browser = await launchBrowser(pw)
 
   const failures = []
   let figuresChecked = 0
