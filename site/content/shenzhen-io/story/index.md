@@ -1,7 +1,7 @@
 ---
 title: Story documents
 description: The three papers in the binder's front pocket - two emails and a visa application.
-order: 7
+order: 8
 icon: ✉️
 ---
 
