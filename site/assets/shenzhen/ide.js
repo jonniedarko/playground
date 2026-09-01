@@ -116,6 +116,60 @@ function uniqueLabel(board, base) {
   for (let n = 2; ; n += 1) if (!used.has(`${base}-${n}`)) return `${base}-${n}`
 }
 
+/* -------------------------------------------------------------- step back
+   R15.3: stepping back is rebuild-and-replay, per R12-R15-PLAN.md - never a
+   snapshot. Machine is deterministic given its spec (which carries the
+   seed - see sim.js's Machine constructor) and its input timeline, so this
+   is the only state kept: every setInput a person makes, tagged with the
+   time unit it happened in. To reach t-1, build a fresh Machine from the
+   same spec and replay t-1 units, applying whichever inputs were logged for
+   each unit before that unit's advance() - the same "applied before
+   advance" rule verify.js's own spec.inputs follows (see its module doc).
+
+   Pure - no DOM - so it is exercised directly under node
+   (test/ide-stepback.test.mjs); the Ide class below wires it to the sim bar
+   and to the one place a person's input reaches the live machine
+   (buildInputs' toggle handler). */
+
+/** Null when there is no earlier unit to step back to - t=0 stays t=0. */
+function stepBackTarget(time) {
+  return time > 0 ? time - 1 : null
+}
+
+/** Apply every timeline entry recorded for `machine.time` that `cursor`
+    hasn't reached yet, in the order they were recorded, and return the
+    cursor advanced past them. Entries for a later time are left for a later
+    call - the timeline only ever acts on "now". Called both by the live
+    input handler's bookkeeping (where it is always a no-op, since that
+    handler applies its own entry immediately and moves the cursor past it
+    itself) and by tick() after a rewind, to catch a rebuilt machine up to
+    the point replay stopped short of. */
+function applyDueInputs(machine, log, cursor) {
+  let i = cursor
+  while (i < log.length && log[i].time === machine.time) {
+    machine.setInput(log[i].label, log[i].value)
+    i += 1
+  }
+  return i
+}
+
+/** Build a fresh Machine from `spec` and replay it up to (not including)
+    `target` time units, applying `log`'s recorded inputs as it goes -
+    exactly the rule applyDueInputs() states, run once per unit crossed.
+    Returns the rebuilt machine and how far into the log replaying it
+    reached: the cursor a live input or a later tick() resumes from. No
+    part of the machine being stepped back from is read or copied - this
+    takes only the spec (parts, wires, seed) and the timeline. */
+function rebuildAndReplay(spec, log, target) {
+  const machine = new Machine(spec)
+  let cursor = 0
+  for (let t = 0; t < target; t += 1) {
+    cursor = applyDueInputs(machine, log, cursor)
+    machine.advance()
+  }
+  return { machine, cursor }
+}
+
 /* ----------------------------------------------------------------- verify
    Index into a time-indexed array, holding the last entry past its end -
    the same rule verify.js applies to spec.inputs. Duplicated here rather
@@ -163,6 +217,16 @@ class Ide {
     // The note text announce() falls back to once its own transient message
     // times out - see announce() below. Blank outside puzzle mode.
     this.puzzleNote = ''
+    // R15.3's entire memory: every setInput a person made, tagged with the
+    // time unit it happened in - see the module doc above rebuildAndReplay().
+    // logCursor is how many of these are already reflected in this.machine's
+    // current state; recordInput() keeps it caught up as inputs happen live,
+    // stepBack() resets it to wherever a rebuild's replay stopped short of.
+    // Cleared wherever the machine starts over from t=0 - reset(),
+    // invalidate(), loadPuzzle() - since a stale entry would name a time
+    // unit, or a terminal, that no longer means what it did.
+    this.inputLog = []
+    this.logCursor = 0
     this.build()
     this.restore()
   }
@@ -213,11 +277,12 @@ class Ide {
     const bar = el('div', 'ide-bar ide-bar-sim')
     this.playBtn = this.button('Run', () => this.toggle(), 'sim-play')
     this.stepBtn = this.button('Step', () => { this.pause(); this.tick() })
+    this.stepBackBtn = this.button('Step back', () => this.stepBack())
     this.resetBtn = this.button('Reset', () => this.reset())
     this.verifyBtn = this.button('Verify', () => this.verify())
     this.delBtn = this.button('Delete', () => this.deleteSelected(), 'ide-danger')
     this.delBtn.disabled = true
-    bar.append(this.playBtn, this.stepBtn, this.resetBtn, this.verifyBtn, this.delBtn)
+    bar.append(this.playBtn, this.stepBtn, this.stepBackBtn, this.resetBtn, this.verifyBtn, this.delBtn)
 
     // Zoom buttons rather than a range input: a slider is the one control that
     // is genuinely worse with a thumb than with a mouse.
@@ -443,6 +508,9 @@ class Ide {
     this.board.select(null)
     this.syncSelection()
     this.machine = null
+    // Same reasoning as invalidate() - an empty board has no timeline either.
+    this.inputLog = []
+    this.logCursor = 0
     this.buildInputs()
     this.hideVerify()
     this.sync()
@@ -500,6 +568,11 @@ class Ide {
   invalidate() {
     this.pause()
     this.machine = null
+    // A structural edit makes the recorded timeline meaningless too - it may
+    // name a terminal that no longer exists, or a time unit in a run this
+    // now-different circuit never had.
+    this.inputLog = []
+    this.logCursor = 0
     this.buildInputs()
     // A structural edit makes any earlier Verify diagnostic stale - the
     // scope trace and mark were drawn from the circuit as it stood before
@@ -538,6 +611,9 @@ class Ide {
 
   buildInputs() {
     this.inputBar.replaceChildren()
+    // label -> button, so syncInputButtons() (below) can refresh the toggle
+    // display after stepBack() rebuilds behind whatever it last showed.
+    this.inputButtons = new Map()
     for (const part of this.board.parts) {
       if (part.tagName.toLowerCase() !== 'io-terminal') continue
       if (part.getAttribute('side') === 'left') continue
@@ -546,12 +622,43 @@ class Ide {
         const m = this.ensureMachine()
         if (!m) return
         const on = m.terminal(label).value >= 50
-        m.setInput(label, on ? 0 : 100)
+        this.recordInput(label, on ? 0 : 100)
         b.setAttribute('aria-pressed', on ? 'false' : 'true')
         this.sync()
       }, 'sim-input')
       b.setAttribute('aria-pressed', 'false')
       this.inputBar.appendChild(b)
+      this.inputButtons.set(label, b)
+    }
+  }
+
+  /** The one place a person's input reaches the live machine: apply it and
+      log it in the same breath, so this.inputLog stays exactly the record
+      stepBack() needs. A press that lands after a rewind - logCursor behind
+      inputLog's own length - abandons whatever was recorded past this
+      point first: the timeline forks here, the same as an edit after undo
+      in any other tool. See the rebuildAndReplay() module doc above. */
+  recordInput(label, value) {
+    const m = this.machine
+    if (!m) return
+    if (this.logCursor < this.inputLog.length) this.inputLog.length = this.logCursor
+    this.inputLog.push({ time: m.time, label, value })
+    this.logCursor = this.inputLog.length
+    m.setInput(label, value)
+  }
+
+  /** Refresh every input toggle's lit/unlit state from the machine.
+      buildInputs() only ever sets one to 'false' at creation - true the
+      rest of the time, since normally nothing but that very button's own
+      click ever changes the terminal it reads. stepBack() breaks that: it
+      can leave a terminal driving high while its button still shows
+      unpressed, so sync() (below) calls this every time it runs. */
+  syncInputButtons() {
+    const m = this.machine
+    if (!m || !this.inputButtons) return
+    for (const [label, b] of this.inputButtons) {
+      const part = m.terminal(label)
+      if (part) b.setAttribute('aria-pressed', part.value >= 50 ? 'true' : 'false')
     }
   }
 
@@ -574,6 +681,10 @@ class Ide {
   reset() {
     this.pause()
     this.machine = null
+    // Back to t=0: the timeline so far belongs to a run that no longer
+    // exists.
+    this.inputLog = []
+    this.logCursor = 0
     this.board.parts.forEach((p) => p.resetRegisters?.())
     this.buildInputs()
     this.sync()
@@ -582,13 +693,36 @@ class Ide {
   tick() {
     const m = this.ensureMachine()
     if (!m) { this.pause(); this.sync(); return }
+    // A no-op unless this machine was just rebuilt behind the timeline by
+    // stepBack() - the live path keeps logCursor caught up itself, in
+    // recordInput() above.
+    this.logCursor = applyDueInputs(m, this.inputLog, this.logCursor)
     const ok = m.advance()
     this.sync()
     if (!ok) this.pause()
   }
 
+  /** R15.3: rebuild from the current machine's own spec (same parts, wires,
+      program text and seed - see the Machine constructor in sim.js) and
+      replay it to one unit short of where it stands now. See
+      rebuildAndReplay()'s module doc above for why this reproduces state
+      exactly rather than approximately, and does so by construction, not by
+      keeping anything from the machine being stepped back from. A no-op at
+      t=0 - stepBackTarget() says so - since there is no earlier unit. */
+  stepBack() {
+    this.pause()
+    const m = this.machine
+    const target = m ? stepBackTarget(m.time) : null
+    if (target === null) { this.sync(); return }
+    const { machine, cursor } = rebuildAndReplay(m.spec, this.inputLog, target)
+    this.machine = machine
+    this.logCursor = cursor
+    this.sync()
+  }
+
   sync() {
     const m = this.machine
+    this.stepBackBtn.disabled = !m || stepBackTarget(m.time) === null
     if (!m) {
       this.readout.textContent = this.problem
         ? `Cannot run: ${this.problem}`
@@ -598,6 +732,10 @@ class Ide {
       this.root.dataset.simState = this.problem ? 'error' : 'ok'
       return
     }
+    // stepBack() can change a terminal's value without going through the
+    // one button that normally keeps its own display in step - see
+    // syncInputButtons()'s doc above.
+    this.syncInputButtons()
 
     const parts = this.board.parts
     for (const snap of m.snapshot()) {
@@ -826,4 +964,4 @@ function upgradeIde() {
   }
 }
 
-export { Ide, upgradeIde, specFromBoard }
+export { Ide, upgradeIde, specFromBoard, stepBackTarget, applyDueInputs, rebuildAndReplay }
