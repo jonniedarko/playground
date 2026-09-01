@@ -43,7 +43,7 @@ attempting to write.
 > operation on a connected device, **the operation will block**. The
 > microcontroller stops there until the other side shows up.
 
-<div class="circuit-figure" data-circuit="interfaces">
+<div class="circuit-figure" data-circuit="interfaces" data-run>
 <p>One MC4000 carrying both kinds: an unmarked simple I/O pin to a switch, and a yellow-dotted XBus pin to a display.</p>
 </div>
 

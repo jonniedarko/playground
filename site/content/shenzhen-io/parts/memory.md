@@ -91,7 +91,7 @@ diverse applications.
 The reference circuit sends a data packet with a predetermined set of values to
 `output` every time unit that `trigger` is high.
 
-<div class="circuit-figure" data-circuit="packet-generator">
+<div class="circuit-figure" data-circuit="packet-generator" data-run>
 <p>While <code>trigger</code> is high, an MC6000 reads the factory-programmed values out of the 200P-14 and forwards them to <code>output</code>.</p>
 </div>
 

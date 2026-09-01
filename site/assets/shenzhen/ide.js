@@ -624,6 +624,8 @@ class Ide {
     if (m.error) status = m.error
     else if (m.deadlock) status = 'Deadlock: ' + why()
     else if (m.stalled && m.stalled.length) status = 'Waiting: ' + why()
+    const chips = this.chipPowerReadout(m)
+    if (chips) status += '   ' + chips
     const held = this.deviceReadout(m)
     if (held) status += '   ' + held
     this.readout.textContent = status
@@ -649,6 +651,27 @@ class Ide {
       bits.push(`${tag} note ${note} instrument ${instrument}`)
     })
     return bits.join('   ')
+  }
+
+  /** Per-chip power, appended to the same status line as the total, so a
+      board where one chip is burning everything says so. Named the way the
+      rest of the UI names a part - its display name, not its tag - and
+      numbered only when two chips would otherwise read identically. The `#`
+      is there because "MC4000 2 41" is three bare numbers in a row. */
+  chipPowerReadout(m) {
+    const chips = m.parts.filter((p) => p.chip)
+    if (!chips.length) return ''
+
+    const sameName = (part) => chips.filter((p) => p.tag === part.tag)
+    return chips.map((part) => {
+      const kin = sameName(part)
+      // part.label is NOT a user label - it defaults to the part's own name,
+      // so it is always set and would swallow the numbering below. The spec's
+      // label is the one a person actually chose.
+      const name = part.spec.label
+        || (kin.length > 1 ? `${part.meta.name} #${kin.indexOf(part) + 1}` : part.meta.name)
+      return `${name} ${part.chip.power}`
+    }).join('   ')
   }
 
   /* ----- verify -----
