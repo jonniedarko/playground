@@ -42,6 +42,52 @@ circuit is better than one, so the fixed bytes can be told from the varying
 ones (timestamps, run counts). Then a third of a visibly different circuit
 to locate the parts and wires. Until someone has one, this stays closed.
 
+### The `gen` instruction is not implemented
+
+`sim.js` implements the fourteen instructions the transcribed manual
+documents. Real solutions to the game's puzzles use a fifteenth, `gen`
+(`gen p0 6 6` — drive a simple pin high for n units, then low for m), which
+appears in the walkthrough screenshots but nowhere in
+`content/shenzhen-io/language-reference/`.
+
+So the operand order, the power it costs and what it does to the
+conditional flag are all unknown here. Writing the case would be inventing
+three of those and guessing the fourth.
+
+**Smallest honest next step:** find `gen` in the manual's own language
+reference and transcribe it, the way the other fourteen were. Then it is
+one `case` in `sim.js`'s switch and a row on the reference card.
+
+### NOTE and BRIDGE are not in the catalogue
+
+The game's parts list carries two ¥0 items this one does not: NOTE, a
+comment box dropped on the board, and BRIDGE, a crossing that lets one wire
+pass over another. Neither is in the manual's parts section — they are
+editor furniture rather than components, which is why no datasheet
+describes them.
+
+NOTE is a small part with no behaviour. BRIDGE is not: `routeAvoiding`
+keeps a lane list precisely so two wires never share a horizontal run, and
+a bridge is the one case where they should be allowed to. That is router
+work, not a `PART_META` entry.
+
+### The game's puzzles cannot be reproduced from a solution screenshot
+
+Solution screenshots (the walkthrough at
+`github.com/Seraphli/SHENZHEN-I-O-Walkthrough`, cloned and read during the
+bench work) show the finished board, the programs and the Information tab.
+None of them shows the **Verification** tab, which is where a puzzle's
+input and expected-output timelines live — the only part a `specs.js` entry
+is made of.
+
+A spec written from the brief alone would read as the game's test and be
+ours. That is the same line R14.3 drew around the save format.
+
+**Smallest honest next step:** a capture of the verification tab for a
+puzzle, or the game's own puzzle definitions. Until then the bench verifies
+against the three manual-derived specs it already has, and the puzzle
+format stays what it is.
+
 ---
 
 ## Real defects
@@ -117,8 +163,8 @@ was added and then removed again.
 
 ### `CLAUDE.md` does not list the newer modules
 
-The Components table stops at `ide.js`. Four modules added in R11–R14 are
-missing from it: `verify.js`, `specs.js`, `share.js`, `keywords.js`. The
+The Components table stops at `ide.js`. Five modules are missing from it:
+`verify.js`, `specs.js`, `share.js`, `keywords.js` and `metrics.js`. The
 file is the first thing anyone reads to find their way around, so a gap
 there costs someone a search.
 
