@@ -178,6 +178,24 @@ stays a fallback. `definePart` checks this now.
 `/shenzhen-io/ide/`. Page is `board: true` + `wide: true`, body holds one
 `<div class="ide">` whose contents are the no-JS fallback.
 
+**Two shells, one set of controls.** `data-layout="full"` on the `.ide` root
+(the bench page, `/shenzhen-io/ide/bench/`) lays the same workbench out the way
+the game does: a rail of run controls left, board + status strip centre, parts
+catalogue right, tabbed Information/Verification panel under the board.
+Anything else keeps the stacked panel. `makeControls()` creates every control
+once; `panelRegions()` and `fullRegions()` only decide where each one hangs, so
+a fix to a button is a fix in both. Below 56rem the bench reflows back to the
+stacked column with `order` — one DOM, never a second implementation. CSS lives
+in style.css's "the bench" section at the end.
+
+The status strip counts through `metrics.js` (pure, node-tested):
+`productionCost` sums `PART_META.cost`, `linesOfCode` counts instructions via
+`parseProgram`, `totalPower` sums a snapshot. The strip says **Instructions**,
+not "lines of code" — a bare label is a line in the game and not here (see
+TODO.md). Test run is Verify's verdict and is cleared by `hideVerify()`, so a
+"pass" cannot outlive the board it was about. Catalogue thumbnails are the
+parts themselves under components.js's `thumb` attribute, not images.
+
 `ide.js` assembles what already exists — `circuit-board` places/drags/wires,
 `Machine` runs — and adds the touch affordances neither has:
 

@@ -18,6 +18,7 @@ import CIRCUITS from './circuits.js'
 import { verify as runVerify } from './verify.js'
 import SPECS from './specs.js'
 import { encodeBoard, decodeBoard, SHARE_BUDGET } from './share.js'
+import { productionCost, linesOfCode, totalPower } from './metrics.js'
 
 const TICK_MS = 550
 const STORE_KEY = 'sz-ide-board'
@@ -261,6 +262,17 @@ class Ide {
     this.breakpoints = []
     // Track previous signal values to detect changes for signal breakpoints.
     this.prevSignalValues = new Map()
+    // Which shell to assemble. `data-layout="full"` (the bench page) lays the
+    // same controls out the way the game does - a rail down the left, the
+    // board and its status strip in the middle, the catalogue down the right,
+    // a tabbed panel underneath. Anything else keeps the stacked panel that
+    // the workbench page has always had. One set of controls either way: the
+    // buttons below are created once, in makeControls(), and each shell only
+    // decides where they hang.
+    this.full = root.dataset.layout === 'full'
+    // Ids have to be unique per instance - two `.ide` roots on one page would
+    // otherwise both claim `ide-tab-info` and the tabs would cross-wire.
+    this.uid = (Ide.count = (Ide.count || 0) + 1)
     this.build()
     this.restore()
   }
@@ -274,18 +286,32 @@ class Ide {
     this.cell = window.innerWidth < 420 ? 26 : 34
     this.board.setAttribute('cell', String(this.cell))
 
+    this.makeControls()
     this.root.append(
-      this.buildPalette(),
-      this.buildStage(),
-      this.buildSimBar(),
-      this.buildFileBar(),
+      ...(this.full ? this.fullRegions() : this.panelRegions()),
       this.buildEditor(),
     )
 
     this.board.addEventListener('open-editor', (e) => this.openEditor(e.detail))
     this.board.addEventListener('click', () => this.syncSelection())
-    this.board.addEventListener('code-changed', () => this.save())
+    this.board.addEventListener('code-changed', () => { this.save(); this.syncMetrics() })
     this.root.dataset.ready = 'true'
+  }
+
+  /** The stacked shell: palette strip, board, sim bar, file bar, top to
+      bottom. What every workbench page had before the bench page existed,
+      and still what a phone gets in either shell - see style.css. */
+  panelRegions() {
+    return [this.buildPalette(), this.buildStage(), this.buildSimBar(), this.buildFileBar()]
+  }
+
+  /** The bench shell. Source order is rail, board column, catalogue: the
+      catalogue is last so a keyboard reaches the board and its controls
+      before a list of 27 parts, whichever side CSS ends up putting it on. */
+  fullRegions() {
+    const main = el('div', 'ide-main')
+    main.append(this.buildStage(), this.buildStatus(), this.buildPanel())
+    return [this.buildRail(), main, this.buildPalette()]
   }
 
   buildPalette() {
@@ -293,12 +319,48 @@ class Ide {
     wrap.setAttribute('role', 'group')
     wrap.setAttribute('aria-label', 'Add a part')
     for (const item of PALETTE) {
-      const b = el('button', 'ide-chip', item.name)
+      const b = el('button', 'ide-chip')
       b.type = 'button'
+      // A span rather than the button's own text: the catalogue rail hangs a
+      // price and a thumbnail off the same button, and textContent still
+      // reads as the part's name either way.
+      b.appendChild(el('span', 'ide-chip-name', item.name))
+      if (this.full) b.append(this.chipPreview(item), this.chipCost(item))
       b.addEventListener('click', () => this.place(item))
       wrap.appendChild(b)
     }
     return wrap
+  }
+
+  /** The part itself, drawn small, rather than a picture of it - components.js
+      has carried a `thumb` mode for exactly this since it was written: inert,
+      no textarea, ghost lines instead of a program. The wrapper is what gives
+      it a box to sit in, since a part positions itself absolutely and has no
+      size of its own beyond `--cell`. Returns an empty span for a tag whose
+      element never got defined, so one bad tag cannot empty the catalogue. */
+  chipPreview(item) {
+    const box = el('span', 'ide-chip-preview')
+    box.setAttribute('aria-hidden', 'true')
+    const meta = PART_META[item.tag]
+    if (!meta || !customElements.get(item.tag)) return box
+    const CELL = 9
+    box.style.setProperty('--cell', `${CELL}px`)
+    box.style.width = `${meta.cols * CELL}px`
+    box.style.height = `${meta.rows * CELL}px`
+    const part = document.createElement(item.tag)
+    part.setAttribute('thumb', '')
+    part.setAttribute('x', '0')
+    part.setAttribute('y', '0')
+    for (const [k, v] of Object.entries(item.attrs || {})) part.setAttribute(k, v)
+    box.appendChild(part)
+    return box
+  }
+
+  /** The datasheet price (parts.js), which is the same number the status
+      strip adds up. There is no shop and no budget behind it. */
+  chipCost(item) {
+    const cost = (PART_META[item.tag] || {}).cost || 0
+    return el('span', 'ide-chip-cost', `¥${cost}`)
   }
 
   buildStage() {
@@ -307,8 +369,10 @@ class Ide {
     return stage
   }
 
-  buildSimBar() {
-    const bar = el('div', 'ide-bar ide-bar-sim')
+  /** Every control, created once. Neither shell creates a control of its
+      own - they only differ in which container each one is appended to - so
+      a fix to a button is a fix in both. */
+  makeControls() {
     this.playBtn = this.button('Run', () => this.toggle(), 'sim-play')
     this.stepBtn = this.button('Step', () => { this.pause(); this.tick() })
     this.stepBackBtn = this.button('Step back', () => this.stepBack())
@@ -317,23 +381,22 @@ class Ide {
     this.verifyBtn = this.button('Verify', () => this.verify())
     this.delBtn = this.button('Delete', () => this.deleteSelected(), 'ide-danger')
     this.delBtn.disabled = true
-    bar.append(this.playBtn, this.stepBtn, this.stepBackBtn, this.breakBtn, this.resetBtn, this.verifyBtn, this.delBtn)
 
     // Zoom buttons rather than a range input: a slider is the one control that
     // is genuinely worse with a thumb than with a mouse.
-    const zoom = el('div', 'ide-zoom')
-    zoom.append(
+    this.zoomGroup = el('div', 'ide-zoom')
+    this.zoomGroup.append(
       this.button('−', () => this.zoom(-CELL_STEP), 'ide-icon', 'Zoom out'),
       this.button('+', () => this.zoom(CELL_STEP), 'ide-icon', 'Zoom in'),
     )
-    bar.appendChild(zoom)
 
     this.inputBar = el('div', 'ide-inputs')
-    bar.appendChild(this.inputBar)
 
     this.readout = el('p', 'sim-readout')
     this.readout.setAttribute('role', 'status')
-    bar.appendChild(this.readout)
+
+    this.note = el('p', 'ide-note')
+    this.note.setAttribute('role', 'status')
 
     // Verify's diagnostic trace. Hidden until Verify actually has a spec to
     // run - most boards never show this at all. `.sim-scope` is the class
@@ -348,8 +411,140 @@ class Ide {
     this.scopeMark.hidden = true
     this.scopeMark.setAttribute('aria-hidden', 'true')
     this.scopeWrap.append(this.scope, this.scopeMark)
-    bar.appendChild(this.scopeWrap)
+  }
+
+  buildSimBar() {
+    const bar = el('div', 'ide-bar ide-bar-sim')
+    bar.append(
+      this.playBtn, this.stepBtn, this.stepBackBtn, this.breakBtn,
+      this.resetBtn, this.verifyBtn, this.delBtn,
+      this.zoomGroup, this.inputBar, this.readout, this.scopeWrap,
+    )
     return bar
+  }
+
+  /** The bench's left rail: the buttons pressed over and over, stacked in
+      the order they are reached for, with the ones that change the board
+      (Delete) below the ones that only move time. Verify is not here - it
+      belongs to the panel tab that shows what it found. */
+  buildRail() {
+    const rail = el('div', 'ide-rail')
+    rail.setAttribute('role', 'group')
+    rail.setAttribute('aria-label', 'Simulation controls')
+
+    // Relative, not absolute: BASE_PATH is applied to markdown links at build
+    // time and this one is written at runtime, so `../` is the only form that
+    // is right both here and under a project-pages prefix.
+    const exit = el('a', 'sim-btn ide-exit', 'Exit')
+    exit.href = '../'
+    exit.setAttribute('aria-label', 'Back to the panel workbench')
+
+    rail.append(
+      exit, this.playBtn, this.stepBtn, this.stepBackBtn,
+      this.resetBtn, this.breakBtn, this.delBtn, this.zoomGroup,
+    )
+    return rail
+  }
+
+  /** The strip under the board: what the design costs, how much of it is
+      code, what it is drawing, and what Verify last made of it - the same
+      four readings the game puts there. Row two carries the terminal
+      toggles, the running status line and the transient note, all of which
+      the stacked shell keeps in its sim and file bars instead. */
+  buildStatus() {
+    const wrap = el('div', 'ide-status-wrap')
+    const bar = el('div', 'ide-status')
+
+    this.wiresBtn = this.button('Show wires', () => this.toggleWires(), 'ide-toggle')
+    this.wiresBtn.setAttribute('aria-pressed', 'false')
+    bar.appendChild(this.wiresBtn)
+
+    this.metricTest = this.metric(bar, 'Test run', '–')
+    this.metricCost = this.metric(bar, 'Production cost', '¥0')
+    this.metricPower = this.metric(bar, 'Power usage', '–')
+    // "Instructions", not the game's "lines of code": blanks, comments and
+    // bare labels parse to no op and are not counted, and in the game a label
+    // occupies a line. Same reading verify() already reports - see TODO.md's
+    // "`lines` counts instructions, not the game's line score". The strip
+    // borrows the game's layout, not its arithmetic.
+    this.metricLines = this.metric(bar, 'Instructions', '0')
+
+    // Load/Clear/Save/Share behind a disclosure: they are reached for once a
+    // session, and the strip they would otherwise crowd is read constantly.
+    // A <details> rather than a popover - it needs no JS, keeps its own
+    // state, and the summary is a real 44px target.
+    const file = el('details', 'ide-file')
+    file.append(el('summary', 'ide-file-summary', 'Board'), this.buildFileBar())
+
+    const row = el('div', 'ide-status-row')
+    row.append(this.inputBar, this.readout, this.note)
+
+    wrap.append(bar, file, row)
+    return wrap
+  }
+
+  /** One `NAME value` cell of the status strip. Returns the value node, so
+      the caller keeps a handle on the half that changes. */
+  metric(bar, name, initial) {
+    const cell = el('div', 'ide-metric')
+    const value = el('span', 'ide-metric-value', initial)
+    cell.append(el('span', 'ide-metric-name', name), value)
+    bar.appendChild(cell)
+    return value
+  }
+
+  /** The bench panel: the selected part's datasheet summary on one tab, what
+      Verify found on the other. Tabs are real buttons with the aria the
+      pattern asks for; the panels are hidden with the `hidden` property and
+      no class here gives them a `display` of their own, so the UA rule
+      applies untouched - the trap `.ide-modal` had to work around. */
+  buildPanel() {
+    const panel = el('div', 'ide-panel')
+    const tabs = el('div', 'ide-tabs')
+    tabs.setAttribute('role', 'tablist')
+    tabs.setAttribute('aria-label', 'Bench panel')
+
+    this.tabButtons = {}
+    this.tabPanels = {}
+    for (const [key, name] of [['info', 'Information'], ['verify', 'Verification']]) {
+      const b = el('button', 'ide-tab', name)
+      b.type = 'button'
+      b.id = `ide-tab-${key}-${this.uid}`
+      b.setAttribute('role', 'tab')
+      b.setAttribute('aria-controls', `ide-tabpanel-${key}-${this.uid}`)
+      b.addEventListener('click', () => this.showTab(key))
+      tabs.appendChild(b)
+      this.tabButtons[key] = b
+
+      const node = el('div', `ide-tabpanel ide-tabpanel-${key}`)
+      node.id = `ide-tabpanel-${key}-${this.uid}`
+      node.setAttribute('role', 'tabpanel')
+      node.setAttribute('aria-labelledby', b.id)
+      this.tabPanels[key] = node
+    }
+
+    this.tabPanels.verify.append(this.verifyBtn, this.scopeWrap)
+    panel.append(tabs, this.tabPanels.info, this.tabPanels.verify)
+    this.showTab('info')
+    this.syncInfo()
+    return panel
+  }
+
+  showTab(key) {
+    for (const [k, b] of Object.entries(this.tabButtons)) {
+      b.setAttribute('aria-selected', String(k === key))
+      this.tabPanels[k].hidden = k !== key
+    }
+  }
+
+  /** Fades the parts so a crowded board's traces can be followed - the
+      game's TAB. A data attribute on the root, so the whole effect is one
+      CSS rule and nothing about the board itself changes. */
+  toggleWires() {
+    const on = this.root.dataset.view !== 'wires'
+    this.root.dataset.view = on ? 'wires' : ''
+    this.wiresBtn.setAttribute('aria-pressed', String(on))
+    this.announce(on ? 'Parts faded' : 'Parts shown')
   }
 
   buildFileBar() {
@@ -415,9 +610,9 @@ class Ide {
     this.revealBtn.hidden = true
     bar.appendChild(this.revealBtn)
 
-    this.note = el('p', 'ide-note')
-    this.note.setAttribute('role', 'status')
-    bar.appendChild(this.note)
+    // The bench keeps the note beside the running status line instead, where
+    // it stays visible with the file controls folded away.
+    if (!this.full) bar.appendChild(this.note)
     return bar
   }
 
@@ -509,6 +704,7 @@ class Ide {
 
   syncSelection() {
     const has = Boolean(this.board.selected)
+    this.syncInfo()
     this.delBtn.disabled = !has
     this.delBtn.textContent = has
       ? `Delete ${this.board.selected.getAttribute('part-name') || 'part'}`
@@ -708,8 +904,12 @@ class Ide {
     this.buildInputs()
     // A structural edit makes any earlier Verify diagnostic stale - the
     // scope trace and mark were drawn from the circuit as it stood before
-    // this change, not as it stands now.
+    // this change, not as it stands now. The verdict on the status strip is
+    // cleared here rather than in hideVerify(), which verify() itself calls
+    // on a spec with nothing to draw - that path has a real result to report
+    // and must not have it wiped by the absence of a picture.
     this.hideVerify()
+    this.setTestRun(null)
     this.sync()
     this.save()
   }
@@ -896,8 +1096,79 @@ class Ide {
     this.sync()
   }
 
+  /* ----- the bench's own readouts -----
+     Both are no-ops in the stacked shell, which has neither a status strip
+     nor a panel to write into. Called from the same places the rest of the
+     UI is kept in step - sync() for anything the machine changed,
+     syncSelection() for anything selection changed - rather than from a
+     listener of their own. metrics.js does the counting; nothing here
+     computes a number itself. */
+
+  /** Cost, code and power, as the strip under the board reports them. Power
+      is the running total for the current time unit, so it reads as a dash
+      until there is a machine to ask. */
+  syncMetrics() {
+    if (!this.full) return
+    const parts = this.board.parts.map((p) => ({
+      tag: p.tagName.toLowerCase(),
+      code: p.getAttribute('code') ?? '',
+    }))
+    this.metricCost.textContent = `¥${productionCost(parts)}`
+    this.metricLines.textContent = String(linesOfCode(parts))
+    this.metricPower.textContent = this.machine ? String(totalPower(this.machine.snapshot())) : '–'
+  }
+
+  /** The Information tab: the selected part's datasheet summary, built from
+      PART_META - the same data the part itself is drawn from, so there is no
+      second copy to drift. Nothing selected is the common case, and it gets
+      the sentence that says what to do rather than an empty panel. */
+  syncInfo() {
+    const panel = this.tabPanels && this.tabPanels.info
+    if (!panel) return
+    const part = this.board.selected
+    const meta = part && PART_META[part.tagName.toLowerCase()]
+    panel.replaceChildren()
+    if (!meta) {
+      panel.appendChild(el('p', 'ide-info-hint',
+        'Tap a part in the catalogue to add it to the board. Select a part on the board to read its summary here.'))
+      return
+    }
+
+    const label = part.getAttribute('label')
+    panel.appendChild(el('h2', 'ide-info-name', label ? `${meta.name} · ${label}` : meta.name))
+
+    const facts = el('dl', 'ide-info-facts')
+    const fact = (name, value) => {
+      facts.append(el('dt', null, name), el('dd', null, String(value)))
+    }
+    fact('Cost', `¥${meta.cost || 0}`)
+    if (meta.kind) fact('Kind', meta.kind)
+    if (meta.lines) fact('Program', `${meta.lines} lines`)
+    if (meta.cells) fact('Memory', `${meta.cells} cells`)
+    fact('Footprint', `${meta.cols} × ${meta.rows} cells`)
+    panel.appendChild(facts)
+
+    // An io-terminal resolves its single pin per instance from its own
+    // attributes, so its PART_META pin list is a template, not this part's
+    // pins - report what this one was shaped into instead.
+    const pins = el('table', 'ide-info-pins')
+    const head = el('tr')
+    head.append(el('th', null, 'Pin'), el('th', null, 'Type'), el('th', null, 'Side'))
+    pins.appendChild(head)
+    const rows = part.tagName.toLowerCase() === 'io-terminal'
+      ? [{ name: label || 'io', type: part.getAttribute('type') || 'simple', side: part.getAttribute('side') || 'right' }]
+      : meta.pins || []
+    for (const pin of rows) {
+      const tr = el('tr')
+      tr.append(el('td', null, pin.name), el('td', null, pin.type), el('td', null, pin.side))
+      pins.appendChild(tr)
+    }
+    if (rows.length) panel.appendChild(pins)
+  }
+
   sync() {
     const m = this.machine
+    this.syncMetrics()
     this.stepBackBtn.disabled = !m || stepBackTarget(m.time) === null
     if (!m) {
       this.readout.textContent = this.problem
@@ -1066,9 +1337,11 @@ class Ide {
      verify() exactly as verify.test.mjs does. */
   verify() {
     this.pause()
+    if (this.full) this.showTab('verify')
     const spec = this.presetKey && SPECS[this.presetKey]
     if (!spec) {
       this.hideVerify()
+      this.setTestRun('no spec')
       this.readout.textContent = 'Verify: no spec for the loaded circuit.'
       this.root.dataset.simState = 'ok'
       return
@@ -1086,11 +1359,13 @@ class Ide {
       result = runVerify(machine, spec)
     } catch (err) {
       this.hideVerify()
+      this.setTestRun('cannot run')
       this.readout.textContent = `Verify: cannot run - ${err.message}`
       this.root.dataset.simState = 'error'
       return
     }
     this.readout.textContent = formatVerify(result)
+    this.setTestRun(result.ok ? 'pass' : 'fail')
     this.root.dataset.simState = result.ok ? 'ok' : 'error'
     this.recordVerifyTrace(spec, result)
   }
@@ -1155,6 +1430,14 @@ class Ide {
     this.scopeWrap.hidden = true
     this.scopeMark.hidden = true
     this.scope.clear()
+  }
+
+  /** The strip's Test run cell. Null means there is no current result - a
+      dash, the same as before Verify has ever been pressed. */
+  setTestRun(state) {
+    if (!this.full) return
+    this.metricTest.textContent = state || '–'
+    this.metricTest.dataset.state = state || ''
   }
 
   announce(text) {

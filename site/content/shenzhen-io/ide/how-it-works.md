@@ -9,7 +9,8 @@ it actually models, so you know when to trust it.
 
 > [!TIP] The short version
 > - **Instructions, scheduling, XBus handshakes and power are modelled.** Trust these.
-> - **The puzzle campaign, costs, verification and the shop are not.** It is a bench, not the game.
+> - **The puzzle campaign, verification and the shop are not.** Costs are added
+>   up and shown, but nothing depends on them. It is a bench, not the game.
 > - **A frozen design is reported, not hung.** The readout names the chips that are stuck.
 
 ---

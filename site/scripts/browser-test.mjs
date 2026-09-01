@@ -929,6 +929,254 @@ async function main() {
     await context.close()
   }
 
+  // The full-screen bench (/shenzhen-io/ide/bench/): the same workbench in
+  // its `data-layout="full"` shell - rail, board column and catalogue side
+  // by side on a desktop viewport, the status strip's metrics, the two-tab
+  // panel, and Show wires - then the same touch-stacking pass every other
+  // shell in this sweep gets.
+  let benchChecked = 0
+  {
+    const context = await browser.newContext({ viewport: { width: 1280, height: 900 } })
+    const page = await context.newPage()
+    const errors = []
+    page.on('pageerror', (e) => errors.push(String(e.message)))
+    page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
+    const at = 'bench desktop'
+    try {
+      await page.goto(`http://localhost:${port}${BASE}/shenzhen-io/ide/bench/`, { waitUntil: 'networkidle' })
+      await page.waitForSelector('.ide[data-ready]', { timeout: 8000 })
+      await page.waitForTimeout(400)
+      benchChecked += 1
+
+      // Rail / board column / catalogue, side by side, in that order. Box x,
+      // not CSS - `order` alone would not prove anything actually moved.
+      const cols = await page.evaluate(() => {
+        const rect = (sel) => {
+          const r = document.querySelector(sel).getBoundingClientRect()
+          return { x: r.x, right: r.right }
+        }
+        return { rail: rect('.ide-rail'), main: rect('.ide-main'), palette: rect('.ide-palette') }
+      })
+      if (!(cols.rail.x < cols.main.x)) {
+        failures.push(`${at}: rail (x=${Math.round(cols.rail.x)}) is not left of the board column (x=${Math.round(cols.main.x)})`)
+      }
+      if (!(cols.palette.x >= cols.main.right - 1)) {
+        failures.push(`${at}: palette (x=${Math.round(cols.palette.x)}) is not right of the board column (right=${Math.round(cols.main.right)})`)
+      }
+
+      // The shell is a viewport's worth of bench, and all of it is visible
+      // once scrolled to. Not "sits under the top bar on load": the page
+      // keeps the breadcrumbs, title and lede every page here has, so the
+      // widget starts below them. What must hold is that it is not TALLER
+      // than the viewport - a bench you cannot see the bottom of at any
+      // scroll position is the failure this is guarding against - and that
+      // nothing about it scrolls the page sideways. Measured after a
+      // scrollIntoView, and re-measured rather than reasoned about, since
+      // scrolling is exactly what moves these numbers.
+      // Scroll and measure are two calls with a wait between them: the site
+      // sets scroll-behavior on the document, so a rect read in the same
+      // evaluate() as the scroll is read while the page is still moving.
+      await page.evaluate(() => document.querySelector('.ide').scrollIntoView({ block: 'end', behavior: 'instant' }))
+      await page.waitForTimeout(500)
+      const fit = await page.evaluate(() => {
+        const ide = document.querySelector('.ide')
+        const r = ide.getBoundingClientRect()
+        return {
+          top: r.top, bottom: r.bottom, right: r.right, height: r.height,
+          vh: window.innerHeight, vw: window.innerWidth,
+          scroll: document.documentElement.scrollWidth,
+          client: document.documentElement.clientWidth,
+        }
+      })
+      if (fit.height > fit.vh + 1) failures.push(`${at}: .ide is ${Math.round(fit.height)}px tall, more than the ${fit.vh}px viewport`)
+      if (fit.top < -1 || fit.bottom > fit.vh + 1) {
+        failures.push(`${at}: .ide is not wholly on screen after scrolling to it - top ${Math.round(fit.top)}, bottom ${Math.round(fit.bottom)}, viewport ${fit.vh}px`)
+      }
+      if (fit.right > fit.vw + 1) failures.push(`${at}: .ide right edge at ${Math.round(fit.right)}, viewport is ${fit.vw}px wide`)
+      if (fit.scroll > fit.client) failures.push(`${at}: page overflows horizontally: ${fit.scroll} > ${fit.client}`)
+
+      // Status strip: the four metric cells exist, and read sane values for
+      // whatever restore() opened with - a fresh context has no saved board,
+      // so this is the AN650 default (see restore() in ide.js). The fourth
+      // cell is labelled "Instructions" (ide.js and bench.md both, and
+      // deliberately - it excludes blanks, comments and bare labels, which
+      // the game's own "lines of code" does not).
+      const readMetric = (name) => page.evaluate((n) => {
+        const cell = [...document.querySelectorAll('.ide-metric')]
+          .find((c) => c.querySelector('.ide-metric-name').textContent.trim() === n)
+        return cell ? cell.querySelector('.ide-metric-value').textContent.trim() : null
+      }, name)
+      const metricNames = await page.evaluate(() =>
+        [...document.querySelectorAll('.ide-metric-name')].map((n) => n.textContent.trim()))
+      for (const want of ['Test run', 'Production cost', 'Power usage', 'Instructions']) {
+        if (!metricNames.includes(want)) failures.push(`${at}: no "${want}" metric cell`)
+      }
+      const costBefore = await readMetric('Production cost')
+      const linesBefore = await readMetric('Instructions')
+      if (!/^¥\d+$/.test(costBefore || '')) failures.push(`${at}: Production cost read "${costBefore}"`)
+      if (!/^\d+$/.test(linesBefore || '')) failures.push(`${at}: Instructions read "${linesBefore}"`)
+
+      // Information tab, nothing selected yet - checked before anything below
+      // places or selects a part, since either replaces this hint.
+      const hintShown = await page.evaluate(() => Boolean(document.querySelector('.ide-info-hint')))
+      if (!hintShown) failures.push(`${at}: Information tab does not show the hint before anything is selected`)
+
+      // Tabs: exactly two, Information selected by default, its panel
+      // painted while Verification's reads computed display:none - never the
+      // `hidden` attribute, which a class-level `display` can outrank (the
+      // .ide-modal trap this repo has already been bitten by once).
+      const tabState = () => page.evaluate(() => {
+        const btns = [...document.querySelectorAll('.ide-tab')]
+        const find = (name) => btns.find((b) => b.textContent.trim() === name)
+        const panelOf = (b) => b && document.getElementById(b.getAttribute('aria-controls'))
+        const info = find('Information')
+        const verify = find('Verification')
+        return {
+          count: btns.length,
+          infoSelected: info && info.getAttribute('aria-selected'),
+          verifySelected: verify && verify.getAttribute('aria-selected'),
+          infoDisplay: info && getComputedStyle(panelOf(info)).display,
+          verifyDisplay: verify && getComputedStyle(panelOf(verify)).display,
+        }
+      })
+      let tabs = await tabState()
+      if (tabs.count !== 2) failures.push(`${at}: expected 2 tabs, found ${tabs.count}`)
+      if (tabs.infoSelected !== 'true' || tabs.verifySelected !== 'false') {
+        failures.push(`${at}: Information is not the default tab (info=${tabs.infoSelected}, verify=${tabs.verifySelected})`)
+      }
+      if (tabs.infoDisplay === 'none') failures.push(`${at}: Information panel is hidden while selected`)
+      if (tabs.verifyDisplay !== 'none') failures.push(`${at}: Verification panel is visible while not selected`)
+
+      // Clicking Verification selects it and reveals its panel.
+      await page.evaluate(() => {
+        [...document.querySelectorAll('.ide-tab')].find((b) => b.textContent.trim() === 'Verification').click()
+      })
+      await page.waitForTimeout(150)
+      tabs = await tabState()
+      if (tabs.verifySelected !== 'true') failures.push(`${at}: clicking Verification did not select it`)
+      if (tabs.verifyDisplay === 'none') failures.push(`${at}: Verification panel stayed hidden after being selected`)
+      if (tabs.infoDisplay !== 'none') failures.push(`${at}: Information panel stayed visible after Verification was selected`)
+
+      // Information: click a real part on the board (not the wires svg) and
+      // read back its summary.
+      const partCenter = await page.evaluate(() => {
+        const part = [...document.querySelectorAll('circuit-board > *')].find((e) => e.shadowRoot)
+        if (!part) return null
+        const r = part.getBoundingClientRect()
+        return { x: r.x + r.width / 2, y: r.y + r.height / 2 }
+      })
+      if (!partCenter) {
+        failures.push(`${at}: no part on the board to select`)
+      } else {
+        await page.mouse.click(partCenter.x, partCenter.y)
+        await page.waitForTimeout(150)
+        const info = await page.evaluate(() => {
+          const name = document.querySelector('.ide-info-name')
+          return {
+            name: name ? name.textContent.trim() : '',
+            facts: document.querySelectorAll('.ide-info-facts dt').length,
+          }
+        })
+        if (!info.name) failures.push(`${at}: selecting a board part left the Information name empty`)
+        if (!info.facts) failures.push(`${at}: selecting a board part produced no facts`)
+      }
+
+      // Adding a part must move at least one metric: Production cost.
+      await page.locator('.ide-chip').first().scrollIntoViewIfNeeded()
+      await page.locator('.ide-chip').first().click()
+      await page.waitForTimeout(200)
+      const costAfter = await readMetric('Production cost')
+      const before = Number((costBefore || '¥0').slice(1))
+      const after = Number((costAfter || '¥0').slice(1))
+      if (!(after > before)) {
+        failures.push(`${at}: adding a part did not raise Production cost (${costBefore} -> ${costAfter})`)
+      }
+
+      // Show wires: aria-pressed and the root's data-view flip together, and
+      // back again.
+      const wireState = () => page.evaluate(() => ({
+        pressed: document.querySelector('.ide-toggle').getAttribute('aria-pressed'),
+        view: document.querySelector('.ide').dataset.view || '',
+      }))
+      const w0 = await wireState()
+      if (w0.pressed !== 'false') failures.push(`${at}: Show wires starts pressed`)
+      await page.click('.ide-toggle')
+      await page.waitForTimeout(150)
+      const w1 = await wireState()
+      if (w1.pressed !== 'true' || w1.view !== 'wires') {
+        failures.push(`${at}: Show wires did not turn on (aria-pressed=${w1.pressed}, data-view="${w1.view}")`)
+      }
+      await page.click('.ide-toggle')
+      await page.waitForTimeout(150)
+      const w2 = await wireState()
+      if (w2.pressed !== 'false' || w2.view !== '') {
+        failures.push(`${at}: Show wires did not turn back off (aria-pressed=${w2.pressed}, data-view="${w2.view}")`)
+      }
+    } catch (err) {
+      failures.push(`${at}: ${err.message.split('\n')[0]}`)
+    }
+    for (const e of errors) failures.push(`${at} console: ${e}`)
+    await context.close()
+  }
+
+  // Bench, touch: the shell must stack instead of sitting side by side, and
+  // every visible control must clear 44px in both axes - the same bar every
+  // other touch pass in this file holds workbench controls to.
+  for (const width of widths) {
+    const context = await browser.newContext({
+      viewport: { width, height: 844 },
+      isMobile: true,
+      hasTouch: true,
+    })
+    const page = await context.newPage()
+    const errors = []
+    page.on('pageerror', (e) => errors.push(String(e.message)))
+    page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
+    const at = `${width}px bench`
+    try {
+      await page.goto(`http://localhost:${port}${BASE}/shenzhen-io/ide/bench/`, { waitUntil: 'networkidle' })
+      await page.waitForSelector('.ide[data-ready]', { timeout: 8000 })
+      await page.waitForTimeout(400)
+      benchChecked += 1
+
+      // Catalogue on top, controls at the bottom - not side by side.
+      const stack = await page.evaluate(() => ({
+        paletteBottom: document.querySelector('.ide-palette').getBoundingClientRect().bottom,
+        railTop: document.querySelector('.ide-rail').getBoundingClientRect().top,
+      }))
+      if (!(stack.paletteBottom <= stack.railTop + 1)) {
+        failures.push(`${at}: palette (bottom ${Math.round(stack.paletteBottom)}) is not stacked above the rail (top ${Math.round(stack.railTop)})`)
+      }
+
+      // No sideways scroll at this width.
+      const box = await page.evaluate(() => ({
+        scroll: document.documentElement.scrollWidth,
+        client: document.documentElement.clientWidth,
+      }))
+      if (box.scroll > box.client) {
+        failures.push(`${at}: overflows horizontally: ${box.scroll} > ${box.client}`)
+      }
+
+      // Every visible control clears 44px on both axes. A getBoundingClientRect
+      // of 0x0 is what a closed <details>'s contents or a hidden tab panel
+      // reads as, so filtering on that also skips exactly what should be
+      // skipped without a second, separate visibility check.
+      const small = await page.evaluate(() =>
+        [...document.querySelectorAll(
+          '.ide button, .ide a.sim-btn, .ide select, .ide input, .ide summary.ide-file-summary'
+        )]
+          .map((e) => ({ e, r: e.getBoundingClientRect() }))
+          .filter(({ r }) => r.width > 0 && r.height > 0 && (r.width < 44 || r.height < 44))
+          .map(({ e, r }) => `${((e.textContent || e.value || e.className || e.tagName) + '').trim().slice(0, 30)} ${Math.round(r.width)}x${Math.round(r.height)}`)
+          .slice(0, 6))
+      for (const name of small) failures.push(`${at}: control "${name}" is under 44px`)
+    } catch (err) {
+      failures.push(`${at}: ${err.message.split('\n')[0]}`)
+    }
+    for (const e of errors) failures.push(`${at} console: ${e}`)
+    await context.close()
+  }
+
   await browser.close()
   server.close()
 
@@ -940,7 +1188,7 @@ async function main() {
     return
   }
   process.stdout.write(
-    `browser-test: ${all.length} routes x ${widths.join('/')}px, ${figuresChecked} chip figures, ${circuitsChecked} circuits, ${runnableChecked} runnable, ${routingChecked} routed, ${ideChecked} ide, ${themesChecked} theme, ${stampChecked} stamp` +
+    `browser-test: ${all.length} routes x ${widths.join('/')}px, ${figuresChecked} chip figures, ${circuitsChecked} circuits, ${runnableChecked} runnable, ${routingChecked} routed, ${ideChecked} ide, ${benchChecked} bench, ${themesChecked} theme, ${stampChecked} stamp` +
     ' - no overflow, no console errors\n'
   )
 }
