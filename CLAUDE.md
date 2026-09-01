@@ -179,20 +179,32 @@ stays a fallback. `definePart` checks this now.
 `<div class="ide">` whose contents are the no-JS fallback.
 
 **Two shells, one set of controls.** `data-layout="full"` on the `.ide` root
-(the bench page, `/shenzhen-io/ide/bench/`) lays the same workbench out the way
-the game does: a rail of run controls left, board + status strip centre, parts
-catalogue right, tabbed Information/Verification panel under the board.
-Anything else keeps the stacked panel. `makeControls()` creates every control
-once; `panelRegions()` and `fullRegions()` only decide where each one hangs, so
-a fix to a button is a fix in both. Below 56rem the bench reflows back to the
-stacked column with `order` — one DOM, never a second implementation. CSS lives
-in style.css's "the bench" section at the end.
+lays the same workbench out the way the game does: a rail of run controls left,
+board + status strip centre, parts catalogue right, tabbed
+Information/Verification panel under the board. Anything else keeps the stacked
+panel. `makeControls()` creates every control once; `panelRegions()` and
+`fullRegions()` only decide where each one hangs, so a fix to a button is a fix
+in both. Below 56rem the bench reflows back to the stacked column with `order` —
+one DOM, never a second implementation. CSS lives in style.css's "the bench"
+section at the end.
+
+**`/workbench/` is an app route, not a page.** `app: true` in front matter
+(build.mjs) renders top bar + breadcrumbs and nothing else — no sidebar, no
+heading block, no contents list, no pager, no footer, and no menu button, since
+it would open a sidebar that is not there. `.content-app` is exactly
+`100dvh - --topbar-h` as a flex column, so the breadcrumbs take what they need
+and the bench takes the rest: a full screen of workbench with no fixed overlay,
+no z-index and nothing to lock behind it. The bench's own page (what the strip
+counts, where each control went) stays a normal doc page at
+`/shenzhen-io/ide/bench/`, because an app route has no room for reading matter.
+On a short phone the catalogue and rail stay put and `.ide-main` scrolls — a
+rail pushed off the bottom is a workbench with no controls.
 
 The status strip counts through `metrics.js` (pure, node-tested):
 `productionCost` sums `PART_META.cost`, `linesOfCode` counts instructions via
 `parseProgram`, `totalPower` sums a snapshot. The strip says **Instructions**,
 not "lines of code" — a bare label is a line in the game and not here (see
-TODO.md). Test run is Verify's verdict and is cleared by `hideVerify()`, so a
+TODO.md). Test run is Verify's verdict and is cleared by `invalidate()`, so a
 "pass" cannot outlive the board it was about. Catalogue thumbnails are the
 parts themselves under components.js's `thumb` attribute, not images.
 

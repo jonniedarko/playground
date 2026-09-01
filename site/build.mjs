@@ -102,6 +102,7 @@ async function readTree(dir, urlPrefix = '') {
         icon: index?.data.icon || '',
         board: index?.data.board === true,
         wide: index?.data.wide === true,
+        app: index?.data.app === true,
         doc: index,
         children,
       })
@@ -121,6 +122,7 @@ async function readTree(dir, urlPrefix = '') {
       icon: doc.data.icon || '',
       board: doc.data.board === true,
       wide: doc.data.wide === true,
+      app: doc.data.app === true,
       doc,
       children: [],
     })
@@ -303,7 +305,14 @@ function renderStamp(where = 'topbar') {
      aria-label="${escapeHtml(label)}" rel="noopener" target="_blank">${inner}</a>`
 }
 
-function layout({ title, description, content, nav, breadcrumbs, pager, isHome, board = false, wide = false }) {
+/* `app` is the one page shape that is not a document: the route IS the tool.
+   It keeps the top bar and the breadcrumbs - where you are, and the way back -
+   and drops the sidebar, the heading block, the contents list, the pager and
+   the footer, so the tool has the viewport under the breadcrumbs to itself.
+   The menu button goes with the sidebar: a control that opens nothing is
+   worse than no control. Search and the theme toggle stay, since neither
+   needs the sidebar to work. */
+function layout({ title, description, content, nav, breadcrumbs, pager, isHome, board = false, wide = false, app = false }) {
   const pageTitle = isHome ? SITE.title + ' - ' + SITE.tagline : title + ' - ' + SITE.title
   return `<!doctype html>
 <html lang="en">
@@ -333,9 +342,9 @@ function layout({ title, description, content, nav, breadcrumbs, pager, isHome, 
 <a class="skip-link" href="#main">Skip to content</a>
 
 <header class="topbar">
-  <button class="icon-btn menu-btn" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">
+  ${app ? '' : `<button class="icon-btn menu-btn" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">
     <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-  </button>
+  </button>`}
   <a class="brand" href="${url('')}" aria-label="${escapeHtml(SITE.title)} home">
     <span class="brand-mark" aria-hidden="true">FN</span>
     <span class="brand-text">${escapeHtml(SITE.title)}</span>
@@ -352,8 +361,8 @@ function layout({ title, description, content, nav, breadcrumbs, pager, isHome, 
   </div>
 </header>
 
-<div class="shell">
-  <div class="scrim" data-close-nav hidden></div>
+<div class="shell${app ? ' shell-app' : ''}">
+  ${app ? '' : `<div class="scrim" data-close-nav hidden></div>
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-inner">
       <button class="search-field" type="button" data-open-search>
@@ -363,18 +372,18 @@ function layout({ title, description, content, nav, breadcrumbs, pager, isHome, 
       </button>
       <nav class="sidebar-nav" aria-label="Documentation">${nav}</nav>
     </div>
-  </aside>
+  </aside>`}
 
-  <main class="content${wide ? ' content-wide' : ''}" id="main">
-    <article class="doc${wide ? ' doc-wide' : ''}">
+  <main class="content${app ? ' content-app' : wide ? ' content-wide' : ''}" id="main">
+    <article class="doc${app ? ' doc-app' : wide ? ' doc-wide' : ''}">
       ${breadcrumbs}
       ${content}
-      ${pager}
+      ${app ? '' : pager}
     </article>
-    <footer class="site-footer">
+    ${app ? '' : `<footer class="site-footer">
       <p>${escapeHtml(SITE.title)} - built as a static site. Source notes are kept as Markdown.</p>
       ${renderStamp('footer')}
-    </footer>
+    </footer>`}
   </main>
 </div>
 
@@ -446,24 +455,29 @@ export async function buildSite({ quiet = false } = {}) {
     const { html, headings } = renderMarkdown(body, { resolveLink: (href) => resolveDocLink(href, node) })
     const trail = [...(parentOf.get(node.route) || []), node]
 
+    // An app route is the tool and nothing else: no heading block, no
+    // contents list. Its title still reaches the tab, the search index and
+    // the breadcrumb trail - it is only the page furniture that goes.
+    const docHead =
+      '<header class="doc-head"><h1>' +
+      escapeHtml(node.title) +
+      '</h1>' +
+      (node.description ? '<p class="lede">' + escapeHtml(node.description) + '</p>' : '') +
+      '</header>'
+
     const page = layout({
       title: node.title,
       description: node.description,
-      content:
-        '<header class="doc-head"><h1>' +
-        escapeHtml(node.title) +
-        '</h1>' +
-        (node.description ? '<p class="lede">' + escapeHtml(node.description) + '</p>' : '') +
-        '</header>' +
-        renderToc(headings) +
-        html +
-        renderChildCards(node),
+      content: node.app
+        ? html
+        : docHead + renderToc(headings) + html + renderChildCards(node),
       nav: renderNav(tree, node.route),
       breadcrumbs: renderBreadcrumbs(trail),
       pager: renderPager(position.prev, position.next),
       isHome: false,
       board: node.board,
       wide: node.wide,
+      app: node.app,
     })
 
     const dest = path.join(OUT_DIR, node.route, 'index.html')

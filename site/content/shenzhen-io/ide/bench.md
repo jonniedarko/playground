@@ -1,26 +1,22 @@
 ---
 title: Full-screen bench
-description: The workbench laid out like the game - sim controls on the left rail, the board and its status strip in the middle, the parts catalogue down the right.
-board: true
-wide: true
+description: What the full-screen workbench puts where - the status strip's four readings, and where each control moved to.
 order: 2
 icon: 🖥️
 ---
 
-<div class="ide" data-layout="full">
-<p>The bench needs JavaScript. Without it, the worked examples on the <a href="/shenzhen-io/quick-start/">quick start</a> and in the <a href="/shenzhen-io/application-notes/">application notes</a> cover the same ground as static diagrams.</p>
-</div>
+The [full-screen workbench](/workbench/) is this same workbench with the screen
+to itself: run controls on a rail down the left, the board and its status strip
+in the middle, the parts catalogue with its prices down the right, and a panel
+underneath for the part you have selected and for what Verify made of the
+circuit. It is the arrangement the game uses.
 
-The same workbench as the [panel version](/shenzhen-io/ide/), arranged the way
-the game arranges it: the run controls on a rail down the left, the board and
-its status strip in the middle, the parts catalogue with its prices down the
-right, and a panel underneath for the part you have selected and for what
-Verify made of the circuit.
-
-Nothing here is a different simulator. It is the same board, the same
+Nothing there is a different simulator. It is the same board, the same
 interpreter and the same saved design - open either page and you get the board
 you left.
 
+This page is the reading matter that will not fit on a screen given over to a
+tool.
 
 ## What the status strip counts
 
@@ -33,16 +29,17 @@ you left.
 | **Instructions** | Executable instructions across every chip. Comments, blank lines and bare labels do not count - which is why this is not labelled the way the game labels it, since a label occupies a line there |
 
 Cost is the sum of the datasheet prices in the [parts
-section](/shenzhen-io/parts/). There is no budget to stay under here and no
-shop to buy from - the number is there because a design that does the job for
-less is the better design.
+section](/shenzhen-io/parts/). There is no budget to stay under and no shop to
+buy from - the number is there because a design that does the job for less is
+the better design.
 
 ## Where the controls went
 
-| Control | Now lives |
+| Control | Lives |
 | --- | --- |
 | Run, Step, Step back, Break, Reset, Delete | The left rail, top to bottom |
 | **−** / **+** grid size | Bottom of the left rail |
+| **Exit** | Top of the rail. Back to the [panel workbench](/shenzhen-io/ide/) |
 | Load, Clear, Save as, Load saved, Share | The **Board** disclosure in the status strip |
 | Verify | The **Verification** tab, with its trace underneath |
 | A terminal's name | The row of toggles under the board |
@@ -51,5 +48,12 @@ less is the better design.
 
 The rail, the catalogue and the panel stack instead of sitting side by side -
 catalogue at the top, board in the middle, controls in thumb reach at the
-bottom, which is [the panel workbench](/shenzhen-io/ide/) in all but name. Use
-whichever page you prefer; on a small screen they converge.
+bottom, which is [the panel workbench](/shenzhen-io/ide/) in all but name. On a
+short screen the middle column scrolls, so the catalogue and the controls never
+leave the screen.
+
+## Where to go next
+
+- Open it → [Full-screen workbench](/workbench/)
+- The stacked version, with the site around it → [Workbench](/shenzhen-io/ide/)
+- What the simulator models → [How it works](/shenzhen-io/ide/how-it-works/)
