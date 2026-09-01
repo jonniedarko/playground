@@ -131,6 +131,10 @@ export const packetReverserSpec = {
   length: 3,
   inputs: { input: [11, 22, 33] },
   expect: { output: [null, null, 11] },
+  // The last value alone does not pin reversal: break the seek order and the
+  // circuit emits 11, 22, 11, ending on the same 11 a correct one does. The
+  // whole stream is what the manual's "in reverse order" actually claims.
+  expectReceived: { output: [33, 22, 11] },
   tolerance: 0,
 }
 

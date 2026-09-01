@@ -1375,6 +1375,18 @@ td code { white-space: nowrap; }
 .ide-danger[disabled] { opacity: 0.4; cursor: default; }
 .ide-danger:not([disabled]) { border-color: var(--sz-alert-edge); color: var(--sz-alert); }
 
+/* Reveal (ide.js loadPuzzle/reveal) - amber like the lit sim-input toggle,
+   so the one control that hands over the answer reads as deliberate rather
+   than blending into Load/Clear. Hidden with the plain `hidden` property
+   when no puzzle is open; nothing here sets `display`, so the UA rule for
+   [hidden] is never in question - see .ide-modal[hidden] below for the case
+   where that isn't true and an override is required. */
+.ide-reveal {
+  background: linear-gradient(180deg, var(--sz-amber), var(--sz-amber-deep));
+  border-color: var(--sz-amber-deep);
+  color: var(--sz-ink);
+}
+
 .ide-select {
   min-height: 2.75rem;
   padding: 0.4rem 0.6rem;

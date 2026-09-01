@@ -134,7 +134,12 @@ async function main() {
     for (const m of html.matchAll(/(?:href|src)="([^"]+)"/g)) {
       const href = m[1]
       if (href.startsWith('#') || /^(https?:)?\/\//.test(href) || href.startsWith('mailto:')) continue
-      const [base, frag] = href.split('#')
+      const [withFrag, frag] = href.split('#')
+      // A query string (the puzzle pages' own `?puzzle=<key>` workbench
+      // links, Task 13.2) selects behaviour on an already-built page - it is
+      // never itself a route or asset, so it plays no part in whether the
+      // link resolves. Stripped here the same way the fragment already is.
+      const base = withFrag.split('?')[0]
       if (!routes.has(base) && !assets.has(base)) {
         add(file, 'broken link', href)
         continue

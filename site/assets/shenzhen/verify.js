@@ -16,6 +16,7 @@
        length: 12,               // time units to run
        inputs: { switch: [0, 0, 100, 100, 0] },
        expect: { lamp: [null, null, 0, 50, 50, 50] },
+       expectReceived: { output: [33, 22, 11] },  // whole XBus stream, in order
        tolerance: 0,             // absolute, per sample. Default 0.
      }
 
@@ -30,6 +31,12 @@
      twice: once here, once at the sampling call site below.
    - Inputs for a unit are applied via setInput *before* that unit's
      advance() - see the loop below, setInput always precedes advance().
+   - `expectReceived` is for XBus output terminals, whose whole point is a
+     stream: `expect` can only ever see the LAST value such a terminal took,
+     and a circuit that emits the right final value by accident passes on
+     that alone. The packet reverser is exactly that case - break its seek
+     order and it emits 11, 22, 11 instead of 33, 22, 11, ending on the same
+     number either way. Checked once, after the run.
    ========================================================================= */
 
 /** Index into a time-indexed array, holding the last entry past its end. */
@@ -119,6 +126,22 @@ export function verify(machine, spec) {
     const chips = machine.parts.filter((p) => p.chip)
     if (chips.length && chips.every((p) => p.chip.halted)) {
       return report(machine, spec, { time: t, signal: 'halted', expected: null, actual: 'every chip halted' })
+    }
+  }
+
+  // The whole stream, for terminals where the last value is not the point.
+  for (const signal of Object.keys(spec.expectReceived || {})) {
+    const want = spec.expectReceived[signal]
+    const got = machine.received(signal)
+    for (let i = 0; i < Math.max(want.length, got.length); i += 1) {
+      if (want[i] !== got[i]) {
+        return report(machine, spec, {
+          time: length - 1,
+          signal: `${signal}[${i}]`,
+          expected: want[i] === undefined ? null : want[i],
+          actual: got[i] === undefined ? null : got[i],
+        })
+      }
     }
   }
 

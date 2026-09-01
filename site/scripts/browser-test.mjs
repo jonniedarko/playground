@@ -660,6 +660,98 @@ async function main() {
       if (!(await page.evaluate(() => document.querySelector('.ide-board').wires.length))) {
         failures.push(`${at}: wires were lost on reload`)
       }
+
+      // Puzzle mode (Task 13.2): a workbench link carrying ?puzzle=<key>
+      // opens an EMPTY board bound to that puzzle's spec, and a Reveal
+      // control loads the manual's reference solution. The board reloaded
+      // above (an650 preset, sabotaged code, a moved terminal) stands in for
+      // "a board someone was already working on" - opening a puzzle, and
+      // merely looking at it, must not touch that save. Clicking Reveal is a
+      // different matter, checked further down: it is exactly loadPreset()
+      // under a different button, which already, deliberately, overwrites
+      // the one autosave slot - the same as picking any circuit from the
+      // Load dropdown always has.
+      const savedBefore = await page.evaluate(() => localStorage.getItem('sz-ide-board'))
+      if (!savedBefore) failures.push(`${at}: expected a saved board ahead of the puzzle-mode check`)
+
+      await page.goto(`http://localhost:${port}${BASE}/shenzhen-io/ide/?puzzle=an650`, { waitUntil: 'networkidle' })
+      await page.waitForSelector('.ide[data-ready]', { timeout: 8000 })
+      await page.waitForTimeout(400)
+
+      if ((await count()) !== 0) failures.push(`${at}: puzzle mode did not open an empty board`)
+      const untouchedOnOpen = await page.evaluate(() => localStorage.getItem('sz-ide-board'))
+      if (untouchedOnOpen !== savedBefore) {
+        failures.push(`${at}: opening a puzzle touched the saved board before any edit`)
+      }
+
+      // Verify must survive being pressed against a genuinely empty,
+      // spec-bound board (spec.inputs names a terminal - "switch" - that
+      // does not exist yet) without throwing - see the try/catch around
+      // runVerify in ide.js. A crash here would show up as a console error
+      // below and as a readout that silently never changed.
+      const beforeEmptyVerify = await readout()
+      await verifyBtn.click()
+      await page.waitForTimeout(200)
+      const emptyVerifyText = await readout()
+      if (emptyVerifyText === beforeEmptyVerify || !emptyVerifyText.startsWith('Verify:')) {
+        failures.push(`${at}: Verify on an empty puzzle board produced no readout - "${emptyVerifyText}"`)
+      }
+
+      // Leave puzzle mode without ever touching Reveal or the board - a
+      // plain visit, no query string - and the autosave from before the
+      // puzzle was ever opened must be exactly as it was. This is the actual
+      // "do not silently destroy" proof: everything above (opening the
+      // puzzle, pressing Verify on the empty board) has to leave zero mark
+      // on the previous save.
+      await page.goto(`http://localhost:${port}${BASE}/shenzhen-io/ide/`, { waitUntil: 'networkidle' })
+      await page.waitForSelector('.ide[data-ready]', { timeout: 8000 })
+      await page.waitForTimeout(400)
+      const afterLookingOnly = await page.evaluate(() => localStorage.getItem('sz-ide-board'))
+      if (afterLookingOnly !== savedBefore) {
+        failures.push(`${at}: the pre-puzzle saved board was not intact after visiting puzzle mode`)
+      }
+
+      // Now re-enter the puzzle and actually use Reveal - a real button, not
+      // a hover affordance: measured and clicked without ever simulating
+      // :hover, so a zero-size or invisible result here is proof by itself
+      // that it would fail on touch.
+      await page.goto(`http://localhost:${port}${BASE}/shenzhen-io/ide/?puzzle=an650`, { waitUntil: 'networkidle' })
+      await page.waitForSelector('.ide[data-ready]', { timeout: 8000 })
+      await page.waitForTimeout(400)
+      const revealBtn = page.getByRole('button', { name: 'Reveal', exact: false })
+      const rBox = await revealBtn.boundingBox()
+      if (!rBox || rBox.height < 44 || rBox.width < 44) {
+        failures.push(`${at}: Reveal control is ${rBox ? `${Math.round(rBox.width)}x${Math.round(rBox.height)}` : 'not visible'}`)
+      } else {
+        await revealBtn.click()
+        await page.waitForTimeout(300)
+        const revealedParts = await count()
+        if (revealedParts !== CIRCUITS.an650.parts.length) {
+          failures.push(`${at}: Reveal loaded ${revealedParts} parts, AN650's reference circuit has ${CIRCUITS.an650.parts.length}`)
+        }
+        await verifyBtn.click()
+        await page.waitForTimeout(200)
+        const revealedVerify = await readout()
+        if (!revealedVerify.includes('PASS')) {
+          failures.push(`${at}: the revealed AN650 solution failed Verify - "${revealedVerify}"`)
+        }
+      }
+
+      // packet-reverser has no PRESETS dropdown entry (see the PUZZLES
+      // comment in ide.js) - Reveal has to reach it some other way, which
+      // means through loadPreset() directly rather than the dropdown's own
+      // list. Proves that path independently of AN650 above.
+      await page.goto(`http://localhost:${port}${BASE}/shenzhen-io/ide/?puzzle=packet-reverser`, { waitUntil: 'networkidle' })
+      await page.waitForSelector('.ide[data-ready]', { timeout: 8000 })
+      await page.waitForTimeout(400)
+      if ((await count()) !== 0) failures.push(`${at}: the packet-reverser puzzle did not open an empty board`)
+      await page.getByRole('button', { name: 'Reveal', exact: false }).click()
+      await page.waitForTimeout(300)
+      const prParts = await count()
+      const prWant = CIRCUITS['packet-reverser'].parts.length
+      if (prParts !== prWant) {
+        failures.push(`${at}: Reveal loaded ${prParts} parts, packet-reverser's reference circuit has ${prWant}`)
+      }
     } catch (err) {
       failures.push(`${at}: ${err.message.split('\n')[0]}`)
     }

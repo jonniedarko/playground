@@ -79,5 +79,8 @@ leave uncertain.
 `motor-0` never moves in this design - the ones digit of every value the
 DX300 is written is `0`.
 
-Build it in the [workbench](/shenzhen-io/ide/). The finished reference
-circuit is on the [DX300 page](/shenzhen-io/parts/dx300/) itself.
+Build it in the [workbench](/shenzhen-io/ide/?puzzle=dx300-stepper) - that
+link opens an empty board bound to this puzzle, so Verify checks an attempt
+against the table above. Stuck? The workbench's own **Reveal** button loads
+the finished circuit; it is also on the [DX300 page](/shenzhen-io/parts/dx300/)
+itself.

@@ -64,6 +64,22 @@ const PRESETS = [
   ['dx300-stepper', 'DX300 stepper'],
 ]
 
+/** Puzzles reachable via `?puzzle=<key>` on the workbench link (see
+    loadPuzzle() below and the puzzle pages in content/shenzhen-io/puzzles/).
+    A key here must have both a spec (specs.js, to grade an attempt) and a
+    circuit (circuits.js, to reveal) - loadPuzzle() checks both before
+    trusting the query string. The display name matches each puzzle page's
+    own `title` front matter. packet-reverser is not in PRESETS above (it is
+    not offered as a dropdown starting point - a puzzle should start empty,
+    not with the answer already loaded) but Reveal still reaches it, since
+    reveal() calls loadPreset() directly rather than going through the
+    dropdown's own list. */
+const PUZZLES = {
+  an650: 'AN650 light controller',
+  'dx300-stepper': 'DX300 stepper',
+  'packet-reverser': 'Packet reverser',
+}
+
 const el = (tag, cls, text) => {
   const n = document.createElement(tag)
   if (cls) n.className = cls
@@ -139,6 +155,14 @@ class Ide {
     // (xbus-pair, blink, button-lamp) have none, and a board restored from a
     // previous session (restore(), below) never sets this at all.
     this.presetKey = null
+    // Set once, by loadPuzzle(), when this page load opened via ?puzzle=.
+    // Unlike presetKey it is never cleared afterwards - it names which
+    // puzzle Reveal answers for the rest of this page's life, independent of
+    // whatever the board is later cleared to or loaded with.
+    this.puzzleKey = null
+    // The note text announce() falls back to once its own transient message
+    // times out - see announce() below. Blank outside puzzle mode.
+    this.puzzleNote = ''
     this.build()
     this.restore()
   }
@@ -242,6 +266,18 @@ class Ide {
     })
     label.appendChild(select)
     bar.append(label, this.button('Clear', () => this.clear()))
+
+    // Reveal: hidden until a puzzle is actually open (loadPuzzle sets
+    // puzzleKey and un-hides it) - most visits never see this button. A real
+    // button, not a hover affordance, and never disabled - .hidden uses the
+    // DOM property (see syncSelection's aria-pressed pattern elsewhere in
+    // this file), and no class below gives .ide-reveal a `display` of its
+    // own, so the plain [hidden] UA rule applies untouched - the opposite
+    // situation from .ide-modal, which needs an explicit override because it
+    // sets display:flex itself (see style.css).
+    this.revealBtn = this.button('Reveal', () => this.reveal(), 'ide-reveal')
+    this.revealBtn.hidden = true
+    bar.appendChild(this.revealBtn)
 
     this.note = el('p', 'ide-note')
     this.note.setAttribute('role', 'status')
@@ -379,7 +415,56 @@ class Ide {
     this.syncSelection()
     // `load` wires up on the next frame, so the run has to wait for it too.
     requestAnimationFrame(() => requestAnimationFrame(() => this.invalidate()))
-    this.announce(`Loaded ${PRESETS.find(([k]) => k === key)?.[1] || key}`)
+    // PRESETS names circuits the dropdown itself offers; PUZZLES covers the
+    // rest (packet-reverser, reached only through reveal() below).
+    this.announce(`Loaded ${PRESETS.find(([k]) => k === key)?.[1] || PUZZLES[key] || key}`)
+  }
+
+  /** Entered via `?puzzle=<key>` on the workbench link (a puzzle page's own
+      "Build it in the workbench" link, see content/shenzhen-io/puzzles/) -
+      an EMPTY board bound to that puzzle's spec, so the point is to attempt
+      it and Verify grades the attempt, not the answer.
+
+      Deliberately does not call invalidate() or save(): opening a puzzle
+      must not touch whatever board was autosaved from an earlier session.
+      This mirrors invalidate() (pause, drop the stale machine, rebuild the
+      input bar, clear any stale Verify trace, sync the readout) but leaves
+      the save() call out - the previous save stays exactly as it was until
+      an actual edit happens here, at which point place()/deleteSelected()
+      etc. save over it exactly as they already do for every other board
+      edit. That first edit is disclosed in the note (see the persistent
+      message below), not hidden. */
+  loadPuzzle(key) {
+    this.puzzleKey = key
+    this.presetKey = key
+    this.pause()
+    this.board.clearWires()
+    this.board.parts.forEach((p) => p.remove())
+    this.board.select(null)
+    this.syncSelection()
+    this.machine = null
+    this.buildInputs()
+    this.hideVerify()
+    this.sync()
+    this.puzzleNote = `Puzzle: ${PUZZLES[key]}. Empty board - your last saved ` +
+      'board is untouched until you edit this one.'
+    this.note.textContent = this.puzzleNote
+    this.revealBtn.hidden = false
+    this.revealBtn.setAttribute('aria-label', `Reveal ${PUZZLES[key]}'s reference solution`)
+  }
+
+  /** The reveal affordance: replaces the board with the puzzle's reference
+      solution from circuits.js. This IS loadPreset() - reveal is exactly
+      "load this circuit", the same operation the Load dropdown performs for
+      its own list, just reached by a different control and not limited to
+      what PRESETS offers as a dropdown starting point (packet-reverser has
+      no dropdown entry - see the PUZZLES comment above - but Reveal still
+      reaches it, because this calls loadPreset() directly). */
+  reveal() {
+    if (!this.puzzleKey) return
+    const key = this.puzzleKey
+    this.puzzleNote = `Revealed: ${PUZZLES[key]}'s reference solution.`
+    this.loadPreset(key)
   }
 
   /* ----- editor ----- */
@@ -575,16 +660,23 @@ class Ide {
       this.root.dataset.simState = 'ok'
       return
     }
-    let machine
+    let result
     try {
-      machine = new Machine(specFromBoard(this.board))
+      // runVerify is inside the same try as Machine's own construction, not
+      // just alongside it: a puzzle's empty (or still-partial) board has no
+      // `switch`/`input`/... terminal yet, and Machine.setInput throws on a
+      // missing one (sim.js) the moment verify.js applies that unit's
+      // inputs - reachable the instant a puzzle page's board opens and
+      // Verify gets pressed before anything is built. Same diagnostic
+      // message either way; the visitor sees "cannot run", not a crash.
+      const machine = new Machine(specFromBoard(this.board))
+      result = runVerify(machine, spec)
     } catch (err) {
       this.hideVerify()
       this.readout.textContent = `Verify: cannot run - ${err.message}`
       this.root.dataset.simState = 'error'
       return
     }
-    const result = runVerify(machine, spec)
     this.readout.textContent = formatVerify(result)
     this.root.dataset.simState = result.ok ? 'ok' : 'error'
     this.recordVerifyTrace(spec, result)
@@ -655,7 +747,10 @@ class Ide {
   announce(text) {
     this.note.textContent = text
     clearTimeout(this._noteT)
-    this._noteT = setTimeout(() => { this.note.textContent = '' }, 2600)
+    // Reverts to the persistent puzzle-mode message, not blank, once one is
+    // set (loadPuzzle/reveal) - a transient "Part added" must not wipe out
+    // the standing "your saved board is untouched" disclosure.
+    this._noteT = setTimeout(() => { this.note.textContent = this.puzzleNote || '' }, 2600)
   }
 
   /* ----- persistence ----- */
@@ -670,6 +765,16 @@ class Ide {
   }
 
   restore() {
+    // A puzzle page's workbench link carries ?puzzle=<key> (the obvious
+    // mechanism for a plain page-to-page link, no state to thread through
+    // otherwise). Checked, and acted on, before localStorage is ever read -
+    // see loadPuzzle()'s own doc comment for why: the saved board must stay
+    // exactly as it was until an actual edit happens.
+    const puzzle = new URLSearchParams(window.location.search).get('puzzle')
+    if (puzzle && SPECS[puzzle] && CIRCUITS[puzzle]) {
+      this.loadPuzzle(puzzle)
+      return
+    }
     let saved = null
     try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null') } catch { saved = null }
     if (saved && Array.isArray(saved.parts) && saved.parts.length) {

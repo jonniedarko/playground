@@ -82,5 +82,8 @@ whole pass has run: `output` must be showing `11`, the *first* value fed in,
 because reversal means it was the *last* one written, and a terminal holds
 whatever it was last written.
 
-Build it in the [workbench](/shenzhen-io/ide/). The finished reference
-circuit is on the [100P-14 page](/shenzhen-io/parts/memory/) itself.
+Build it in the [workbench](/shenzhen-io/ide/?puzzle=packet-reverser) - that
+link opens an empty board bound to this puzzle, so Verify checks an attempt
+against the table above. Stuck? The workbench's own **Reveal** button loads
+the finished circuit; it is also on the [100P-14 page](/shenzhen-io/parts/memory/)
+itself.

@@ -208,3 +208,22 @@ test('packet-reverser really reverses, rather than passing values straight throu
   m.run(3)
   assert.deepEqual(m.received('output'), [33, 22, 11])
 })
+
+test('expectReceived checks the whole stream, not just what a terminal ends on', () => {
+  // An XBus output terminal shows only its last value, so `expect` alone
+  // cannot tell 33,22,11 from 11,22,11 - both end on 11. This is the check
+  // that does, and the reason the packet reverser's spec carries one.
+  const build = () => new Machine(CIRCUITS['packet-reverser'])
+  const base = { circuit: 'packet-reverser', length: 3, inputs: { input: [11, 22, 33] }, tolerance: 0 }
+
+  assert.equal(verify(build(), { ...base, expectReceived: { output: [33, 22, 11] } }).ok, true)
+
+  const wrong = verify(build(), { ...base, expectReceived: { output: [11, 22, 11] } })
+  assert.equal(wrong.ok, false, 'a stream in the wrong order must not pass')
+  assert.equal(wrong.divergence.signal, 'output[0]', 'and it names which value differed')
+  assert.equal(wrong.divergence.expected, 11)
+  assert.equal(wrong.divergence.actual, 33)
+
+  // A short expectation is a mismatch, not a silent pass on a prefix.
+  assert.equal(verify(build(), { ...base, expectReceived: { output: [33, 22] } }).ok, false)
+})
