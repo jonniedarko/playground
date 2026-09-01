@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>AN650 light controller - Field Notes</title>
+<meta name="description" content="Detect a capacitive switch&#39;s rising edge and step a lamp through off, 50% and 100%." />
+<meta name="color-scheme" content="light dark" />
+<meta name="theme-color" content="#f7f7f5" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)" />
+<meta property="og:title" content="AN650 light controller - Field Notes" />
+<meta property="og:description" content="Detect a capacitive switch&#39;s rising edge and step a lamp through off, 50% and 100%." />
+<meta property="og:type" content="article" />
+<link rel="icon" href="/playground/assets/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="/playground/assets/style.css" />
+<script>
+  // Apply the stored theme before first paint so the page never flashes the wrong one.
+  try {
+    var t = localStorage.getItem('theme')
+    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t
+  } catch (e) {}
+  window.__BASE__ = "/playground/"
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <button class="icon-btn menu-btn" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="/playground/" aria-label="Field Notes home">
+    <span class="brand-mark" aria-hidden="true">FN</span>
+    <span class="brand-text">Field Notes</span>
+  </a>
+  <div class="topbar-actions">
+    <a class="build-stamp" href="https://github.com/jonniedarko/playground/commit/6f220aeaa9de44392aad880a9526329c8438a75e" title="R14.2: named local saves - 6f220ae - 2026-09-01T05:26:30+00:00"
+     aria-label="Last updated 2026-09-01 at 05:26 UTC. Opens the commit on GitHub." rel="noopener" target="_blank"><span class="stamp-brief" aria-hidden="true">09-01</span><time datetime="2026-09-01T05:26:30+00:00">2026-09-01</time><span class="stamp-time">05:26</span><span class="stamp-sha">6f220ae</span></a>
+    <button class="icon-btn search-btn" type="button" aria-label="Search" data-open-search>
+      <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <button class="icon-btn theme-btn" type="button" aria-label="Toggle colour theme" data-toggle-theme>
+      <svg class="icon-sun" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="4" fill="currentColor"/><path d="M10 1v2M10 17v2M1 10h2M17 10h2M3.6 3.6l1.4 1.4M15 15l1.4 1.4M16.4 3.6L15 5M5 15l-1.4 1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <svg class="icon-moon" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M16 12.5A7 7 0 0 1 7.5 4a7 7 0 1 0 8.5 8.5z" fill="currentColor"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="shell">
+  <div class="scrim" data-close-nav hidden></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+      <button class="search-field" type="button" data-open-search>
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Search docs</span>
+        <kbd>/</kbd>
+      </button>
+      <nav class="sidebar-nav" aria-label="Documentation"><ul class="nav-list nav-depth-0"><li class="nav-group is-open"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/"><span class="nav-icon" aria-hidden="true">🔌</span>SHENZHEN I/O</a><button class="nav-toggle" type="button" aria-expanded="true" aria-label="Toggle SHENZHEN I/O section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-1"><li><a class="nav-link" href="/playground/shenzhen-io/quick-start/"><span class="nav-icon" aria-hidden="true">🚀</span>Quick start</a></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/ide/"><span class="nav-icon" aria-hidden="true">🛠️</span>Workbench</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Workbench section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/ide/how-it-works/">How it works</a></li></ul></li><li><a class="nav-link" href="/playground/shenzhen-io/reference-card/"><span class="nav-icon" aria-hidden="true">🗂️</span>Reference card</a></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/language-reference/"><span class="nav-icon" aria-hidden="true">📘</span>Language reference</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Language reference section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/program-structure/">Program structure</a></li><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/registers/">Registers</a></li><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/basic-instructions/">Basic instructions</a></li><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/arithmetic-instructions/">Arithmetic instructions</a></li><li><a class="nav-link" href="/playground/shenzhen-io/language-reference/test-instructions/">Test instructions</a></li></ul></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/application-notes/"><span class="nav-icon" aria-hidden="true">📐</span>Application notes</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Application notes section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/application-notes/an268-interfaces/">AN268: Two interfaces, limitless possibilities</a></li><li><a class="nav-link" href="/playground/shenzhen-io/application-notes/an393-sleep/">AN393: Make sure to get enough sleep</a></li><li><a class="nav-link" href="/playground/shenzhen-io/application-notes/an650-light-controller/">AN650: Touch-activated light controller</a></li></ul></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/parts/"><span class="nav-icon" aria-hidden="true">🧩</span>Parts datasheets</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Parts datasheets section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/parts/mc4000/">MC4000</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/mc6000/">MC6000</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/mc4010/">MC4010</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/dx300/">DX300</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/memory/">Memory - 100P-14 and 200P-14</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/logic-gates/">LC70Gxx logic gates</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/clock/">DT2415 incremental clock</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/radio/">C2S-RF901 radio</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/fm-blaster/">FM Blaster sound module</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/displays-and-inputs/">Displays and inputs</a></li><li><a class="nav-link" href="/playground/shenzhen-io/parts/specialist-parts/">Specialist parts</a></li></ul></li><li class="nav-group is-open"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/puzzles/"><span class="nav-icon" aria-hidden="true">🎯</span>Puzzles</a><button class="nav-toggle" type="button" aria-expanded="true" aria-label="Toggle Puzzles section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link is-current" href="/playground/shenzhen-io/puzzles/an650-light-controller/" aria-current="page"><span class="nav-icon" aria-hidden="true">💡</span>AN650 light controller</a></li><li><a class="nav-link" href="/playground/shenzhen-io/puzzles/dx300-stepper/"><span class="nav-icon" aria-hidden="true">⚙️</span>DX300 stepper</a></li><li><a class="nav-link" href="/playground/shenzhen-io/puzzles/packet-reverser/"><span class="nav-icon" aria-hidden="true">🔃</span>Packet reverser</a></li></ul></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/supplemental/"><span class="nav-icon" aria-hidden="true">📎</span>Supplemental data</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Supplemental data section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/supplemental/signal-specs/">Signal and formula specs</a></li><li><a class="nav-link" href="/playground/shenzhen-io/supplemental/tv-keywords/">TV spoiler keyword list</a></li><li><a class="nav-link" href="/playground/shenzhen-io/supplemental/lookup-tables/">Product lookup tables</a></li></ul></li><li class="nav-group"><div class="nav-group-head"><a class="nav-link" href="/playground/shenzhen-io/story/"><span class="nav-icon" aria-hidden="true">✉️</span>Story documents</a><button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle Story documents section"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><ul class="nav-list nav-depth-2"><li><a class="nav-link" href="/playground/shenzhen-io/story/emails/">The recruiter emails</a></li><li><a class="nav-link" href="/playground/shenzhen-io/story/visa-application/">Visa application form</a></li></ul></li></ul></li></ul></nav>
+    </div>
+  </aside>
+
+  <main class="content content-wide" id="main">
+    <article class="doc doc-wide">
+      <nav class="breadcrumbs" aria-label="Breadcrumb"><ol><li><a href="/playground/">Home</a></li><li><a href="/playground/shenzhen-io/">SHENZHEN I/O</a></li><li><a href="/playground/shenzhen-io/puzzles/">Puzzles</a></li><li aria-current="page">AN650 light controller</li></ol></nav>
+      <header class="doc-head"><h1>AN650 light controller</h1><p class="lede">Detect a capacitive switch&#39;s rising edge and step a lamp through off, 50% and 100%.</p></header><nav class="toc" aria-label="On this page"><details open><summary>On this page</summary><ul><li class="toc-h2"><a href="#the-brief">The brief</a></li><li class="toc-h2"><a href="#parts-allowed">Parts allowed</a></li><li class="toc-h2"><a href="#inputs-and-outputs">Inputs and outputs</a></li><li class="toc-h2"><a href="#what-a-correct-circuit-must-do">What a correct circuit must do</a></li></ul></details></nav><h2 id="the-brief">The brief<a class="anchor" href="#the-brief" aria-label="Link to this section">#</a></h2>
+<p>From <a href="/playground/shenzhen-io/application-notes/an650-light-controller/">AN650: Touch-activated light controller</a>:</p>
+<blockquote class="callout callout-quote"><p>When a user touches a capacitive switch, the controller will detect the rising edge and advance the light to the next intensity level - from off, to 50%, to 100%, and back to off.</p></blockquote>
+<p>The load-bearing word is <em>edge</em>. The same page spells out how the first chip finds one:</p>
+<blockquote class="callout callout-quote"><p>By storing the previous reading from the capacitive switch in <code>acc</code>, the first microcontroller can detect a transition from low (<code>0</code>) to high (<code>100</code>).</p></blockquote>
+<p>That is a comparison against the previous reading, not a read of the current level. A build that just watches the switch and advances the lamp whenever it reads high will keep climbing for as long as a touch is held, which is not what the brief asks for: one touch, one step, however long it is held.</p>
+<h2 id="parts-allowed">Parts allowed<a class="anchor" href="#parts-allowed" aria-label="Link to this section">#</a></h2>
+<p>From the same page:</p>
+<blockquote class="callout callout-quote"><p>The circuit consists of two MC4000 microcontrollers that communicate over XBus.</p></blockquote>
+<div class="chip-figure" data-part="mc-4000" aria-label="MC4000 pin layout. Left side, top to bottom: x0 XBus, p0 simple I/O. Right side, top to bottom: p1 simple I/O, x1 XBus.">
+<div class="pinout" role="img" aria-label="MC4000 pin layout. Left side, top to bottom: x0 XBus, p0 simple I/O. Right side, top to bottom: p1 simple I/O, x1 XBus.">
+<div class="pinout-col"><span class="pin pin-x">x0</span><span class="pin pin-s">p0</span></div>
+<div class="pinout-chip"><span class="pinout-name">MC4000</span></div>
+<div class="pinout-col"><span class="pin pin-s">p1</span><span class="pin pin-x">x1</span></div>
+</div>
+</div>
+<div class="table-wrap"><table><thead><tr><th>Part</th><th>Count</th><th>Datasheet</th></tr></thead><tbody><tr><td>MC4000</td><td>2</td><td><a href="/playground/shenzhen-io/parts/mc4000/">MC4000</a></td></tr></tbody></table></div>
+<h2 id="inputs-and-outputs">Inputs and outputs<a class="anchor" href="#inputs-and-outputs" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Terminal</th><th>Direction</th><th>Type</th><th>Values</th></tr></thead><tbody><tr><td><code>switch</code></td><td>input</td><td>simple I/O</td><td><code>0</code> untouched, <code>100</code> touched</td></tr><tr><td><code>lamp</code></td><td>output</td><td>simple I/O</td><td><code>0</code> off, <code>50</code> half, <code>100</code> full</td></tr></tbody></table></div>
+<h2 id="what-a-correct-circuit-must-do">What a correct circuit must do<a class="anchor" href="#what-a-correct-circuit-must-do" aria-label="Link to this section">#</a></h2>
+<p><code>switch</code> is touched three times below, each held for six time units with five units released in between. This is the timeline the workbench&#39;s Verify button checks a build against.</p>
+<p>A <code>-</code> marks a time unit the brief doesn&#39;t pin to an exact instant - it falls inside the first few units of a touch, while the edge is still being detected. Every other cell is exact, including the runs of repeated values while a touch is held: <code>lamp</code> must sit still there, not keep advancing.</p>
+<div class="table-wrap"><table><thead><tr><th>Time unit</th><th>switch (in)</th><th>lamp (expected)</th></tr></thead><tbody><tr><td>0</td><td>0</td><td>0</td></tr><tr><td>1</td><td>0</td><td>0</td></tr><tr><td>2</td><td>0</td><td>0</td></tr><tr><td>3</td><td>100</td><td>-</td></tr><tr><td>4</td><td>100</td><td>-</td></tr><tr><td>5</td><td>100</td><td>-</td></tr><tr><td>6</td><td>100</td><td>50</td></tr><tr><td>7</td><td>100</td><td>50</td></tr><tr><td>8</td><td>100</td><td>50</td></tr><tr><td>9</td><td>0</td><td>50</td></tr><tr><td>10</td><td>0</td><td>50</td></tr><tr><td>11</td><td>0</td><td>50</td></tr><tr><td>12</td><td>0</td><td>50</td></tr><tr><td>13</td><td>0</td><td>50</td></tr><tr><td>14</td><td>100</td><td>-</td></tr><tr><td>15</td><td>100</td><td>-</td></tr><tr><td>16</td><td>100</td><td>-</td></tr><tr><td>17</td><td>100</td><td>100</td></tr><tr><td>18</td><td>100</td><td>100</td></tr><tr><td>19</td><td>100</td><td>100</td></tr><tr><td>20</td><td>0</td><td>100</td></tr><tr><td>21</td><td>0</td><td>100</td></tr><tr><td>22</td><td>0</td><td>100</td></tr><tr><td>23</td><td>0</td><td>100</td></tr><tr><td>24</td><td>0</td><td>100</td></tr><tr><td>25</td><td>100</td><td>-</td></tr><tr><td>26</td><td>100</td><td>-</td></tr><tr><td>27</td><td>100</td><td>-</td></tr><tr><td>28</td><td>100</td><td>0</td></tr><tr><td>29</td><td>100</td><td>0</td></tr><tr><td>30</td><td>100</td><td>0</td></tr></tbody></table></div>
+<p>The third touch wraps <code>100</code> back to <code>0</code> - the brief&#39;s own &quot;and back to off&quot;.</p>
+<p>Build it in the <a href="/playground/shenzhen-io/ide/">workbench</a>. The finished reference circuit is on the <a href="/playground/shenzhen-io/application-notes/an650-light-controller/">AN650 page</a> itself.</p>
+      <nav class="pager" aria-label="Pagination"><a class="pager-link pager-prev" href="/playground/shenzhen-io/puzzles/"><span class="pager-label">Previous</span><span class="pager-title">Puzzles</span></a><a class="pager-link pager-next" href="/playground/shenzhen-io/puzzles/dx300-stepper/"><span class="pager-label">Next</span><span class="pager-title">DX300 stepper</span></a></nav>
+    </article>
+    <footer class="site-footer">
+      <p>Field Notes - built as a static site. Source notes are kept as Markdown.</p>
+      <a class="build-stamp build-stamp-footer" href="https://github.com/jonniedarko/playground/commit/6f220aeaa9de44392aad880a9526329c8438a75e" title="R14.2: named local saves - 6f220ae - 2026-09-01T05:26:30+00:00"
+     aria-label="Last updated 2026-09-01 at 05:26 UTC. Opens the commit on GitHub." rel="noopener" target="_blank">Updated <time datetime="2026-09-01T05:26:30+00:00">2026-09-01 05:26 UTC</time> &middot; <span class="stamp-sha">6f220ae</span></a>
+    </footer>
+  </main>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-head">
+      <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L17 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input type="search" class="search-input" placeholder="Search all notes" aria-label="Search query" autocomplete="off" />
+      <button class="icon-btn" type="button" data-close-search aria-label="Close search">Esc</button>
+    </div>
+    <div class="search-results" role="listbox" aria-label="Search results"></div>
+  </div>
+</div>
+
+<script src="/playground/assets/app.js" defer></script>
+<script type="module" src="/playground/assets/shenzhen/embed.js"></script>
+</body>
+</html>

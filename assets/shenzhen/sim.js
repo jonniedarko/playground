@@ -235,21 +235,43 @@ export class Machine {
     return this.parts.find((p) => p.tag === 'io-terminal' && p.label === label)
   }
 
-  /** Set the level an input terminal presents to the circuit. */
+  /**
+   * Set what an input terminal presents to the circuit.
+   *
+   * A simple terminal is a level, so this replaces it. An XBus one is a
+   * stream, so this hands it one more value to be read: the two pin types
+   * are different contracts, and a queue is what "a chip reads a packet"
+   * means.
+   */
   setInput(label, value) {
     const part = this.terminal(label)
     if (!part) throw new Error(`no terminal labelled "${label}"`)
+    if (part.spec.type === 'xbus') {
+      part.queue.push(clamp(value))
+      return this
+    }
     part.value = clamp(value)
     this.refreshDevices()
     return this
   }
 
-  /** Read the level on a terminal, whoever is driving it. */
+  /**
+   * Read a terminal: the level on it for a simple one, and for an XBus one
+   * the last value it was handed, since a stream has no level to read.
+   */
   output(label) {
     const part = this.terminal(label)
     if (!part) throw new Error(`no terminal labelled "${label}"`)
+    if (part.spec.type === 'xbus') return part.value || 0
     const net = this.net(part.id, part.label)
     return net ? net.level : 0
+  }
+
+  /** Everything an XBus output terminal has been handed, in order. */
+  received(label) {
+    const part = this.terminal(label)
+    if (!part) throw new Error(`no terminal labelled "${label}"`)
+    return part.received || []
   }
 
   /** Find an N4PB-8000 by its label, the same way terminal() finds an io-terminal. */
@@ -654,11 +676,177 @@ export class Machine {
     const describe = (c) => `${c.meta.name} blocked on ${c.blocked.op} ${c.blocked.args.join(' ')}`
 
     // Everyone waiting on everyone: nothing can ever move again.
-    if (chips.length && chips.every((c) => c.blocked)) this.deadlock = chips.map(describe)
+    //
+    // Except a chip waiting on the board edge. An XBus input terminal is fed
+    // from outside the machine, so an empty one may simply not have been
+    // handed its next value yet - the packet reverser reads a value per time
+    // unit and blocks in between, which is the circuit working, not failing.
+    // Deadlock has to mean provably fatal or it is worthless as a signal, so
+    // an edge-waiter downgrades the verdict to stalled.
+    const onEdge = chips.some((c) => this.waitingOnEdge(c.id))
+    if (chips.length && chips.every((c) => c.blocked) && !onEdge) this.deadlock = chips.map(describe)
 
     // Blocked while others merely sleep is not provably fatal, but it is the
     // symptom players actually hit, so surface it rather than sitting silent.
     this.stalled = chips.filter((c) => c.blocked).map(describe)
+  }
+
+  /**
+   * Is this chip blocked reading from an XBus input terminal - the board's
+   * edge - rather than from another part of the circuit? Only the edge can
+   * be refilled from outside, so only the edge makes a block survivable.
+   */
+  waitingOnEdge(chipId) {
+    for (const net of this.nets) {
+      if (!net.reads.some((r) => r.id === chipId)) continue
+      for (const member of net.members) {
+        const part = this.parts[member.id]
+        if (part && part.tag === 'io-terminal' && part.spec.type === 'xbus' && part.spec.side === 'right') {
+          return true
+        }
+      }
+    }
+    return false
+  }
+
+  /**
+   * Which token of a blocked instruction is the pin it blocked on, and was
+   * that a read or a write.
+   *
+   * `chip.blocked.args` are raw tokens - a register, an immediate, a label,
+   * or a pin - and the pin can be either operand (`mov x0 acc` reads x0;
+   * `mov acc x1` writes x1). Rather than assume a position, this walks the
+   * args in the order the interpreter itself evaluates them (mov reads its
+   * first operand before writing its second; every other instruction that
+   * touches a pin only reads) and asks the chip's own pin list whether each
+   * token is an XBus pin at all - only XBus reads and writes ever block, so
+   * a simple-pin token, register or immediate is skipped.
+   *
+   * For the token that is a pin, the net tells the rest: no net at all means
+   * readPin/writePin threw before ever registering a wait (nothing wired);
+   * otherwise this chip's id is exactly what got pushed onto net.reads or
+   * net.writes the moment it blocked, so that registration - not the arg's
+   * static position - is the ground truth for read vs write.
+   *
+   * Returns null only if chip.blocked is set but no arg resolves to a pin,
+   * which should not happen; callers treat that as "could not explain".
+   */
+  blockedPin(chip, ins) {
+    for (let i = 0; i < ins.args.length; i += 1) {
+      const name = String(ins.args[i]).toLowerCase()
+      const meta = chip.pins.get(name)
+      if (!meta || meta.type !== 'xbus') continue
+      const net = this.net(chip.id, name)
+      if (!net) return { pin: name, net: null, direction: ins.op === 'mov' && i === 1 ? 'write' : 'read' }
+      if (net.reads.some((r) => r.id === chip.id)) return { pin: name, net, direction: 'read' }
+      if (net.writes.some((w) => w.id === chip.id)) return { pin: name, net, direction: 'write' }
+      // This candidate's read or write went through fine - the instruction
+      // blocked on a later operand instead. Keep looking.
+    }
+    return null
+  }
+
+  /**
+   * Explain one blocked chip: which pin, what (if anything) is wired to it,
+   * and why the wait hasn't resolved. Pure formatting over state settle()
+   * already keeps in chip.blocked / net.reads / net.writes - see
+   * blockedPin() above for how the pin itself is found.
+   *
+   * `reason` is one of:
+   *   'unwired'  - nothing is wired to the pin at all.
+   *   'edge'     - the other end is an XBus input terminal (the board's own
+   *                edge) with nothing queued yet. Distinct from 'unwired'
+   *                because something IS wired there; it is simply fed from
+   *                outside the circuit, the same case waitingOnEdge() already
+   *                downgrades a full deadlock for.
+   *   'blocked'  - the other end is a chip, and that chip is itself blocked.
+   *   'sleeping' - the other end is a chip, and that chip is asleep.
+   *   'halted'   - the other end is a chip with no program to run at all, so
+   *                it can never reach the pin. Not one of the task's three
+   *                named reasons, but a real, reachable state this function
+   *                must still describe rather than mis-file as something
+   *                else - see the R15.1 task report.
+   *   'other'    - the other end is a non-chip device (or something odder)
+   *                that is neither serving nor accepting right now, e.g. a
+   *                write-only part like LX700 or FM Blaster being read.
+   *                Also not one of the three; kept honest rather than forced
+   *                into a reason that would misdescribe it.
+   */
+  explainOne(part) {
+    const chip = part.chip
+    const ins = chip.blocked
+    const found = this.blockedPin(chip, ins)
+    const base = { id: part.id, tag: part.tag, label: part.label, op: ins.op, args: ins.args.slice() }
+    const verb = (d) => (d === 'write' ? 'writing' : 'reading')
+
+    if (!found) {
+      return {
+        ...base, pin: null, direction: null, reason: 'other', partner: null,
+        message: `${part.label} is blocked on "${ins.op} ${ins.args.join(' ')}" (no pin identified).`,
+      }
+    }
+
+    const { pin, net, direction } = found
+
+    if (!net) {
+      return {
+        ...base, pin, direction, reason: 'unwired', partner: null,
+        message: `${part.label} is blocked ${verb(direction)} ${pin}: nothing is wired to it.`,
+      }
+    }
+
+    const otherEnd = net.members.find((m) => m.id !== part.id)
+    const otherPart = otherEnd ? this.parts[otherEnd.id] : null
+    const partner = otherPart ? { id: otherPart.id, tag: otherPart.tag, label: otherPart.label, pin: otherEnd.pin } : null
+
+    if (otherPart && otherPart.tag === 'io-terminal' && otherPart.spec.type === 'xbus' && otherPart.spec.side === 'right') {
+      return {
+        ...base, pin, direction, reason: 'edge', partner,
+        message: `${part.label} is waiting for input on ${pin}, from the "${otherPart.label}" terminal.`,
+      }
+    }
+
+    if (otherPart && otherPart.chip) {
+      const oc = otherPart.chip
+      if (oc.blocked) {
+        return {
+          ...base, pin, direction, reason: 'blocked', partner,
+          message: `${part.label} is blocked ${verb(direction)} ${pin}, wired to ${otherPart.label} ${otherEnd.pin} - which is itself blocked.`,
+        }
+      }
+      if (oc.sleepUntil >= 0) {
+        return {
+          ...base, pin, direction, reason: 'sleeping', partner,
+          message: `${part.label} is blocked ${verb(direction)} ${pin}, wired to ${otherPart.label} ${otherEnd.pin} - which is asleep.`,
+        }
+      }
+      if (oc.halted) {
+        return {
+          ...base, pin, direction, reason: 'halted', partner,
+          message: `${part.label} is blocked ${verb(direction)} ${pin}, wired to ${otherPart.label} ${otherEnd.pin} - which has no program running.`,
+        }
+      }
+      // Should not occur once settle() has stopped every chip is halted,
+      // blocked or asleep - but describe it rather than mis-file it.
+      return {
+        ...base, pin, direction, reason: 'other', partner,
+        message: `${part.label} is blocked ${verb(direction)} ${pin}, wired to ${otherPart.label} ${otherEnd.pin}.`,
+      }
+    }
+
+    // Something non-chip is wired there (or nothing at all, which should not
+    // happen for a real net) but is not currently serving or accepting.
+    return {
+      ...base, pin, direction, reason: 'other', partner,
+      message: partner
+        ? `${part.label} is blocked ${verb(direction)} ${pin}, wired to ${otherPart.label} ${otherEnd.pin} - which has nothing for it right now.`
+        : `${part.label} is blocked ${verb(direction)} ${pin}.`,
+    }
+  }
+
+  /** Explain every chip currently blocked (chip.blocked, not merely asleep). */
+  explainBlocked() {
+    return this.parts.filter((p) => p.chip && p.chip.blocked).map((p) => this.explainOne(p))
   }
 
   /** Advance the clock by one time unit. Returns false if it cannot. */
