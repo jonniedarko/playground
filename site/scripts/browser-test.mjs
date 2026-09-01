@@ -640,6 +640,41 @@ async function main() {
         }
       }
 
+      // A breakpoint must actually stop a run, not merely be settable. The
+      // feature shipped once with no way to arm it at all, so this checks
+      // the whole path: cycle the control onto a signal, start the clock,
+      // and confirm the run paused itself.
+      await page.selectOption('.ide-select', 'an650')
+      await page.waitForTimeout(300)
+      const tapNamed = async (name) => {
+        await page.evaluate((n) => {
+          const b = [...document.querySelectorAll('.ide button')].find((e) => e.textContent.trim() === n)
+          if (b) { b.scrollIntoView({ block: 'center' }); b.click() }
+        }, name)
+        await page.waitForTimeout(150)
+      }
+      const breakLabel = () => page.evaluate(() => {
+        const b = [...document.querySelectorAll('.ide button')].find((e) => e.textContent.trim().startsWith('Break:'))
+        return b ? b.textContent.trim() : null
+      })
+      if ((await breakLabel()) !== 'Break: off') {
+        failures.push(`${at}: no Break control, or it does not start off`)
+      } else {
+        await tapNamed('Break: off')
+        const armed = await breakLabel()
+        if (armed !== 'Break: lamp') {
+          failures.push(`${at}: cycling the Break control gave "${armed}", not the lamp output`)
+        } else {
+          await tapNamed('switch')
+          await tapNamed('Run')
+          await page.waitForTimeout(1200)
+          const stillRunning = await page.evaluate(() =>
+            document.querySelector('.ide button.sim-play').textContent.trim() !== 'Run')
+          if (stillRunning) failures.push(`${at}: the run did not stop when the watched signal changed`)
+        }
+        await tapNamed(await breakLabel()) // cycle back off, so later checks start clean
+      }
+
       // Every control the page offers has to be a real tap target.
       const small = await ide.evaluate((root) =>
         [...root.querySelectorAll('button, select')]

@@ -170,6 +170,32 @@ function rebuildAndReplay(spec, log, target) {
   return { machine, cursor }
 }
 
+/* ------------------------------------------------------------ breakpoints
+   Pure helper functions to check if a breakpoint condition is met.
+   Exported for testing; the Ide class calls them from tick() after each
+   advance to decide whether to pause. */
+
+/** Check if a line breakpoint should pause the simulation.
+    Fires when a chip's PC reaches the target line (moving into it, not
+    merely staying on it). Takes snapshots before and after the time unit
+    to detect the transition. */
+function shouldPauseLineBreakpoint(chipId, line, beforeSnapshot, afterSnapshot) {
+  if (!beforeSnapshot || !afterSnapshot) return false
+  const before = beforeSnapshot.find(s => s.id === chipId)
+  const after = afterSnapshot.find(s => s.id === chipId)
+  if (!after || after.pc === undefined) return false
+  // Pause if we just moved into this line
+  const wasNotThere = !before || before.pc === undefined || before.pc !== line
+  return after.pc === line && wasNotThere
+}
+
+/** Check if a signal breakpoint should pause the simulation.
+    Fires when a named output signal's value changes. The caller is
+    responsible for tracking before/after values. */
+function shouldPauseSignalBreakpoint(beforeValue, afterValue) {
+  return beforeValue !== afterValue
+}
+
 /* ----------------------------------------------------------------- verify
    Index into a time-indexed array, holding the last entry past its end -
    the same rule verify.js applies to spec.inputs. Duplicated here rather
@@ -227,6 +253,12 @@ class Ide {
     // unit, or a terminal, that no longer means what it did.
     this.inputLog = []
     this.logCursor = 0
+    // R15.2: breakpoints array. Each entry is { type: 'line', chipId, line }
+    // or { type: 'signal', label }. Checked in tick() to pause when conditions
+    // are met. Cleared when the machine is rebuilt (reset, invalidate, etc).
+    this.breakpoints = []
+    // Track previous signal values to detect changes for signal breakpoints.
+    this.prevSignalValues = new Map()
     this.build()
     this.restore()
   }
@@ -278,11 +310,12 @@ class Ide {
     this.playBtn = this.button('Run', () => this.toggle(), 'sim-play')
     this.stepBtn = this.button('Step', () => { this.pause(); this.tick() })
     this.stepBackBtn = this.button('Step back', () => this.stepBack())
+    this.breakBtn = this.button('Break: off', () => this.cycleSignalBreak())
     this.resetBtn = this.button('Reset', () => this.reset())
     this.verifyBtn = this.button('Verify', () => this.verify())
     this.delBtn = this.button('Delete', () => this.deleteSelected(), 'ide-danger')
     this.delBtn.disabled = true
-    bar.append(this.playBtn, this.stepBtn, this.stepBackBtn, this.resetBtn, this.verifyBtn, this.delBtn)
+    bar.append(this.playBtn, this.stepBtn, this.stepBackBtn, this.breakBtn, this.resetBtn, this.verifyBtn, this.delBtn)
 
     // Zoom buttons rather than a range input: a slider is the one control that
     // is genuinely worse with a thumb than with a mouse.
@@ -367,8 +400,9 @@ class Ide {
     this.modalArea.setAttribute('aria-label', 'Program source')
     this.modalCount = el('p', 'ide-modal-count')
 
+    const breakHere = this.button('Break here', () => this.toggleLineBreak())
     const done = this.button('Done', () => this.closeEditor(), 'ide-primary')
-    panel.append(this.modalTitle, this.modalArea, this.modalCount, done)
+    panel.append(this.modalTitle, this.modalArea, this.modalCount, breakHere, done)
     dlg.appendChild(panel)
 
     this.modalArea.addEventListener('input', () => {
@@ -536,6 +570,61 @@ class Ide {
   }
 
   /* ----- editor ----- */
+  /* ----- setting a breakpoint -------------------------------------------
+     The checks below were reachable only from code until now: nothing in
+     the workbench ever put an entry in this.breakpoints, so a debugger
+     nobody can arm is not a debugger. These are the two ways in, both
+     inside bars that already exist.
+     --------------------------------------------------------------------- */
+
+  /** Output terminals, which are the signals worth breaking on. */
+  breakableSignals() {
+    return [...this.board.querySelectorAll('io-terminal')]
+      .filter((t) => t.getAttribute('side') === 'left')
+      .map((t) => t.getAttribute('label'))
+      .filter(Boolean)
+  }
+
+  /** Cycle the signal breakpoint: off, then each output terminal, then off
+      again. A cycling button rather than a picker because the sim bar has
+      room for one control, not for a list. */
+  cycleSignalBreak() {
+    const signals = this.breakableSignals()
+    const current = this.breakpoints.find((b) => b.type === 'signal')
+    this.breakpoints = this.breakpoints.filter((b) => b.type !== 'signal')
+    if (signals.length) {
+      const next = current ? signals.indexOf(current.label) + 1 : 0
+      if (next < signals.length) this.breakpoints.push({ type: 'signal', label: signals[next] })
+    }
+    this.syncBreakButton()
+    this.announce(this.breakBtn.textContent)
+  }
+
+  syncBreakButton() {
+    const on = this.breakpoints.find((b) => b.type === 'signal')
+    this.breakBtn.textContent = on ? `Break: ${on.label}` : 'Break: off'
+  }
+
+  /** Toggle a line breakpoint on the line the caret is in, for the chip the
+      editor is open on. The caret is how a person says "this line" in a
+      textarea; there is no gutter to tap. Program index and source line are
+      the same thing - a comment or a blank still parses to an entry - so the
+      caret's line number is the pc to break on. */
+  toggleLineBreak() {
+    if (!this.editing) return
+    const chipId = [...this.board.children].indexOf(this.editing)
+    const line = this.modalArea.value.slice(0, this.modalArea.selectionStart).split('\n').length - 1
+    const at = this.breakpoints.findIndex(
+      (b) => b.type === 'line' && b.chipId === chipId && b.line === line)
+    if (at > -1) {
+      this.breakpoints.splice(at, 1)
+      this.announce(`Breakpoint cleared on line ${line + 1}`)
+    } else {
+      this.breakpoints.push({ type: 'line', chipId, line })
+      this.announce(`Break on line ${line + 1}`)
+    }
+  }
+
   openEditor(part) {
     this.editing = part
     this.modalTitle.textContent = `${part.getAttribute('part-name') || 'Chip'} program`
@@ -573,6 +662,11 @@ class Ide {
     // now-different circuit never had.
     this.inputLog = []
     this.logCursor = 0
+    // R15.2: clear breakpoints on structural change (they may refer to
+    // deleted parts or terminals)
+    this.breakpoints = []
+    if (this.breakBtn) this.syncBreakButton()
+    this.prevSignalValues.clear()
     this.buildInputs()
     // A structural edit makes any earlier Verify diagnostic stale - the
     // scope trace and mark were drawn from the circuit as it stood before
@@ -685,6 +779,10 @@ class Ide {
     // exists.
     this.inputLog = []
     this.logCursor = 0
+    // R15.2: clear breakpoints on reset (state has changed)
+    this.breakpoints = []
+    if (this.breakBtn) this.syncBreakButton()
+    this.prevSignalValues.clear()
     this.board.parts.forEach((p) => p.resetRegisters?.())
     this.buildInputs()
     this.sync()
@@ -697,8 +795,48 @@ class Ide {
     // stepBack() - the live path keeps logCursor caught up itself, in
     // recordInput() above.
     this.logCursor = applyDueInputs(m, this.inputLog, this.logCursor)
+
+    // R15.2: Collect state before advance for breakpoint checking
+    const beforeSnapshot = m.snapshot()
+    const beforeSignalValues = new Map()
+    for (const bp of this.breakpoints) {
+      if (bp.type === 'signal') {
+        try {
+          beforeSignalValues.set(bp.label, m.output(bp.label))
+        } catch {
+          // Signal doesn't exist - skip it
+        }
+      }
+    }
+
     const ok = m.advance()
     this.sync()
+
+    // R15.2: Check breakpoints after advance
+    if (ok && this.breakpoints.length > 0) {
+      const afterSnapshot = m.snapshot()
+      for (const bp of this.breakpoints) {
+        if (bp.type === 'line') {
+          if (shouldPauseLineBreakpoint(bp.chipId, bp.line, beforeSnapshot, afterSnapshot)) {
+            this.pause()
+            return
+          }
+        } else if (bp.type === 'signal') {
+          const before = beforeSignalValues.get(bp.label)
+          let after
+          try {
+            after = m.output(bp.label)
+          } catch {
+            continue
+          }
+          if (shouldPauseSignalBreakpoint(before, after)) {
+            this.pause()
+            return
+          }
+        }
+      }
+    }
+
     if (!ok) this.pause()
   }
 
@@ -964,4 +1102,4 @@ function upgradeIde() {
   }
 }
 
-export { Ide, upgradeIde, specFromBoard, stepBackTarget, applyDueInputs, rebuildAndReplay }
+export { Ide, upgradeIde, specFromBoard, stepBackTarget, applyDueInputs, rebuildAndReplay, shouldPauseLineBreakpoint, shouldPauseSignalBreakpoint }
