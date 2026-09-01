@@ -1806,66 +1806,82 @@ td code { white-space: nowrap; }
   .ide-chip-preview { display: none; }
 }
 
-/* ---- screen mode ----
-   The bench is a full-screen workbench, so by default it is exactly that: it
-   covers the viewport, the site's own header included, the way the game's
-   editor covers the screen. `Notes` in the rail drops it back into the
-   document (`data-fill="inline"`) to read the page it lives on, and `Exit`
-   leaves for the panel workbench.
+/* ---- the app route ----
+   `app: true` in front matter (build.mjs) gives a page the top bar and the
+   breadcrumbs and nothing else - no sidebar, no heading block, no contents
+   list, no pager, no footer - because on that route the tool IS the page.
 
-   Three conditions, all load-bearing. `[data-layout="full"]` is the bench
-   rather than the stacked workbench. `[data-ready]` means ide.js has built
-   the shell - before that the element holds the no-JS fallback paragraph,
-   and covering a page with a paragraph is worse than not covering it, so a
-   reader without JavaScript never sees this rule. `[data-fill="screen"]` is
-   the toggle, set by ide.js and never by the markup.
+   The main column is exactly the viewport under the top bar, laid out as a
+   flex column, so the breadcrumbs take the height they need (they wrap on a
+   narrow screen) and the bench takes the rest. That is what makes this a
+   full screen of workbench without a fixed overlay, a z-index, or a lock on
+   the page behind it: there is nothing behind it. */
+/* The shell centres the docs in a 90rem column with a gutter; an app route
+   is the whole window, so it keeps neither. */
+.shell-app {
+  display: block;
+  max-width: none;
+  padding: 0;
+}
 
-   z-index 50 clears the topbar (40) and stays under the search overlay and
-   the program editor (60); the skip link (100) still wins, which is what
-   keeps a keyboard's way out of here open. */
-.ide[data-layout='full'][data-ready][data-fill='screen'] {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  height: 100dvh;
-  max-height: none;
+.content-app {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--topbar-h));
+  max-width: none;
   margin: 0;
-  border: 0;
+  padding: 0;
+}
+
+.doc-app {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.doc-app > .breadcrumbs {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0.5rem max(0.75rem, env(safe-area-inset-left));
+}
+
+.doc-app .ide[data-layout='full'] {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  height: auto;
+  margin: 0;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
   border-radius: 0;
 }
 
 /* The rail is the bottom row on a phone, which is where the home indicator
    and a floating browser toolbar live. */
-.ide[data-layout='full'][data-fill='screen'] .ide-rail {
+.doc-app .ide-rail {
   padding-bottom: max(0.625rem, env(safe-area-inset-bottom));
 }
 
-/* Nothing to scroll behind a cover that hides the scrollbar. Set by ide.js
-   alongside the mode, and cleared with it. */
-body[data-ide-fill='screen'] { overflow: hidden; }
-
-/* A short phone in screen mode: everything has to fit, because nothing
-   scrolls the shell itself - the rail is the bottom row and a rail pushed
-   off the bottom is a workbench with no controls. So the panel is the part
-   that gives: it shrinks to its tab row and scrolls internally, while the
-   board keeps a floor. The desktop grid is untouched. */
+/* A short phone cannot hold the catalogue, the board, the strip, the panel
+   and a four-row rail at once. The catalogue and the rail stay put - they
+   are what the thumb reaches for - and the middle column scrolls, so the
+   strip and the panel are reached by scrolling rather than clipped out of
+   existence. The panel never goes below its own tab row: Verify lives on the
+   Verification tab, and a collapsed panel would take Verify off the phone. */
 @media (max-width: 55.999rem) {
-  .ide[data-layout='full'][data-fill='screen'] .ide-panel {
-    flex: 0 1 auto;
-    /* Never below the tab row: Verify lives on the Verification tab, and a
-       panel squeezed to nothing takes Verify off the phone with it. */
-    min-height: 2.75rem;
-    max-height: 30dvh;
-  }
-  .ide[data-layout='full'][data-fill='screen'] .ide-stage { min-height: 8rem; }
-
-  /* On a short phone the catalogue, board, strip, panel and a four-row rail
-     genuinely do not all fit. The catalogue and the rail stay put - they are
-     what the thumb reaches for - and the middle column scrolls, so the strip
-     and the panel are reached by scrolling the board area rather than by
-     being clipped out of existence. */
-  .ide[data-layout='full'][data-fill='screen'] .ide-main {
+  .doc-app .ide-main {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
+  .doc-app .ide-panel {
+    flex: 0 1 auto;
+    min-height: 2.75rem;
+    max-height: 30dvh;
+  }
+  .doc-app .ide-stage { min-height: 8rem; }
 }

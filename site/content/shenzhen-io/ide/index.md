@@ -21,8 +21,9 @@ browser as you work, so you can leave and come back.
 </div>
 
 The same workbench in the game's own arrangement - run controls on a rail,
-the parts catalogue down the side - is at [Full-screen
-bench](/shenzhen-io/ide/bench/). Same board, same saved design.
+the parts catalogue down the side, the screen to itself - is at [Full-screen
+workbench](/workbench/); [what it puts where](/shenzhen-io/ide/bench/) is
+written up separately. Same board, same saved design.
 
 ## What the controls do
 
@@ -71,4 +72,5 @@ for these.
 - The rules, in one page → [Quick start](/shenzhen-io/quick-start/)
 - One instruction, right now → [Reference card](/shenzhen-io/reference-card/)
 - What this simulator does and does not model → [How it works](/shenzhen-io/ide/how-it-works/)
-- The same workbench full-screen → [Full-screen bench](/shenzhen-io/ide/bench/)
+- The same workbench full-screen → [Full-screen workbench](/workbench/)
+- What the full-screen one puts where → [Full-screen bench](/shenzhen-io/ide/bench/)

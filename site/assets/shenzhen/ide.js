@@ -295,7 +295,6 @@ class Ide {
     this.board.addEventListener('open-editor', (e) => this.openEditor(e.detail))
     this.board.addEventListener('click', () => this.syncSelection())
     this.board.addEventListener('code-changed', () => { this.save(); this.syncMetrics() })
-    if (this.full) this.toggleFill('screen')
     this.root.dataset.ready = 'true'
   }
 
@@ -433,43 +432,20 @@ class Ide {
     rail.setAttribute('role', 'group')
     rail.setAttribute('aria-label', 'Simulation controls')
 
-    // Relative, not absolute: BASE_PATH is applied to markdown links at build
-    // time and this one is written at runtime, so `../` is the only form that
-    // is right both here and under a project-pages prefix.
+    // The bench route is its own page, so `../` would leave the site section
+    // rather than land on the panel workbench. `window.__BASE__` is written
+    // into every page by build.mjs's layout() and already carries whatever
+    // BASE_PATH the deploy used, which is the only reliable way to build an
+    // absolute path from a script that ships to a project-pages prefix.
     const exit = el('a', 'sim-btn ide-exit', 'Exit')
-    exit.href = '../'
+    exit.href = (window.__BASE__ || '/') + 'shenzhen-io/ide/'
     exit.setAttribute('aria-label', 'Back to the panel workbench')
-
-    // The bench takes the whole screen - that is what it is for - so the page
-    // it lives on is behind it, and this is the way back to that page without
-    // leaving the board. Not a hover affordance and not a keyboard shortcut:
-    // there is no keyboard on the device this matters most on.
-    this.fillBtn = this.button('Notes', () => this.toggleFill(), 'ide-fill-toggle')
-    this.fillBtn.setAttribute('aria-label', 'Show the page behind the bench')
 
     rail.append(
       exit, this.playBtn, this.stepBtn, this.stepBackBtn,
-      this.resetBtn, this.breakBtn, this.delBtn, this.fillBtn, this.zoomGroup,
+      this.resetBtn, this.breakBtn, this.delBtn, this.zoomGroup,
     )
     return rail
-  }
-
-  /** Screen mode covers the viewport, page and all; inline mode puts the
-      bench back in the document so the prose under it can be read. Screen is
-      the default and is set in build(), never in the markup: until ide.js has
-      run, the `.ide` element holds the no-JS fallback paragraph, and a
-      paragraph is not something to cover a page with. */
-  toggleFill(mode) {
-    const next = mode || (this.root.dataset.fill === 'screen' ? 'inline' : 'screen')
-    this.root.dataset.fill = next
-    const screen = next === 'screen'
-    // The page behind must not scroll under a cover that hides the scrolling.
-    document.body.dataset.ideFill = screen ? 'screen' : ''
-    if (!this.fillBtn) return
-    this.fillBtn.textContent = screen ? 'Notes' : 'Full screen'
-    this.fillBtn.setAttribute('aria-label', screen
-      ? 'Show the page behind the bench'
-      : 'Fill the screen with the bench')
   }
 
   /** The strip under the board: what the design costs, how much of it is

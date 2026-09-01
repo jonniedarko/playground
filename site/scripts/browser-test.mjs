@@ -929,7 +929,7 @@ async function main() {
     await context.close()
   }
 
-  // The full-screen bench (/shenzhen-io/ide/bench/): the same workbench in
+  // The full-screen bench (/workbench/, an `app: true` route): the same workbench in
   // its `data-layout="full"` shell - rail, board column and catalogue side
   // by side on a desktop viewport, the status strip's metrics, the two-tab
   // panel, and Show wires - then the same touch-stacking pass every other
@@ -943,7 +943,7 @@ async function main() {
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
     const at = 'bench desktop'
     try {
-      await page.goto(`http://localhost:${port}${BASE}/shenzhen-io/ide/bench/`, { waitUntil: 'networkidle' })
+      await page.goto(`http://localhost:${port}${BASE}/workbench/`, { waitUntil: 'networkidle' })
       await page.waitForSelector('.ide[data-ready]', { timeout: 8000 })
       await page.waitForTimeout(400)
       benchChecked += 1
@@ -964,59 +964,48 @@ async function main() {
         failures.push(`${at}: palette (x=${Math.round(cols.palette.x)}) is not right of the board column (right=${Math.round(cols.main.right)})`)
       }
 
-      // Full screen means full screen: the bench covers the viewport, the
-      // site's own header included, with the page behind it held still. This
-      // is what the page failed to do when it merely sat in the document
-      // under a title and a lede, so it is asserted in pixels rather than in
-      // CSS - a rule can say `position: fixed` and still be outranked.
+      // Full screen means full screen. The route is an app route (build.mjs's
+      // `app: true`): top bar, breadcrumbs, then the bench for the rest of
+      // the viewport - no sidebar, no heading block, no contents list. It is
+      // asserted in pixels rather than in CSS, because the failure this
+      // guards against was a page whose rules all looked right while the
+      // widget sat halfway down it.
       const fit = await page.evaluate(() => {
-        const ide = document.querySelector('.ide')
-        const r = ide.getBoundingClientRect()
+        const r = document.querySelector('.ide').getBoundingClientRect()
+        const crumbs = document.querySelector('.breadcrumbs')
         return {
-          top: r.top, left: r.left, right: r.right, height: r.height,
+          top: r.top, left: r.left, bottom: r.bottom, right: r.right,
+          crumbsBottom: crumbs ? crumbs.getBoundingClientRect().bottom : null,
           vh: window.innerHeight, vw: window.innerWidth,
-          fill: ide.dataset.fill,
-          bodyOverflow: getComputedStyle(document.body).overflow,
+          furniture: {
+            sidebar: Boolean(document.querySelector('.sidebar')),
+            head: Boolean(document.querySelector('.doc-head')),
+            toc: Boolean(document.querySelector('.toc')),
+            menuBtn: Boolean(document.querySelector('.menu-btn')),
+            search: Boolean(document.querySelector('[data-open-search]')),
+          },
           scroll: document.documentElement.scrollWidth,
           client: document.documentElement.clientWidth,
         }
       })
-      if (fit.fill !== 'screen') failures.push(`${at}: opened in data-fill="${fit.fill}", not screen`)
-      if (Math.abs(fit.top) > 1 || Math.abs(fit.left) > 1) {
-        failures.push(`${at}: .ide starts at ${Math.round(fit.left)},${Math.round(fit.top)}, not the top left of the viewport`)
+      if (fit.crumbsBottom === null) failures.push(`${at}: no breadcrumbs on the app route`)
+      // Directly under the breadcrumbs, and down to the bottom of the screen.
+      if (fit.crumbsBottom !== null && Math.abs(fit.top - fit.crumbsBottom) > 2) {
+        failures.push(`${at}: .ide starts at ${Math.round(fit.top)} with the breadcrumbs ending at ${Math.round(fit.crumbsBottom)}`)
       }
-      if (Math.abs(fit.height - fit.vh) > 2) {
-        failures.push(`${at}: .ide is ${Math.round(fit.height)}px tall against a ${fit.vh}px viewport`)
+      if (Math.abs(fit.bottom - fit.vh) > 2) {
+        failures.push(`${at}: .ide ends at ${Math.round(fit.bottom)} in a ${fit.vh}px viewport`)
       }
+      if (Math.abs(fit.left) > 1) failures.push(`${at}: .ide starts at x=${Math.round(fit.left)}, not the left edge`)
       if (fit.right > fit.vw + 1) failures.push(`${at}: .ide right edge at ${Math.round(fit.right)}, viewport is ${fit.vw}px wide`)
-      if (fit.bodyOverflow !== 'hidden') failures.push(`${at}: the page behind the bench still scrolls (body overflow ${fit.bodyOverflow})`)
       if (fit.scroll > fit.client) failures.push(`${at}: page overflows horizontally: ${fit.scroll} > ${fit.client}`)
-
-      // Notes drops the bench back into the document so the page it lives on
-      // can be read, and puts it back again. Both directions: a one-way door
-      // out of the workbench is the same bug in reverse.
-      await page.click('.ide-fill-toggle')
-      await page.waitForTimeout(200)
-      const inline = await page.evaluate(() => ({
-        fill: document.querySelector('.ide').dataset.fill,
-        position: getComputedStyle(document.querySelector('.ide')).position,
-        bodyOverflow: getComputedStyle(document.body).overflow,
-        label: document.querySelector('.ide-fill-toggle').textContent.trim(),
-      }))
-      if (inline.fill !== 'inline') failures.push(`${at}: Notes left data-fill at "${inline.fill}"`)
-      if (inline.position === 'fixed') failures.push(`${at}: Notes left the bench fixed over the page`)
-      if (inline.bodyOverflow === 'hidden') failures.push(`${at}: Notes left the page unable to scroll`)
-      if (inline.label !== 'Full screen') failures.push(`${at}: the toggle reads "${inline.label}" in inline mode`)
-      await page.click('.ide-fill-toggle')
-      await page.waitForTimeout(200)
-      const back = await page.evaluate(() => ({
-        fill: document.querySelector('.ide').dataset.fill,
-        height: Math.round(document.querySelector('.ide').getBoundingClientRect().height),
-        vh: window.innerHeight,
-      }))
-      if (back.fill !== 'screen' || Math.abs(back.height - back.vh) > 2) {
-        failures.push(`${at}: pressing the toggle again did not fill the screen - data-fill "${back.fill}", ${back.height}px against ${back.vh}px`)
+      // What the app layout drops, and what it must keep: search is in the
+      // top bar and does not need the sidebar, so it stays; the menu button
+      // opens the sidebar and would open nothing.
+      for (const gone of ['sidebar', 'head', 'toc', 'menuBtn']) {
+        if (fit.furniture[gone]) failures.push(`${at}: the app route still renders ${gone}`)
       }
+      if (!fit.furniture.search) failures.push(`${at}: the app route has no search control`)
 
       // Status strip: the four metric cells exist, and read sane values for
       // whatever restore() opened with - a fresh context has no saved board,
@@ -1157,24 +1146,32 @@ async function main() {
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
     const at = `${width}px bench`
     try {
-      await page.goto(`http://localhost:${port}${BASE}/shenzhen-io/ide/bench/`, { waitUntil: 'networkidle' })
+      await page.goto(`http://localhost:${port}${BASE}/workbench/`, { waitUntil: 'networkidle' })
       await page.waitForSelector('.ide[data-ready]', { timeout: 8000 })
       await page.waitForTimeout(400)
       benchChecked += 1
 
-      // The phone is where "full screen" is the whole point: no site header
-      // above it, no page scrolling underneath, and the control rail on
-      // screen without hunting for it.
+      // The phone is where "full screen" is the whole point: nothing above
+      // the bench but the top bar and one line of breadcrumbs, nothing
+      // scrolling underneath it, and the control rail on screen without
+      // hunting for it.
       const cover = await page.evaluate(() => {
         const r = document.querySelector('.ide').getBoundingClientRect()
         const rail = document.querySelector('.ide-rail').getBoundingClientRect()
         return {
-          top: r.top, height: r.height, vh: window.innerHeight,
+          top: r.top, bottom: r.bottom, vh: window.innerHeight,
           railTop: rail.top, railBottom: rail.bottom,
+          pageScroll: document.documentElement.scrollHeight - document.documentElement.clientHeight,
         }
       })
-      if (Math.abs(cover.top) > 1 || Math.abs(cover.height - cover.vh) > 2) {
-        failures.push(`${at}: .ide does not cover the viewport - top ${Math.round(cover.top)}, ${Math.round(cover.height)}px against ${cover.vh}px`)
+      if (Math.abs(cover.bottom - cover.vh) > 2) {
+        failures.push(`${at}: .ide ends at ${Math.round(cover.bottom)} in a ${cover.vh}px viewport`)
+      }
+      if (cover.top > cover.vh * 0.25) {
+        failures.push(`${at}: .ide starts ${Math.round(cover.top)}px down a ${cover.vh}px screen - too much above the bench`)
+      }
+      if (cover.pageScroll > 2) {
+        failures.push(`${at}: the app route scrolls the page by ${Math.round(cover.pageScroll)}px - the bench should hold the viewport`)
       }
       if (cover.railTop < -1 || cover.railBottom > cover.vh + 1) {
         failures.push(`${at}: the control rail is off screen - top ${Math.round(cover.railTop)}, bottom ${Math.round(cover.railBottom)}, viewport ${cover.vh}px`)
