@@ -1505,3 +1505,312 @@ td code { white-space: nowrap; }
   .ide-note { flex: 1 1 auto; margin: 0 0 0 0.5rem; text-align: right; }
   .ide-modal { align-items: center; }
 }
+
+/* ========================================================== the bench
+   `.ide[data-layout="full"]` - the full-screen shell on
+   /shenzhen-io/ide/bench/. Same controls as the stacked workbench, laid out
+   the way the game lays them out: a rail of run controls down the left, the
+   board and its status strip in the middle, the parts catalogue down the
+   right, a tabbed panel underneath.
+
+   Base is the phone, as everywhere else here: one column, catalogue at the
+   top, controls at the bottom in thumb reach - which is the stacked
+   workbench in all but source order, and is reached with `order` rather
+   than a second DOM. The side-by-side arrangement starts at 56rem, below
+   which three columns cannot each hold a 44px target.
+
+   No token is invented below; the strip and the rail are built from the
+   same --sz-* pairs the rest of the workbench uses, so both schemes are
+   already covered.
+   ==================================================================== */
+
+.ide[data-layout='full'] .ide-palette { order: 1; }
+.ide[data-layout='full'] .ide-main { order: 2; display: flex; flex-direction: column; min-height: 0; }
+.ide[data-layout='full'] .ide-rail { order: 3; }
+
+.ide-rail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.625rem;
+  background: var(--sz-panel);
+  border-top: 1px solid var(--sz-panel-line);
+}
+
+/* Exit is an <a>, so it needs the height a .sim-btn gets from its own rule
+   plus the centring a link does not have. */
+.ide-exit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.ide-status-wrap {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--sz-panel-line);
+}
+
+.ide-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.625rem;
+}
+
+.ide-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0 0.625rem 0.5rem;
+}
+
+.ide-metric {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 1.9rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--sz-btn-edge);
+  border-radius: 5px;
+  background: var(--sz-btn-bottom);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+}
+
+.ide-metric-name {
+  color: var(--sz-readout);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ide-metric-value { color: var(--sz-btn-text); font-weight: 600; }
+.ide-metric-value[data-state='pass'] { color: var(--sz-trace); }
+.ide-metric-value[data-state='fail'] { color: var(--sz-alert); }
+
+/* Pressed state for Show wires. aria-pressed is the state; this is only its
+   picture - and it is a real button either way, never a hover affordance. */
+.ide-toggle[aria-pressed='true'] {
+  background: linear-gradient(180deg, var(--sz-amber-lit-top), var(--sz-amber-lit-bottom));
+  border-color: var(--sz-amber-deep);
+  color: var(--sz-ink);
+}
+
+.ide[data-view='wires'] .ide-board > :not(svg) { opacity: 0.22; }
+
+.ide-file { border-top: 1px solid var(--sz-panel-line); }
+
+.ide-file-summary {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 0.625rem;
+  color: var(--sz-readout);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.ide-file-summary:focus-visible { outline: 2px solid var(--sz-amber-deep); outline-offset: -2px; }
+.ide-file .ide-bar-file { border-top: 0; }
+
+/* Phone: tabs across the top, the panel underneath at full width. Side by
+   side - the game's arrangement - is desktop only: at 320px a column of
+   vertical tabs beside a panel leaves the panel three characters wide, which
+   is exactly what it did before this rule existed. */
+.ide-panel {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  /* Enough for the tab row plus three lines of the panel under it; past that
+     it scrolls rather than taking height off the board. */
+  min-height: 8.5rem;
+  border-top: 1px solid var(--sz-panel-line);
+  background: var(--sz-panel);
+}
+
+.ide-tabs { display: flex; flex: 0 0 auto; }
+
+.ide-tab {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  padding: 0.5rem 0.9rem;
+  border: 0;
+  border-right: 1px solid var(--sz-panel-line);
+  background: transparent;
+  color: var(--sz-readout);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.ide-tab[aria-selected='true'] { background: var(--sz-code-bg); color: var(--sz-btn-text); }
+.ide-tab:focus-visible { outline: 2px solid var(--sz-amber-deep); outline-offset: -2px; }
+
+.ide-tabpanel {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.75rem;
+}
+/* Belt and braces: nothing above gives a panel a `display`, so the UA rule
+   for [hidden] already applies - but the modal's history in this file says
+   to state it rather than trust the next edit not to add one. */
+.ide-tabpanel[hidden] { display: none; }
+
+.ide-info-hint {
+  margin: 0;
+  color: var(--sz-readout);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+
+.ide-info-name {
+  margin: 0 0 0.5rem;
+  color: var(--sz-btn-text);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ide-info-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.75rem;
+  margin: 0 0 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+.ide-info-facts dt { color: var(--sz-readout); text-transform: uppercase; letter-spacing: 0.06em; }
+.ide-info-facts dd { margin: 0; color: var(--sz-btn-text); }
+
+.ide-info-pins {
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+.ide-info-pins th,
+.ide-info-pins td {
+  padding: 0.15rem 0.75rem 0.15rem 0;
+  text-align: left;
+  color: var(--sz-btn-text);
+}
+.ide-info-pins th { color: var(--sz-readout); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 400; }
+
+/* The catalogue button carries a name, a thumbnail and a price. In the
+   stacked shell it is still just the name, so these rules only ever apply
+   where chipPreview/chipCost put the other two (ide.js). */
+.ide[data-layout='full'] .ide-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem 0.5rem;
+}
+.ide-chip-cost { color: var(--sz-readout); font-size: 0.68rem; }
+
+/* The thumbnail is the part itself, drawn small (components.js `thumb`).
+   A part positions itself absolutely, so this box is what gives it room. */
+.ide-chip-preview {
+  position: relative;
+  display: block;
+  pointer-events: none;
+}
+
+@media (min-width: 56rem) {
+  .ide[data-layout='full'] {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) 10.5rem;
+    grid-template-areas: 'rail main palette';
+    /* A viewport's worth of bench. Not "the viewport": the page still opens
+       with its breadcrumbs, title and lede above the widget, the way every
+       other page here does, so this is what fits on screen once the bench is
+       scrolled to - not what sits under the top bar on load. The browser
+       sweep asserts the height, and that the bench is wholly visible after a
+       scrollIntoView; it cannot assert more than that without the page
+       pretending not to be a documentation page. */
+    height: calc(100dvh - var(--topbar-h) - 3rem);
+    max-height: none;
+  }
+
+  .ide[data-layout='full'] .ide-rail { grid-area: rail; }
+  .ide[data-layout='full'] .ide-main { grid-area: main; }
+  .ide[data-layout='full'] .ide-palette { grid-area: palette; }
+
+  .ide-rail {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    /* Wide enough for RESET and STEP BACK at the sim button's own size, and
+       no wider - every rem here is a rem the board does not get. */
+    width: 6.5rem;
+    overflow-y: auto;
+    border-top: 0;
+    border-right: 1px solid var(--sz-panel-line);
+  }
+  .ide-rail .ide-zoom { margin-top: auto; }
+
+  .ide[data-layout='full'] .ide-stage { flex: 1 1 auto; height: auto; min-height: 0; }
+
+  .ide[data-layout='full'] .ide-palette {
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border-bottom: 0;
+    border-left: 1px solid var(--sz-panel-line);
+  }
+
+  /* The panel is a reference, the board is the work: a quarter of the height
+     holds a part's summary or a verify trace without crowding the board. */
+  .ide[data-layout='full'] .ide-panel { flex: 0 0 26%; flex-direction: row; }
+
+  /* Vertical tab labels, as the game has them: read bottom-up, which is the
+     rotate() - vertical-rl alone reads top-down. */
+  .ide[data-layout='full'] .ide-tabs { flex-direction: column; }
+  .ide[data-layout='full'] .ide-tab {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    flex: 1 1 auto;
+    padding: 0.9rem 0.5rem;
+    /* A vertical label wraps on its own axis, which reads as INFORMATI/ON. */
+    white-space: nowrap;
+    border-right: 0;
+    border-bottom: 1px solid var(--sz-panel-line);
+  }
+
+  /* The status strip is read constantly and pressed rarely, so above the
+     breakpoint - where there is a pointer, not a thumb - its controls drop to
+     a denser 2rem. The 44px minimum still holds everywhere it matters: this
+     rule cannot apply below 56rem, and no other control is touched. */
+  .ide-status .sim-btn {
+    min-height: 2rem;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.68rem;
+  }
+}
+
+/* Below the side-by-side breakpoint the catalogue is a scrolling strip inside
+   a height-capped panel, exactly as the stacked workbench's is, and every row
+   of thumbnails there is a row the board does not get. Names and prices stay;
+   the pictures are what goes. */
+@media (max-width: 55.999rem) {
+  .ide-chip-preview { display: none; }
+}
+
+/* The bench page's own content is a tool, and its three headings are all
+   below that tool - so an inline contents list at the top is 60px of link
+   between the reader and the thing they came for. `wide` pages put the TOC
+   inline (it needs the gutter `wide` removes), which is right for a long
+   prose page and wrong for this one. Scoped with :has() so no other page is
+   touched; where :has() is unsupported the list simply stays, which is the
+   behaviour every wide page already has. */
+.doc:has(.ide[data-layout='full']) > .toc { display: none; }
