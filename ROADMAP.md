@@ -1,7 +1,8 @@
 # Roadmap — the full simulator and tools
 
 Where the SHENZHEN I/O section stands, what is left to build, and in what
-order. Written after R9; R0–R9 are done and shipped.
+order. Written after R9. **R0–R15 are now done**; what remains is listed at
+the bottom, under "Still open".
 
 Companion to `CLAUDE.md`, which describes the code as it *is*. This file
 describes what it is *not yet*.
@@ -49,6 +50,41 @@ Each is independently shippable. Stop after any one and the site is coherent.
 | **R13** | Puzzle definitions | Content on top of R12 | M |
 | **R14** | Share and import | A design you cannot send is a design you cannot discuss | S |
 | **R15** | Debugging tools | Where the time actually goes when a design misbehaves | M |
+
+All shipped. R12's harness earned itself immediately: the first spec written
+against a page rather than against the circuit's own output found that XBus
+io-terminals had no read or write side at all, so the packet reverser had
+never once run.
+
+---
+
+## Still open
+
+**PGA33X6 does not run**, and is the only part that does not. Its datasheet
+gives the shape of a logic array - product-term columns, a flip-flop, a
+switchable sum of products - and no programming model: no encoding, no
+configuration pin, no table mapping inputs to outputs. Implementing it means
+inventing a fuse-map format *and* an editor for it. It is not unfinished; it
+is unspecified.
+
+**Importing a save file from the game is not possible from here.** R14.3
+looked for anything offline that would pin the format down and found
+nothing: no specification, no sample file, no extension, no magic bytes, and
+nothing in the manual, which documents the language and the parts but never
+how the game stores a design. Guessing a byte layout would be worse than not
+having the feature. The smallest honest next step is a real save file - two,
+ideally, of the same circuit - so the fixed bytes can be told from the
+varying ones. Until someone has one, this stays closed.
+
+**The packet reverser is still a still illustration.** It runs now, but a
+runnable figure's only input affordance is a toggle per terminal, which fits
+a simple level and not an XBus stream: the toggle can only ever hand it 100,
+so a reader would watch it return 100, 100, 100 and never see the reversal.
+It needs an affordance that can feed a terminal a packet.
+
+**Asset URLs are not cache-busted.** Every deploy ships the same
+`style.css` and `app.js` filenames, so a returning visitor can get stale
+assets against fresh HTML.
 
 ---
 
