@@ -787,6 +787,75 @@ async function main() {
       if (prParts !== prWant) {
         failures.push(`${at}: Reveal loaded ${prParts} parts, packet-reverser's reference circuit has ${prWant}`)
       }
+
+      // R14.1: Share round-trips a real board through a real URL, via the
+      // actual button - not just the codec directly (share.test.mjs already
+      // covers that headlessly). AN650 has known parts/wires/labels/code to
+      // check against on the other side.
+      await page.goto(`http://localhost:${port}${BASE}/shenzhen-io/ide/`, { waitUntil: 'networkidle' })
+      await page.waitForSelector('.ide[data-ready]', { timeout: 8000 })
+      await page.selectOption('.ide-select', 'an650')
+      await page.waitForTimeout(300)
+      const shareBtn = page.getByRole('button', { name: 'Share', exact: true })
+      const sBox = await shareBtn.boundingBox()
+      if (!sBox || sBox.height < 44 || sBox.width < 44) {
+        failures.push(`${at}: Share control is ${sBox ? `${Math.round(sBox.width)}x${Math.round(sBox.height)}` : 'not visible'}`)
+      } else {
+        await shareBtn.click()
+        await page.waitForTimeout(200)
+        const shareText = await page.$eval('.ide-note', (n) => n.textContent)
+        const m = /https?:\/\/\S+/.exec(shareText)
+        if (!shareText.startsWith('Share link') || !m) {
+          failures.push(`${at}: Share did not produce a link - "${shareText}"`)
+        } else {
+          await page.goto(m[0], { waitUntil: 'networkidle' })
+          await page.waitForSelector('.ide[data-ready]', { timeout: 8000 })
+          await page.waitForTimeout(400)
+          const shared = await page.evaluate(() => {
+            const board = document.querySelector('.ide-board')
+            const terms = [...board.querySelectorAll('io-terminal')]
+            return {
+              parts: board.parts.length,
+              wires: board.wires.length,
+              switchSide: terms.find((t) => t.getAttribute('label') === 'switch')?.getAttribute('side'),
+              lampSide: terms.find((t) => t.getAttribute('label') === 'lamp')?.getAttribute('side'),
+              code: [...board.querySelectorAll('mc-4000')].map((c) => c.code).join('|'),
+            }
+          })
+          if (shared.parts !== CIRCUITS.an650.parts.length) {
+            failures.push(`${at}: shared link loaded ${shared.parts} parts, AN650 has ${CIRCUITS.an650.parts.length}`)
+          }
+          if (shared.wires !== CIRCUITS.an650.wires.length) {
+            failures.push(`${at}: shared link loaded ${shared.wires} wires, AN650 has ${CIRCUITS.an650.wires.length}`)
+          }
+          // The R14.1 trap by name: a dropped `side` resolves the wrong pin
+          // and silently drops the terminal's wire - so check it explicitly,
+          // for both terminals, not just that a "switch" and "lamp" exist.
+          if (shared.switchSide !== 'right') failures.push(`${at}: shared "switch" terminal came back side="${shared.switchSide}", want right`)
+          if (shared.lampSide !== 'left') failures.push(`${at}: shared "lamp" terminal came back side="${shared.lampSide}", want left`)
+          if (!shared.code.includes('rising edge')) {
+            failures.push(`${at}: shared link lost a chip's program text`)
+          }
+        }
+      }
+
+      // And the budget path: a board large enough to cross SHARE_BUDGET must
+      // say so plainly, in the UI itself, and never hand back a link.
+      await page.evaluate(() => {
+        const board = document.querySelector('.ide-board')
+        board.clearWires()
+        board.parts.forEach((p) => p.remove())
+        const bigProgram = Array.from({ length: 14 }, (_, i) =>
+          `# line ${i} of a long, deliberately verbose filler comment to blow the budget`).join('\n')
+        for (let i = 0; i < 10; i += 1) board.addPart('mc-6000', i, 0).setCode(bigProgram)
+      })
+      await page.waitForTimeout(200)
+      await shareBtn.click()
+      await page.waitForTimeout(200)
+      const overBudgetText = await page.$eval('.ide-note', (n) => n.textContent)
+      if (!/too big/i.test(overBudgetText) || /https?:\/\//.test(overBudgetText)) {
+        failures.push(`${at}: an over-budget board did not get a plain refusal - "${overBudgetText}"`)
+      }
     } catch (err) {
       failures.push(`${at}: ${err.message.split('\n')[0]}`)
     }

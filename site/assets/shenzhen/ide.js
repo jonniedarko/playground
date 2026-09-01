@@ -17,6 +17,7 @@ import { PART_META } from './parts.js'
 import CIRCUITS from './circuits.js'
 import { verify as runVerify } from './verify.js'
 import SPECS from './specs.js'
+import { encodeBoard, decodeBoard, SHARE_BUDGET } from './share.js'
 
 const TICK_MS = 550
 const STORE_KEY = 'sz-ide-board'
@@ -364,6 +365,12 @@ class Ide {
     })
     label.appendChild(select)
     bar.append(label, this.button('Clear', () => this.clear()))
+
+    // Share: encodes the live board into a URL (share.js) and writes it
+    // into the note below - see share() for the budget message and the
+    // over-budget path. A real button in the bar that already exists, not a
+    // new one - see the R14.1 constraint in R12-R15-PLAN.md.
+    bar.appendChild(this.button('Share', () => this.share()))
 
     // Reveal: hidden until a puzzle is actually open (loadPuzzle sets
     // puzzleKey and un-hides it) - most visits never see this button. A real
@@ -950,6 +957,76 @@ class Ide {
     }).join('   ')
   }
 
+  /* ----- share -----
+     R14.1: encodes the live board into a URL anyone can open back into this
+     same workbench. share.js speaks board.toJSON()'s own shape (see its
+     module doc), so there is nothing to convert here beyond building the
+     link and writing it somewhere a person can read or copy it from -
+     `this.note` already exists for status text (buildFileBar above), so the
+     result lands there rather than opening any new panel.
+
+     SHARE_BUDGET (share.js) is the line this refuses to cross: past it, the
+     encoded string might not survive being pasted into whatever the link
+     travels through - a chat client, a URL shortener, the address bar
+     itself - so this hands back nothing rather than a link something
+     downstream could silently truncate. The board is already saved to this
+     device on every edit (save(), below) - that save is what the
+     over-budget message points back to; there is no separate "local save"
+     control to offer here (that is Task 14.2, named saves, not this task).
+     ------------------------------------------------------------------- */
+  share() {
+    clearTimeout(this._noteT)
+    let encoded
+    try {
+      encoded = encodeBoard(this.board.toJSON())
+    } catch (err) {
+      this.note.textContent = `Cannot share: ${err.message}`
+      return
+    }
+    if (encoded.length > SHARE_BUDGET) {
+      this.note.textContent =
+        `Too big to share as a link (${encoded.length} of ${SHARE_BUDGET} characters). ` +
+        'This board is already saved on this device - come back to it here instead.'
+      return
+    }
+    const url = `${location.origin}${location.pathname}?board=${encoded}`
+    this.note.textContent = `Share link (${encoded.length} of ${SHARE_BUDGET} chars, copied): ${url}`
+    // Best-effort: not every context grants clipboard access (an iframe, a
+    // denied permission, an insecure origin), and the link is readable in
+    // the note either way - the text above says "copied" for the common
+    // case but the link itself is what actually matters if that fails.
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(url).catch(() => {})
+  }
+
+  /** Loads a board carried on `?board=<share.js encoding>` - the other end
+      of share() above. Called from restore() before anything falls back to
+      localStorage, the same priority ?puzzle= already gets and for the same
+      reason: an explicit link in the address bar says more than whatever
+      was last autosaved. Structured like loadPreset() (pause, load, drop
+      selection, let load()'s next-frame wiring finish, then invalidate()) -
+      opening a share link is exactly "load this circuit", the same
+      operation, just sourced from a URL instead of circuits.js. Unlike
+      loadPuzzle(), this DOES overwrite the autosave slot (via invalidate()'s
+      own save() call) - the same as Load and Reveal already do, and
+      deliberate: a share link is something a person opened on purpose. */
+  loadShared(encoded) {
+    let data
+    try {
+      data = decodeBoard(encoded)
+    } catch (err) {
+      this.announce(`Could not open that share link: ${err.message}`)
+      return false
+    }
+    this.presetKey = null
+    this.pause()
+    this.board.load(data)
+    this.board.select(null)
+    this.syncSelection()
+    requestAnimationFrame(() => requestAnimationFrame(() => this.invalidate()))
+    this.announce('Loaded board from share link')
+    return true
+  }
+
   /* ----- verify -----
      Checks the current board against the spec for whichever preset was last
      loaded - see the Files table in R12-R15-PLAN.md: SPECS lives in
@@ -1075,11 +1152,19 @@ class Ide {
     // otherwise). Checked, and acted on, before localStorage is ever read -
     // see loadPuzzle()'s own doc comment for why: the saved board must stay
     // exactly as it was until an actual edit happens.
-    const puzzle = new URLSearchParams(window.location.search).get('puzzle')
+    const params = new URLSearchParams(window.location.search)
+    const puzzle = params.get('puzzle')
     if (puzzle && SPECS[puzzle] && CIRCUITS[puzzle]) {
       this.loadPuzzle(puzzle)
       return
     }
+    // A share.js link (see share()/loadShared() above). Same up-front
+    // priority as ?puzzle= and for the same reason - an explicit link beats
+    // whatever localStorage happens to hold. A bad or corrupted link falls
+    // through to the normal restore path below rather than leaving the page
+    // stuck - loadShared() has already announced why.
+    const shared = params.get('board')
+    if (shared && this.loadShared(shared)) return
     let saved = null
     try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null') } catch { saved = null }
     if (saved && Array.isArray(saved.parts) && saved.parts.length) {
