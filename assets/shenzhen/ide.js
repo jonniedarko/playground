@@ -432,11 +432,13 @@ class Ide {
     rail.setAttribute('role', 'group')
     rail.setAttribute('aria-label', 'Simulation controls')
 
-    // Relative, not absolute: BASE_PATH is applied to markdown links at build
-    // time and this one is written at runtime, so `../` is the only form that
-    // is right both here and under a project-pages prefix.
+    // The bench route is its own page, so `../` would leave the site section
+    // rather than land on the panel workbench. `window.__BASE__` is written
+    // into every page by build.mjs's layout() and already carries whatever
+    // BASE_PATH the deploy used, which is the only reliable way to build an
+    // absolute path from a script that ships to a project-pages prefix.
     const exit = el('a', 'sim-btn ide-exit', 'Exit')
-    exit.href = '../'
+    exit.href = (window.__BASE__ || '/') + 'shenzhen-io/ide/'
     exit.setAttribute('aria-label', 'Back to the panel workbench')
 
     rail.append(

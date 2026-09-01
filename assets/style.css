@@ -1806,11 +1806,82 @@ td code { white-space: nowrap; }
   .ide-chip-preview { display: none; }
 }
 
-/* The bench page's own content is a tool, and its three headings are all
-   below that tool - so an inline contents list at the top is 60px of link
-   between the reader and the thing they came for. `wide` pages put the TOC
-   inline (it needs the gutter `wide` removes), which is right for a long
-   prose page and wrong for this one. Scoped with :has() so no other page is
-   touched; where :has() is unsupported the list simply stays, which is the
-   behaviour every wide page already has. */
-.doc:has(.ide[data-layout='full']) > .toc { display: none; }
+/* ---- the app route ----
+   `app: true` in front matter (build.mjs) gives a page the top bar and the
+   breadcrumbs and nothing else - no sidebar, no heading block, no contents
+   list, no pager, no footer - because on that route the tool IS the page.
+
+   The main column is exactly the viewport under the top bar, laid out as a
+   flex column, so the breadcrumbs take the height they need (they wrap on a
+   narrow screen) and the bench takes the rest. That is what makes this a
+   full screen of workbench without a fixed overlay, a z-index, or a lock on
+   the page behind it: there is nothing behind it. */
+/* The shell centres the docs in a 90rem column with a gutter; an app route
+   is the whole window, so it keeps neither. */
+.shell-app {
+  display: block;
+  max-width: none;
+  padding: 0;
+}
+
+.content-app {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--topbar-h));
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.doc-app {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.doc-app > .breadcrumbs {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0.5rem max(0.75rem, env(safe-area-inset-left));
+}
+
+.doc-app .ide[data-layout='full'] {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  height: auto;
+  margin: 0;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-radius: 0;
+}
+
+/* The rail is the bottom row on a phone, which is where the home indicator
+   and a floating browser toolbar live. */
+.doc-app .ide-rail {
+  padding-bottom: max(0.625rem, env(safe-area-inset-bottom));
+}
+
+/* A short phone cannot hold the catalogue, the board, the strip, the panel
+   and a four-row rail at once. The catalogue and the rail stay put - they
+   are what the thumb reaches for - and the middle column scrolls, so the
+   strip and the panel are reached by scrolling rather than clipped out of
+   existence. The panel never goes below its own tab row: Verify lives on the
+   Verification tab, and a collapsed panel would take Verify off the phone. */
+@media (max-width: 55.999rem) {
+  .doc-app .ide-main {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .doc-app .ide-panel {
+    flex: 0 1 auto;
+    min-height: 2.75rem;
+    max-height: 30dvh;
+  }
+  .doc-app .ide-stage { min-height: 8rem; }
+}
