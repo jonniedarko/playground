@@ -21,6 +21,11 @@ Nothing here is a different simulator. It is the same board, the same
 interpreter and the same saved design - open either page and you get the board
 you left.
 
+The page opens as the bench, covering the screen - no site header, nothing
+scrolling underneath. **Notes** in the rail puts it back into the page so this
+text can be read, and turns into **Full screen** to go back. **Exit** leaves
+for the panel workbench.
+
 
 ## What the status strip counts
 
@@ -44,6 +49,8 @@ less is the better design.
 | Run, Step, Step back, Break, Reset, Delete | The left rail, top to bottom |
 | **−** / **+** grid size | Bottom of the left rail |
 | Load, Clear, Save as, Load saved, Share | The **Board** disclosure in the status strip |
+| **Notes** / **Full screen** | The rail. Uncovers this page, and covers it again |
+| **Exit** | The rail, top. Back to the panel workbench |
 | Verify | The **Verification** tab, with its trace underneath |
 | A terminal's name | The row of toggles under the board |
 

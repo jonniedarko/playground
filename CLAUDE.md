@@ -188,6 +188,15 @@ a fix to a button is a fix in both. Below 56rem the bench reflows back to the
 stacked column with `order` — one DOM, never a second implementation. CSS lives
 in style.css's "the bench" section at the end.
 
+**The bench covers the viewport.** `data-fill="screen"` (set by `toggleFill()`
+in `build()`, never in markup) makes it `position: fixed; inset: 0` above the
+topbar and freezes the page behind it via `body[data-ide-fill]`; the rail's
+**Notes** button flips to `inline` to read the page under it. The CSS requires
+`[data-ready]` too, so a reader without JavaScript is never handed a fixed
+overlay containing the fallback paragraph. On a short phone the catalogue and
+rail stay put and `.ide-main` scrolls — a rail pushed off the bottom is a
+workbench with no controls.
+
 The status strip counts through `metrics.js` (pure, node-tested):
 `productionCost` sums `PART_META.cost`, `linesOfCode` counts instructions via
 `parseProgram`, `totalPower` sums a snapshot. The strip says **Instructions**,

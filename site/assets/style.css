@@ -1806,11 +1806,66 @@ td code { white-space: nowrap; }
   .ide-chip-preview { display: none; }
 }
 
-/* The bench page's own content is a tool, and its three headings are all
-   below that tool - so an inline contents list at the top is 60px of link
-   between the reader and the thing they came for. `wide` pages put the TOC
-   inline (it needs the gutter `wide` removes), which is right for a long
-   prose page and wrong for this one. Scoped with :has() so no other page is
-   touched; where :has() is unsupported the list simply stays, which is the
-   behaviour every wide page already has. */
-.doc:has(.ide[data-layout='full']) > .toc { display: none; }
+/* ---- screen mode ----
+   The bench is a full-screen workbench, so by default it is exactly that: it
+   covers the viewport, the site's own header included, the way the game's
+   editor covers the screen. `Notes` in the rail drops it back into the
+   document (`data-fill="inline"`) to read the page it lives on, and `Exit`
+   leaves for the panel workbench.
+
+   Three conditions, all load-bearing. `[data-layout="full"]` is the bench
+   rather than the stacked workbench. `[data-ready]` means ide.js has built
+   the shell - before that the element holds the no-JS fallback paragraph,
+   and covering a page with a paragraph is worse than not covering it, so a
+   reader without JavaScript never sees this rule. `[data-fill="screen"]` is
+   the toggle, set by ide.js and never by the markup.
+
+   z-index 50 clears the topbar (40) and stays under the search overlay and
+   the program editor (60); the skip link (100) still wins, which is what
+   keeps a keyboard's way out of here open. */
+.ide[data-layout='full'][data-ready][data-fill='screen'] {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+/* The rail is the bottom row on a phone, which is where the home indicator
+   and a floating browser toolbar live. */
+.ide[data-layout='full'][data-fill='screen'] .ide-rail {
+  padding-bottom: max(0.625rem, env(safe-area-inset-bottom));
+}
+
+/* Nothing to scroll behind a cover that hides the scrollbar. Set by ide.js
+   alongside the mode, and cleared with it. */
+body[data-ide-fill='screen'] { overflow: hidden; }
+
+/* A short phone in screen mode: everything has to fit, because nothing
+   scrolls the shell itself - the rail is the bottom row and a rail pushed
+   off the bottom is a workbench with no controls. So the panel is the part
+   that gives: it shrinks to its tab row and scrolls internally, while the
+   board keeps a floor. The desktop grid is untouched. */
+@media (max-width: 55.999rem) {
+  .ide[data-layout='full'][data-fill='screen'] .ide-panel {
+    flex: 0 1 auto;
+    /* Never below the tab row: Verify lives on the Verification tab, and a
+       panel squeezed to nothing takes Verify off the phone with it. */
+    min-height: 2.75rem;
+    max-height: 30dvh;
+  }
+  .ide[data-layout='full'][data-fill='screen'] .ide-stage { min-height: 8rem; }
+
+  /* On a short phone the catalogue, board, strip, panel and a four-row rail
+     genuinely do not all fit. The catalogue and the rail stay put - they are
+     what the thumb reaches for - and the middle column scrolls, so the strip
+     and the panel are reached by scrolling the board area rather than by
+     being clipped out of existence. */
+  .ide[data-layout='full'][data-fill='screen'] .ide-main {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
