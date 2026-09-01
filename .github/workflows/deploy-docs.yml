@@ -1,0 +1,114 @@
+name: Deploy documentation site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - '.github/workflows/deploy-docs.yml'
+  # Run by hand from the Actions tab. Note that GitHub only offers the "Run
+  # workflow" button for workflows that exist on the DEFAULT branch - a copy
+  # sitting on a feature branch is never listed, however correct it is.
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch, tag or commit to build and publish (blank = this branch)'
+        required: false
+        default: ''
+
+# Pushing the built site to the `pages` branch needs write access to the repo.
+permissions:
+  contents: write
+
+# One publish at a time; queued runs supersede each other rather than interrupting
+# a push that is already in flight.
+concurrency:
+  group: pages-branch
+  cancel-in-progress: false
+
+env:
+  PAGES_BRANCH: pages
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # A hand-run deploy can name any ref, so the site can be published
+          # from a branch before it is merged. Blank falls back to whatever
+          # ref triggered the run.
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: Check there is a site to publish
+        # The publish step replaces the branch contents wholesale. Running it
+        # against a ref with no site/ would empty the live site rather than
+        # fail, so stop here instead.
+        run: |
+          if [ ! -f site/build.mjs ]; then
+            echo "::error::No site/build.mjs on this ref - nothing to publish."
+            echo "Pick a ref that carries the site, or merge it to the default branch first."
+            exit 1
+          fi
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Resolve base path
+        id: base
+        # A project page is served from /<repo>; a user or org page is served from the root.
+        run: |
+          if [ "${{ github.event.repository.name }}" = "${{ github.repository_owner }}.github.io" ]; then
+            echo "path=" >> "$GITHUB_OUTPUT"
+          else
+            echo "path=/${{ github.event.repository.name }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build site
+        working-directory: site
+        env:
+          BASE_PATH: ${{ steps.base.outputs.path }}
+        run: node build.mjs
+
+      - name: Check the build produced something
+        # Belt and braces on the same risk: a build that silently produced no
+        # pages must not be copied over a working site.
+        run: |
+          if [ ! -f site/dist/index.html ]; then
+            echo "::error::The build produced no site/dist/index.html - refusing to publish."
+            exit 1
+          fi
+          echo "Built $(find site/dist -name '*.html' | wc -l) pages."
+
+      - name: Publish to the ${{ env.PAGES_BRANCH }} branch
+        run: |
+          set -euo pipefail
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          # Check the publish branch out beside the source tree. Creating it from the
+          # current commit is only a fallback for a repository that has none yet.
+          if git ls-remote --exit-code --heads origin "$PAGES_BRANCH" >/dev/null 2>&1; then
+            git fetch origin "$PAGES_BRANCH"
+            git worktree add ../publish "origin/$PAGES_BRANCH"
+          else
+            git worktree add ../publish --detach
+          fi
+          git -C ../publish checkout -B "$PAGES_BRANCH"
+
+          # Replace the branch contents wholesale: the built site is the branch.
+          find ../publish -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+          cp -R site/dist/. ../publish/
+
+          git -C ../publish add -A
+          if git -C ../publish diff --cached --quiet; then
+            echo 'Site output is unchanged; nothing to publish.'
+            exit 0
+          fi
+
+          git -C ../publish commit -m "Deploy documentation site from ${GITHUB_SHA:0:7}"
+          git -C ../publish push origin "$PAGES_BRANCH"

@@ -29,6 +29,20 @@
 </p>
 <br/>
 
+## Documentation site
+
+This repository also hosts a standalone static documentation site under
+[`site/`](./site). It is independent of the Next.js app above - no build
+dependencies, just Node and Markdown - and it deploys to GitHub Pages via
+[`.github/workflows/deploy-docs.yml`](./.github/workflows/deploy-docs.yml).
+
+```sh
+cd site
+node build.mjs --serve    # http://localhost:4321
+```
+
+See [`site/README.md`](./site/README.md) for how to add topics and pages.
+
 ## Features
 
 - ⚡️ Next.js 14 (App Router)

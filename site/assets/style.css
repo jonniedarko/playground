@@ -1,0 +1,1507 @@
+/* ==========================================================================
+   Field Notes - static documentation styles
+   Written mobile-first: the base rules describe the phone layout, and the
+   media queries at the bottom progressively add the desktop sidebar.
+   ========================================================================== */
+
+:root {
+  color-scheme: light dark;
+
+  --bg: #f7f7f5;
+  --bg-raised: #ffffff;
+  --bg-sunken: #eeeeea;
+  --border: #dedcd6;
+  --border-strong: #c8c5bd;
+  --text: #22242a;
+  --text-muted: #62656e;
+  --text-faint: #8b8e97;
+  --accent: #b4451f;
+  --accent-soft: #fbeee8;
+  --accent-text: #93370f;
+  --code-bg: #f2f1ec;
+  --shadow: 0 1px 2px rgb(20 22 26 / 0.06), 0 8px 24px rgb(20 22 26 / 0.07);
+
+  --topbar-h: 3.5rem;
+  --sidebar-w: 17.5rem;
+  --measure: 46rem;
+  --radius: 0.625rem;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
+  /* ---- hardware palette ----
+     One set of tokens for everything that draws a circuit: the components in
+     assets/shenzhen/, the frames around them, and the simulator chrome.
+     Custom properties inherit into shadow DOM, so defining them here reaches
+     inside every part without the components knowing the site exists.
+
+     This block is the daylight scheme. The dark scheme below is the authentic
+     one - a board really is near-black - so light is a deliberate translation
+     rather than an inversion: the same object photographed on a bright bench.
+     Lit surfaces (the amber readouts) stay amber in both, because a lit
+     display does not change colour with the room. */
+  --sz-board: #e9ece6;
+  --sz-board-grid: rgb(52 116 106 / 0.18);
+  --sz-board-shadow: inset 0 0 60px rgb(90 100 96 / 0.16);
+  --sz-frame: #f1f3ee;
+
+  --sz-bezel-top: #ced4db;
+  --sz-bezel-mid: #aeb7c1;
+  --sz-bezel-bottom: #8d97a3;
+  --sz-body-top: #fbfcfd;
+  --sz-body-bottom: #e6eaef;
+  --sz-edge: #98a3ae;
+
+  --sz-amber: #e0a52a;
+  --sz-amber-deep: #96690f;
+  --sz-amber-lit-top: #f7dda4;
+  --sz-amber-lit-bottom: #d29b28;
+
+  --sz-trace: #1f7a66;
+  --sz-ink: #241d14;
+  --sz-code: #262a31;
+  --sz-comment: #6a727c;
+  --sz-metal: #9aa5b0;
+  --sz-metal-lit: #d8b45f;
+  --sz-exec-bar: #f7ddcf;
+  --sz-code-bg: #f4f6f8;
+  --sz-mnemonic: #10141a;
+  --sz-alert-bg: #fbe9e6;
+  --sz-alert-edge: #d3a49c;
+
+  --sz-wire-case: #cdd4d9;
+  --sz-wire-body: #2f9c85;
+  --sz-wire-groove: #17604f;
+  --sz-wire-core: #7fd8c0;
+  --sz-wire-end: #b6bfc7;
+
+  --sz-panel: #eef0ec;
+  --sz-panel-line: #d4d8d2;
+  --sz-btn-top: #fdfdfc;
+  --sz-btn-bottom: #e7e9e5;
+  --sz-btn-edge: #c4c9c2;
+  --sz-btn-text: #363b41;
+  --sz-readout: #5f6771;
+  --sz-alert: #a8372a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #14161a;
+    --bg-raised: #1b1e24;
+    --bg-sunken: #101216;
+    --border: #2c3038;
+    --border-strong: #3d424c;
+    --text: #e6e7ea;
+    --text-muted: #a2a6b0;
+    --text-faint: #757a85;
+    --accent: #ef8354;
+    --accent-soft: #2a1d17;
+    --accent-text: #f4a077;
+    --code-bg: #14171c;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px rgb(0 0 0 / 0.35);
+
+    /* Hardware, dark scheme: the authentic look - a board really is
+       near-black. See the daylight values on :root for the reasoning. */
+    --sz-board: #0b1114;
+    --sz-board-grid: rgb(52 116 106 / 0.20);
+    --sz-board-shadow: inset 0 0 70px rgb(0 0 0 / 0.75);
+    --sz-frame: #0b1114;
+
+    --sz-bezel-top: #525d67;
+    --sz-bezel-mid: #303841;
+    --sz-bezel-bottom: #232a31;
+    --sz-body-top: #1d232a;
+    --sz-body-bottom: #12171c;
+    --sz-edge: #05080a;
+
+    --sz-amber: #f3c46f;
+    --sz-amber-deep: #b8862f;
+    --sz-amber-lit-top: #f9d491;
+    --sz-amber-lit-bottom: #e5b559;
+
+    --sz-trace: #2f9c85;
+    --sz-ink: #241d14;
+    --sz-code: #e4e0d5;
+    --sz-comment: #8b9189;
+    --sz-metal: #b7c1c8;
+    --sz-metal-lit: #e2cb96;
+    --sz-exec-bar: #5a2a20;
+    --sz-code-bg: #0c1215;
+    --sz-mnemonic: #ffffff;
+    --sz-alert-bg: #2a1614;
+    --sz-alert-edge: #7a2f27;
+
+    --sz-wire-case: #06110e;
+    --sz-wire-body: #3fae93;
+    --sz-wire-groove: #24705f;
+    --sz-wire-core: #8fe4cf;
+    --sz-wire-end: #06110e;
+
+    --sz-panel: #0d151a;
+    --sz-panel-line: #1e2a30;
+    --sz-btn-top: #2a343d;
+    --sz-btn-bottom: #1b232a;
+    --sz-btn-edge: #0a0f13;
+    --sz-btn-text: #cfd9e0;
+    --sz-readout: #7f8d98;
+    --sz-alert: #f0a598;
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: #14161a;
+  --bg-raised: #1b1e24;
+  --bg-sunken: #101216;
+  --border: #2c3038;
+  --border-strong: #3d424c;
+  --text: #e6e7ea;
+  --text-muted: #a2a6b0;
+  --text-faint: #757a85;
+  --accent: #ef8354;
+  --accent-soft: #2a1d17;
+  --accent-text: #f4a077;
+  --code-bg: #14171c;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px rgb(0 0 0 / 0.35);
+
+  /* Hardware, dark scheme: the authentic look - a board really is
+     near-black. See the daylight values on :root for the reasoning. */
+  --sz-board: #0b1114;
+  --sz-board-grid: rgb(52 116 106 / 0.20);
+  --sz-board-shadow: inset 0 0 70px rgb(0 0 0 / 0.75);
+  --sz-frame: #0b1114;
+
+  --sz-bezel-top: #525d67;
+  --sz-bezel-mid: #303841;
+  --sz-bezel-bottom: #232a31;
+  --sz-body-top: #1d232a;
+  --sz-body-bottom: #12171c;
+  --sz-edge: #05080a;
+
+  --sz-amber: #f3c46f;
+  --sz-amber-deep: #b8862f;
+  --sz-amber-lit-top: #f9d491;
+  --sz-amber-lit-bottom: #e5b559;
+
+  --sz-trace: #2f9c85;
+  --sz-ink: #241d14;
+  --sz-code: #e4e0d5;
+  --sz-comment: #8b9189;
+  --sz-metal: #b7c1c8;
+  --sz-metal-lit: #e2cb96;
+  --sz-exec-bar: #5a2a20;
+  --sz-code-bg: #0c1215;
+  --sz-mnemonic: #ffffff;
+  --sz-alert-bg: #2a1614;
+  --sz-alert-edge: #7a2f27;
+
+  --sz-wire-case: #06110e;
+  --sz-wire-body: #3fae93;
+  --sz-wire-groove: #24705f;
+  --sz-wire-core: #8fe4cf;
+  --sz-wire-end: #06110e;
+
+  --sz-panel: #0d151a;
+  --sz-panel-line: #1e2a30;
+  --sz-btn-top: #2a343d;
+  --sz-btn-bottom: #1b232a;
+  --sz-btn-edge: #0a0f13;
+  --sz-btn-text: #cfd9e0;
+  --sz-readout: #7f8d98;
+  --sz-alert: #f0a598;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--topbar-h) + 1rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  overflow-wrap: break-word;
+}
+
+body.nav-open,
+body.search-open {
+  overflow: hidden;
+}
+
+a {
+  color: var(--accent-text);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.15em;
+}
+
+a:hover { text-decoration-thickness: 2px; }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  background: var(--bg-raised);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+}
+.skip-link:focus { left: 0.5rem; top: 0.5rem; }
+
+/* ------------------------------------------------------------------ topbar */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: var(--topbar-h);
+  padding: 0 0.75rem;
+  padding-left: max(0.75rem, env(safe-area-inset-left));
+  padding-right: max(0.75rem, env(safe-area-inset-right));
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 650;
+  color: var(--text);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+  min-width: 0;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  flex: none;
+}
+
+.brand-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* ---- build stamp ----
+   When the site was last changed, linking to the commit. On a phone there is
+   no room beside the menu and search, so only the date survives; the width
+   earns back the time and the short SHA. */
+
+.build-stamp {
+  display: flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  /* A 44px tap target without a 44px-tall box pushing the bar around. */
+  min-height: 2.75rem;
+  padding: 0 0.25rem;
+  align-self: stretch;
+  align-items: center;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  white-space: nowrap;
+  border-radius: var(--radius);
+}
+
+.build-stamp:hover,
+.build-stamp:focus-visible { color: var(--accent-text); }
+
+/* Below 22rem the bar cannot hold the menu, the site name, the stamp and two
+   icon buttons at once - measured, the name comes up 33px short. The FN mark
+   still links home and still says the name to a screen reader, so the wordmark
+   is what gives way rather than the stamp. */
+@media (max-width: 21.99rem) {
+  .brand-text { display: none; }
+}
+
+@media (min-width: 27rem) {
+  .build-stamp { padding: 0 0.5rem; }
+}
+
+/* The bar shows the shortest form that fits and grows into the longer ones.
+   On a phone that is the compact stamp ("3h", "08-31"); "2026-08-31" beside
+   the site name would squeeze it to an ellipsis. Widths below are measured,
+   not guessed. */
+.topbar-actions .build-stamp time,
+.stamp-time,
+.topbar-actions .stamp-sha { display: none; }
+
+@media (min-width: 27rem) {
+  .topbar-actions .build-stamp time { display: inline; }
+  .topbar-actions .stamp-brief { display: none; }
+}
+
+@media (min-width: 34rem) {
+  .stamp-time { display: inline; }
+}
+
+/* app.js hides the clock once the date is shown as "2 hours ago". The class
+   rule above is more specific than the UA rule for [hidden], so say it here. */
+.stamp-time[hidden] { display: none; }
+
+/* The compact form never appears in the footer, which always spells it out. */
+.build-stamp-footer .stamp-brief { display: none; }
+
+@media (min-width: 46rem) {
+  .topbar-actions .stamp-sha {
+    display: inline;
+    padding: 0.1rem 0.3rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-muted);
+  }
+}
+
+/* The footer copy is always present and always complete. */
+.build-stamp-footer {
+  display: inline-flex;
+  min-height: 0;
+  padding: 0;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+}
+.build-stamp-footer .stamp-sha { display: inline; }
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0 0.5rem;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.icon-btn:hover { background: var(--bg-sunken); color: var(--text); }
+
+.theme-btn .icon-moon { display: none; }
+:root[data-theme='dark'] .theme-btn .icon-sun { display: none; }
+:root[data-theme='dark'] .theme-btn .icon-moon { display: block; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .theme-btn .icon-sun { display: none; }
+  :root:not([data-theme='light']) .theme-btn .icon-moon { display: block; }
+}
+
+/* ------------------------------------------------------------------ shell */
+
+.shell {
+  display: block;
+  max-width: 90rem;
+  margin: 0 auto;
+}
+
+/* Sidebar is an off-canvas drawer on small screens. */
+.sidebar {
+  position: fixed;
+  inset: var(--topbar-h) auto 0 0;
+  z-index: 35;
+  /* Leave a comfortable strip of scrim so tapping outside closes the drawer. */
+  width: min(19rem, 80vw);
+  background: var(--bg-raised);
+  border-right: 1px solid var(--border);
+  transform: translateX(-102%);
+  transition: transform 0.22s ease;
+  overscroll-behavior: contain;
+  overflow-y: auto;
+}
+
+body.nav-open .sidebar { transform: translateX(0); }
+
+.sidebar-inner {
+  padding: 1rem 0.875rem 3rem;
+  padding-left: max(0.875rem, env(safe-area-inset-left));
+}
+
+.scrim {
+  position: fixed;
+  inset: var(--topbar-h) 0 0 0;
+  z-index: 30;
+  background: rgb(0 0 0 / 0.45);
+  border: 0;
+  padding: 0;
+}
+
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.75rem;
+  margin-bottom: 1rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.search-field:hover { border-color: var(--border-strong); }
+.search-field span { flex: 1; }
+.search-field kbd {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 0.1rem 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-sunken);
+}
+
+/* --------------------------------------------------------------- side nav */
+
+.nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-list .nav-list {
+  margin-left: 0.5rem;
+  padding-left: 0.5rem;
+  border-left: 1px solid var(--border);
+}
+
+.nav-group:not(.is-open) > .nav-list { display: none; }
+
+.nav-group-head {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.nav-group-head .nav-link { flex: 1; }
+
+.nav-toggle {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  min-height: 2.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  border-radius: 6px;
+  flex: none;
+}
+
+.nav-toggle svg { transition: transform 0.18s ease; }
+.nav-group.is-open > .nav-group-head .nav-toggle svg { transform: rotate(90deg); }
+.nav-toggle:hover { background: var(--bg-sunken); color: var(--text); }
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  padding: 0.375rem 0.625rem;
+  border-radius: 0.5rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.nav-link:hover { background: var(--bg-sunken); color: var(--text); }
+
+.nav-link.is-current {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.nav-depth-0 > li > .nav-group-head > .nav-link,
+.nav-depth-0 > li > .nav-link {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.nav-icon { font-size: 1rem; line-height: 1; }
+
+/* --------------------------------------------------------------- content */
+
+.content {
+  padding: 1.5rem 1rem 4rem;
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+  min-width: 0;
+}
+
+.doc { max-width: var(--measure); }
+/* `wide: true` in front matter: the page is a workspace, not prose, so it
+   takes the whole column. The measure still applies to its prose, set on the
+   blocks themselves rather than the article. */
+.doc-wide { max-width: none; }
+.doc-wide > :not(.ide) { max-width: var(--measure); }
+
+.breadcrumbs { margin-bottom: 1rem; }
+.breadcrumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+.breadcrumbs li + li::before { content: '/'; margin-right: 0.35rem; color: var(--border-strong); }
+.breadcrumbs a { color: var(--text-muted); text-decoration: none; }
+.breadcrumbs a:hover { color: var(--accent-text); text-decoration: underline; }
+
+.doc-head { margin-bottom: 1.5rem; }
+.doc-head h1 {
+  margin: 0;
+  font-size: clamp(1.65rem, 5.5vw, 2.35rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.lede {
+  margin: 0.5rem 0 0;
+  color: var(--text-muted);
+  font-size: 1.05rem;
+}
+
+.doc h2 {
+  margin: 2.5rem 0 0.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  font-size: clamp(1.25rem, 4vw, 1.5rem);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.doc h3 {
+  margin: 2rem 0 0.5rem;
+  font-size: 1.1rem;
+  line-height: 1.3;
+}
+
+.doc h4 {
+  margin: 1.5rem 0 0.375rem;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.doc p { margin: 0 0 1rem; }
+.doc ul, .doc ol { margin: 0 0 1rem; padding-left: 1.35rem; }
+.doc li { margin-bottom: 0.35rem; }
+.doc li > ul, .doc li > ol { margin-top: 0.35rem; margin-bottom: 0.35rem; }
+
+.doc hr {
+  margin: 2rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+.anchor {
+  margin-left: 0.4rem;
+  color: var(--border-strong);
+  text-decoration: none;
+  font-weight: 400;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+h2:hover .anchor, h3:hover .anchor, .anchor:focus { opacity: 1; }
+
+/* --------------------------------------------------------- code + tables */
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+
+.code-block {
+  position: relative;
+  margin: 0 0 1.25rem;
+}
+
+.code-block pre {
+  margin: 0;
+  padding: 1rem;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.code-block code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  white-space: pre;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-raised);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.code-block:hover .copy-btn,
+.copy-btn:focus-visible { opacity: 1; }
+@media (hover: none) { .copy-btn { opacity: 1; } }
+
+.table-wrap {
+  margin: 0 0 1.25rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+th, td {
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+th {
+  background: var(--bg-sunken);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+tbody tr:last-child td { border-bottom: 0; }
+
+/* Keep short code tokens whole inside tables - a wrapped `mov 100 p1` reads as
+   two things. The table scrolls in its own container if that makes it wide. */
+th code,
+td code { white-space: nowrap; }
+
+/* ------------------------------------------------------------- callouts */
+
+.callout {
+  margin: 0 0 1.25rem;
+  padding: 0.875rem 1rem;
+  border-left: 3px solid var(--border-strong);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: var(--bg-sunken);
+}
+
+.callout > :last-child { margin-bottom: 0; }
+
+.callout-title {
+  margin: 0 0 0.35rem;
+  font-weight: 650;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.callout-note { border-left-color: #4f7fc4; }
+.callout-note .callout-title { color: #4f7fc4; }
+.callout-tip { border-left-color: #3f9a6b; }
+.callout-tip .callout-title { color: #3f9a6b; }
+.callout-warning { border-left-color: #c9873a; }
+.callout-warning .callout-title { color: #c9873a; }
+.callout-spec { border-left-color: var(--accent); }
+.callout-spec .callout-title { color: var(--accent-text); }
+
+/* ------------------------------------------------------------------ toc */
+
+.toc {
+  margin: 0 0 1.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+}
+
+.toc summary {
+  padding: 0.7rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  cursor: pointer;
+  list-style-position: inside;
+}
+
+.toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 1rem 0.75rem;
+}
+
+.toc li { margin: 0; }
+.toc a {
+  display: block;
+  padding: 0.3rem 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.toc a:hover { color: var(--accent-text); }
+.toc .toc-h3 { padding-left: 0.875rem; }
+
+/* ----------------------------------------------------------- card grid */
+
+.card-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+  margin: 1.75rem 0 0;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.card:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.card-icon { font-size: 1.25rem; line-height: 1; margin-bottom: 0.25rem; }
+.card-title { font-weight: 650; color: var(--text); }
+.card-desc { font-size: 0.875rem; color: var(--text-muted); }
+.card-meta { font-size: 0.75rem; color: var(--text-faint); margin-top: 0.25rem; }
+
+/* --------------------------------------------------------------- pager */
+
+.pager {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.pager-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: inherit;
+  min-height: 3.5rem;
+}
+
+.pager-link.is-empty { display: none; }
+.pager-link:hover { border-color: var(--accent); }
+.pager-next { text-align: right; }
+.pager-label { font-size: 0.75rem; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; }
+.pager-title { font-weight: 600; color: var(--text); }
+
+.site-footer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+
+/* --------------------------------------------------------------- search */
+
+.search-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgb(0 0 0 / 0.5);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0.75rem;
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+
+.search-overlay[hidden] { display: none; }
+
+.search-panel {
+  width: min(38rem, 100%);
+  max-height: min(80vh, 40rem);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.search-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-faint);
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem; /* 16px keeps iOS from zooming on focus */
+  padding: 0.6rem 0;
+}
+
+.search-input:focus { outline: none; }
+
+.search-results {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.375rem;
+}
+
+.search-hit {
+  display: block;
+  padding: 0.7rem 0.75rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.search-hit:hover,
+.search-hit.is-active { background: var(--bg-sunken); }
+
+.search-hit-crumb {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-faint);
+}
+.search-hit-title {
+  display: block;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.search-hit-snippet {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.search-hit mark {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  border-radius: 3px;
+  padding: 0 0.1em;
+}
+
+.search-empty {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 0.9rem;
+}
+
+/* ---------------------------------------------------------- breakpoints */
+
+@media (min-width: 48rem) {
+  .content { padding: 2rem 2rem 5rem; }
+  .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pager { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pager-link.is-empty { display: block; border: 0; }
+}
+
+@media (min-width: 64rem) {
+  .menu-btn { display: none; }
+  .scrim { display: none; }
+
+  .shell {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+    gap: 2rem;
+    padding: 0 1.5rem;
+  }
+
+  .sidebar {
+    /* Reset the drawer's fixed offsets before setting the sticky one -
+       a later `inset` shorthand would clobber `top`. */
+    inset: auto;
+    position: sticky;
+    top: var(--topbar-h);
+    height: calc(100vh - var(--topbar-h));
+    width: auto;
+    transform: none;
+    background: none;
+    border-right: 0;
+    transition: none;
+  }
+
+  .sidebar-inner { padding: 1.5rem 0.5rem 3rem 0; }
+  .content { padding: 2.5rem 0 6rem; }
+  .search-btn { display: none; }
+}
+
+@media (min-width: 80rem) {
+  /* Float the table of contents beside the prose once there is room for it. */
+  .doc { max-width: var(--measure); }
+  .toc {
+    position: sticky;
+    top: calc(var(--topbar-h) + 1.5rem);
+    float: right;
+    width: 14rem;
+    margin: 0 -16rem 1.5rem 1.5rem;
+    background: none;
+    border: 0;
+    border-left: 1px solid var(--border);
+    border-radius: 0;
+  }
+  .toc summary { padding: 0 0 0.25rem 1rem; }
+  .toc ul { padding: 0 0 0 1rem; }
+  .content { padding-right: 15rem; }
+  /* A wide page spends the gutter on the workspace, so its contents-list stays
+     inline above the prose rather than floating into a margin that is no
+     longer there - floating it would push the page sideways. */
+  .content-wide { padding-right: 0; }
+  .doc-wide .toc {
+    position: static;
+    float: none;
+    width: auto;
+    max-width: var(--measure);
+    margin: 0 0 1.5rem;
+    border-left: 0;
+  }
+}
+
+@media print {
+  .topbar, .sidebar, .toc, .pager, .scrim, .search-overlay, .copy-btn { display: none !important; }
+  .shell { display: block; }
+  .content { padding: 0; }
+  .doc { max-width: none; }
+}
+
+/* ---------------------------------------------------------- pin diagrams */
+/* A chip pinout drawn with markup rather than an image, so it stays legible
+   at phone widths and reads correctly in a screen reader. */
+
+.pinout {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0;
+  margin: 0 0 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.pinout-chip {
+  display: grid;
+  place-items: center;
+  flex: 0 1 11rem;
+  min-height: 5.5rem;
+  padding: 1rem 0.75rem;
+  background: var(--bg-sunken);
+  border: 2px solid var(--text);
+  border-radius: 0.25rem;
+  text-align: center;
+}
+
+.pinout-name {
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+}
+
+.pinout-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  gap: 0.375rem;
+  flex: 0 0 auto;
+  padding: 0.5rem 0;
+}
+
+.pinout-col:empty { flex-basis: 0; }
+
+.pin {
+  display: block;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-raised);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.pinout-col:first-child .pin {
+  border-right: 0;
+  border-radius: 0.25rem 0 0 0.25rem;
+  text-align: right;
+}
+
+.pinout-col:last-child .pin {
+  border-left: 0;
+  border-radius: 0 0.25rem 0.25rem 0;
+}
+
+/* XBus pins carry a yellow dot in the manual; simple I/O pins are unmarked. */
+.pin-x::before {
+  content: '';
+  display: inline-block;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-right: 0.35rem;
+  border-radius: 50%;
+  background: #e0b322;
+  vertical-align: 0.02em;
+}
+
+.pin-nc { color: var(--text-faint); font-style: italic; }
+
+/* ------------------------------------------------------------ chip figures */
+/* A datasheet figure showing a real component. The board inside is dark by
+   design - it is a picture of a device - so it gets a frame that reads as a
+   panel in both themes rather than a rendering fault. */
+
+.chip-figure,
+.circuit-figure {
+  margin: 0 0 1.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--sz-frame);
+  /* The widest part is ~340px with its pin labels; scroll inside the frame
+     rather than pushing the page sideways on a narrow phone. */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chip-figure > circuit-board,
+.circuit-figure > circuit-board {
+  margin: 0 auto;
+}
+
+/* Until the module upgrades it, the figure holds the static pinout markup.
+   Give that fallback the page background so it stays readable on the dark frame. */
+.chip-figure:not([data-upgraded]),
+.circuit-figure:not([data-upgraded]) {
+  background: var(--bg-sunken);
+}
+
+/* The fallback for a circuit is prose, not a drawing, so give it room to read. */
+.circuit-figure:not([data-upgraded]) {
+  padding: 1rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.circuit-figure > p:last-child { margin-bottom: 0; }
+
+/* --------------------------------------------------------- manual figures */
+/* Scans from the manual are black line art on white. Frame them on a light
+   panel so they stay legible in the dark theme instead of glaring. */
+
+.doc img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 0 1.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fbfbfa;
+}
+
+/* ------------------------------------------------------- simulator controls */
+/* Sits under a runnable figure. Wraps on a phone and every control clears the
+   44px tap target, since this is the part people actually poke at. */
+
+.sim-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--sz-panel-line);
+}
+
+.sim-btn {
+  min-height: 2.75rem;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--sz-btn-edge);
+  border-radius: 5px;
+  background: linear-gradient(180deg, var(--sz-btn-top), var(--sz-btn-bottom));
+  color: var(--sz-btn-text);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.sim-btn:hover { color: var(--sz-amber-deep); border-color: var(--sz-bezel-mid); }
+.sim-btn:focus-visible { outline: 2px solid var(--sz-amber-deep); outline-offset: 2px; }
+.sim-play { min-width: 5.5rem; }
+
+/* An input toggle reads as a switch: lit when it is feeding the circuit. */
+.sim-input[aria-pressed='true'] {
+  background: linear-gradient(180deg, var(--sz-amber), var(--sz-amber-deep));
+  border-color: var(--sz-amber-deep);
+  color: var(--sz-ink);
+}
+
+.sim-readout {
+  flex: 1 1 100%;
+  margin: 0.25rem 0 0;
+  color: var(--sz-readout);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.circuit-figure[data-sim-state='deadlock'] .sim-readout,
+.circuit-figure[data-sim-state='error'] .sim-readout { color: var(--sz-alert); }
+
+.sim-scope {
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--sz-panel-line);
+}
+
+/* The workbench's Verify diagnostic (ide.js). The wrap carries the same
+   spacing .sim-scope gives itself elsewhere - moved here so the mark below
+   can line up with the trace's own box exactly, with nothing left over from
+   a margin or border of its own. Hidden by default: no class here sets
+   `display`, so the [hidden] UA rule still applies untouched. */
+.sim-scope-wrap {
+  position: relative;
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--sz-panel-line);
+}
+.sim-scope-wrap .sim-scope { margin-top: 0; padding-top: 0; border-top: none; }
+
+.sim-scope-mark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--sz-alert);
+  opacity: 0.32;
+  pointer-events: none;
+}
+
+@media (min-width: 48rem) {
+  .sim-readout { flex: 1 1 auto; margin: 0 0 0 0.5rem; text-align: right; }
+}
+
+/* ---------------------------------------------------------------- the IDE */
+/* Laid out for a phone held in one hand: palette at the top where you reach
+   for it deliberately, board in the middle, and the controls you poke at
+   repeatedly pinned to the bottom of the viewport within thumb reach. The
+   desktop layout is the media query, not the base. */
+
+.ide {
+  margin: 0 0 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--sz-frame);
+  /* On a phone the workbench is a panel that fits one screen: palette at the
+     top, board taking whatever is left, controls at the bottom in thumb reach.
+     Capping the height here is what keeps the controls reachable - a sticky bar
+     would instead float over the palette while the panel is half on screen.
+     dvh, not vh, so the on-screen keyboard shrinks it rather than pushing the
+     controls underneath itself. */
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - var(--topbar-h) - 2rem);
+  overflow: hidden;
+}
+
+
+/* Before the module loads, the placeholder holds prose saying what it is. */
+.ide:not([data-ready]) {
+  padding: 1rem;
+  background: var(--bg-sunken);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.ide:not([data-ready]) > :last-child { margin-bottom: 0; }
+
+.ide-palette {
+  display: flex;
+  gap: 0.375rem;
+  padding: 0.625rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-bottom: 1px solid var(--sz-panel-line);
+  scrollbar-width: thin;
+}
+
+.ide-chip {
+  flex: 0 0 auto;
+  min-height: 2.75rem;
+  /* A short name like OR would otherwise land just under the 44px minimum. */
+  min-width: 2.75rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--sz-btn-edge);
+  border-radius: 5px;
+  background: linear-gradient(180deg, var(--sz-btn-top), var(--sz-btn-bottom));
+  color: var(--sz-btn-text);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ide-chip:focus-visible { outline: 2px solid var(--sz-amber-deep); outline-offset: 2px; }
+
+.ide-stage {
+  flex: 1 1 auto;
+  min-height: 9rem;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.625rem;
+}
+
+/* The board has no intrinsic size - its parts are absolutely positioned - so
+   the workbench gives it an explicit canvas in grid cells and lets the stage
+   scroll it. Zooming changes --cell, so the canvas rescales with it. */
+.ide-board {
+  margin: 0;
+  width: calc(var(--cell) * 28);
+  height: calc(var(--cell) * 16);
+}
+
+.ide-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.625rem;
+  border-top: 1px solid var(--sz-panel-line);
+}
+
+/* The bar people poke at constantly. It sits directly above the file bar at
+   the bottom of the panel, which the height cap keeps within thumb reach. */
+.ide-bar-sim { background: var(--sz-panel); }
+.ide-palette, .ide-bar { flex: 0 0 auto; }
+
+.ide-zoom { display: flex; gap: 0.25rem; }
+.ide-icon { min-width: 2.75rem; padding: 0.4rem 0; font-size: 1rem; }
+
+.ide-inputs { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+
+.ide-danger[disabled] { opacity: 0.4; cursor: default; }
+.ide-danger:not([disabled]) { border-color: var(--sz-alert-edge); color: var(--sz-alert); }
+
+/* Reveal (ide.js loadPuzzle/reveal) - amber like the lit sim-input toggle,
+   so the one control that hands over the answer reads as deliberate rather
+   than blending into Load/Clear. Hidden with the plain `hidden` property
+   when no puzzle is open; nothing here sets `display`, so the UA rule for
+   [hidden] is never in question - see .ide-modal[hidden] below for the case
+   where that isn't true and an override is required. */
+.ide-reveal {
+  background: linear-gradient(180deg, var(--sz-amber), var(--sz-amber-deep));
+  border-color: var(--sz-amber-deep);
+  color: var(--sz-ink);
+}
+
+.ide-select,
+.ide-save-input {
+  min-height: 2.75rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--sz-btn-edge);
+  border-radius: 5px;
+  background: var(--sz-btn-bottom);
+  color: var(--sz-btn-text);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.ide-save-input::placeholder {
+  opacity: 0.6;
+}
+
+.ide-preset {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--sz-readout);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ide-note {
+  flex: 1 1 100%;
+  margin: 0.25rem 0 0;
+  min-height: 1.1em;
+  color: var(--sz-readout);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+.ide[data-sim-state='deadlock'] .sim-readout,
+.ide[data-sim-state='error'] .sim-readout { color: var(--sz-alert); }
+
+/* ---- full-screen program editor ----
+   Sized in dvh, not vh: on a phone the on-screen keyboard shrinks the visual
+   viewport, and a vh-sized panel would sit underneath it. */
+
+.ide-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0.75rem;
+  background: rgb(10 14 16 / 0.68);
+}
+/* A class-level `display` outranks the UA rule for [hidden], so say it here or
+   the editor is open on load. */
+.ide-modal[hidden] { display: none; }
+
+.ide-modal-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  width: min(40rem, 100%);
+  max-height: 92dvh;
+  padding: 0.875rem;
+  border: 1px solid var(--sz-bezel-mid);
+  border-radius: var(--radius);
+  background: var(--sz-panel);
+}
+
+.ide-modal-title {
+  margin: 0;
+  color: var(--sz-btn-text);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ide-modal-area {
+  flex: 1 1 auto;
+  min-height: 8rem;
+  /* Shrinks with the visual viewport instead of hiding behind the keyboard. */
+  height: 38dvh;
+  padding: 0.625rem;
+  border: 1px solid var(--sz-bezel-mid);
+  border-radius: 5px;
+  background: var(--sz-code-bg);
+  color: var(--sz-code);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.55;
+  resize: none;
+}
+
+.ide-modal-count {
+  margin: 0;
+  color: var(--sz-readout);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+.ide-modal-count.over { color: var(--sz-alert); }
+
+.ide-primary {
+  align-self: stretch;
+  background: linear-gradient(180deg, var(--sz-amber), var(--sz-amber-deep));
+  border-color: var(--sz-amber-deep);
+  color: var(--sz-ink);
+}
+
+@media (min-width: 48rem) {
+  /* With room to spare the panel stops fighting for viewport and just takes a
+     comfortable fixed height. */
+  .ide { max-height: none; }
+  .ide-stage { height: min(62vh, 34rem); }
+  .ide-note { flex: 1 1 auto; margin: 0 0 0 0.5rem; text-align: right; }
+  .ide-modal { align-items: center; }
+}

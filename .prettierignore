@@ -37,3 +37,13 @@ next-env.d.ts
 
 pnpm-lock.yaml
 
+
+# static docs site - standalone, not part of the Next.js app
+/site
+
+# Notes about that site, hand-formatted for reading in a terminal. Same reason
+# as /site: they are not part of the Next.js app.
+/CLAUDE.md
+/ROADMAP.md
+/R11-PLAN.md
+/R12-R15-PLAN.md
