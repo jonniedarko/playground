@@ -1387,7 +1387,8 @@ td code { white-space: nowrap; }
   color: var(--sz-ink);
 }
 
-.ide-select {
+.ide-select,
+.ide-save-input {
   min-height: 2.75rem;
   padding: 0.4rem 0.6rem;
   border: 1px solid var(--sz-btn-edge);
@@ -1396,6 +1397,10 @@ td code { white-space: nowrap; }
   color: var(--sz-btn-text);
   font-family: var(--font-mono);
   font-size: 0.78rem;
+}
+
+.ide-save-input::placeholder {
+  opacity: 0.6;
 }
 
 .ide-preset {

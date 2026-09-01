@@ -574,7 +574,7 @@ async function main() {
       // to do with what this checks. AN650 has a shipped spec (specs.js)
       // that its own reference circuit passes (verify.test.mjs), so a clean
       // load of it must read PASS here too.
-      await page.selectOption('.ide-select', 'an650')
+      await page.selectOption('.ide-select:not(.ide-saved)', 'an650')
       await page.waitForTimeout(300)
       const verifyBtn = page.getByRole('button', { name: 'Verify', exact: true })
       const vBox = await verifyBtn.boundingBox()
@@ -644,7 +644,7 @@ async function main() {
       // feature shipped once with no way to arm it at all, so this checks
       // the whole path: cycle the control onto a signal, start the clock,
       // and confirm the run paused itself.
-      await page.selectOption('.ide-select', 'an650')
+      await page.selectOption('.ide-select:not(.ide-saved)', 'an650')
       await page.waitForTimeout(300)
       const tapNamed = async (name) => {
         await page.evaluate((n) => {
@@ -794,7 +794,7 @@ async function main() {
       // check against on the other side.
       await page.goto(`http://localhost:${port}${BASE}/shenzhen-io/ide/`, { waitUntil: 'networkidle' })
       await page.waitForSelector('.ide[data-ready]', { timeout: 8000 })
-      await page.selectOption('.ide-select', 'an650')
+      await page.selectOption('.ide-select:not(.ide-saved)', 'an650')
       await page.waitForTimeout(300)
       const shareBtn = page.getByRole('button', { name: 'Share', exact: true })
       const sBox = await shareBtn.boundingBox()
@@ -856,6 +856,72 @@ async function main() {
       if (!/too big/i.test(overBudgetText) || /https?:\/\//.test(overBudgetText)) {
         failures.push(`${at}: an over-budget board did not get a plain refusal - "${overBudgetText}"`)
       }
+
+      // R14.2: a named save must bring BACK the board it saved, which means
+      // the board has to be something else in between. Saving AN650 and then
+      // loading it over an AN650 that is already there proves nothing: a load
+      // that does nothing at all passes that.
+      await page.goto(`http://localhost:${port}${BASE}/shenzhen-io/ide/`, { waitUntil: 'networkidle' })
+      await page.waitForSelector('.ide[data-ready]', { timeout: 8000 })
+
+      const boardShape = () => page.evaluate(() => {
+        const b = document.querySelector('.ide-board')
+        return {
+          parts: b.parts.length,
+          wires: b.wires.length,
+          tags: b.parts.map((p) => p.tagName.toLowerCase()).sort().join(','),
+        }
+      })
+
+      await page.selectOption('.ide-select:not(.ide-saved)', 'an650')
+      await page.waitForTimeout(350)
+      const savedShape = await boardShape()
+
+      const nameField = await page.$('.ide-save-input')
+      if (!nameField) {
+        failures.push(`${at}: no save-name field`)
+      } else {
+        await nameField.fill('sweep-save')
+        await page.evaluate(() => {
+          const b = [...document.querySelectorAll('.ide-bar-file button')]
+            .find((x) => x.textContent.includes('Save as'))
+          b.scrollIntoView({ block: 'center' }); b.click()
+        })
+        await page.waitForTimeout(350)
+
+        await page.reload({ waitUntil: 'networkidle' })
+        await page.waitForSelector('.ide[data-ready]', { timeout: 8000 })
+        await page.waitForTimeout(350)
+
+        // Make the board genuinely different before loading the save back.
+        await page.selectOption('.ide-select:not(.ide-saved)', 'dx300-stepper')
+        await page.waitForTimeout(350)
+        const other = await boardShape()
+        if (other.tags === savedShape.tags) {
+          failures.push(`${at}: the two presets are indistinguishable, so this check cannot fail`)
+        }
+
+        const picker = await page.$('select.ide-saved')
+        if (!picker) {
+          failures.push(`${at}: no named-save picker`)
+        } else {
+          const names = await picker.evaluate((el) => [...el.options].map((o) => o.textContent))
+          if (!names.includes('sweep-save')) {
+            failures.push(`${at}: the named save did not survive a reload (${names.join(', ')})`)
+          } else {
+            await picker.selectOption('sweep-save')
+            await page.waitForTimeout(500)
+            const back = await boardShape()
+            if (back.tags !== savedShape.tags) {
+              failures.push(`${at}: loading the save gave "${back.tags}", expected "${savedShape.tags}"`)
+            }
+            if (back.parts !== savedShape.parts || back.wires !== savedShape.wires) {
+              failures.push(`${at}: loaded save has ${back.parts}/${back.wires} parts/wires, saved ${savedShape.parts}/${savedShape.wires}`)
+            }
+          }
+        }
+      }
+
     } catch (err) {
       failures.push(`${at}: ${err.message.split('\n')[0]}`)
     }

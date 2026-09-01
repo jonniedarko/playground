@@ -21,6 +21,7 @@ import { encodeBoard, decodeBoard, SHARE_BUDGET } from './share.js'
 
 const TICK_MS = 550
 const STORE_KEY = 'sz-ide-board'
+const NAMED_SAVES_KEY = 'sz-ide-named-saves'
 const CELL_MIN = 22
 const CELL_MAX = 52
 const CELL_STEP = 4
@@ -365,6 +366,36 @@ class Ide {
     })
     label.appendChild(select)
     bar.append(label, this.button('Clear', () => this.clear()))
+
+    // Named saves (Task 14.2): save the current board under a name, and load
+    // any named save by name. The unnamed autosave (STORE_KEY) stays as the
+    // default - someone who never names anything still comes back to the board
+    // they had open. The text input and buttons are real controls, ≥44px.
+    const saveNameInput = el('input', 'ide-save-input')
+    saveNameInput.type = 'text'
+    saveNameInput.placeholder = 'Save name'
+    bar.appendChild(saveNameInput)
+    this.saveNameInput = saveNameInput
+
+    bar.appendChild(this.button('Save as', () => {
+      const name = saveNameInput.value.trim()
+      if (!name) return this.announce('Enter a save name')
+      this.saveNamed(name)
+      saveNameInput.value = ''
+    }, '', 'Save current board with a name'))
+
+    // Its own class, not `ide-select`: the preset picker already owns that
+    // one and several checks address it by class. Two elements answering to
+    // the same selector is a trap for whoever writes the next assertion.
+    const loadSavedSelect = el('select', 'ide-select ide-saved')
+    loadSavedSelect.appendChild(new Option('Load saved…', ''))
+    loadSavedSelect.addEventListener('change', () => {
+      if (loadSavedSelect.value) this.loadNamed(loadSavedSelect.value)
+      loadSavedSelect.value = ''
+    })
+    bar.appendChild(loadSavedSelect)
+    this.loadSavedSelect = loadSavedSelect
+    this.refreshNamedSavesList()
 
     // Share: encodes the live board into a URL (share.js) and writes it
     // into the note below - see share() for the budget message and the
@@ -1143,7 +1174,66 @@ class Ide {
       try {
         localStorage.setItem(STORE_KEY, JSON.stringify(this.board.toJSON()))
       } catch { /* private mode, a full quota - the board still works */ }
+      // Refresh the named saves dropdown whenever any save happens, in case
+      // the board was edited after a named load.
+      this.refreshNamedSavesList()
     }, 250)
+  }
+
+  /** Save the current board under a name to localStorage. Named saves are
+      stored in a JSON object under NAMED_SAVES_KEY: { "name": {...board...}, ... } */
+  saveNamed(name) {
+    try {
+      const saves = this.listNamedSaves()
+      saves[name] = this.board.toJSON()
+      localStorage.setItem(NAMED_SAVES_KEY, JSON.stringify(saves))
+      this.refreshNamedSavesList()
+      this.announce(`Saved as "${name}"`)
+    } catch {
+      // private mode, full quota - still works without named saves
+      this.announce(`Could not save "${name}"`)
+    }
+  }
+
+  /** Load a board from a named save. The board is restored to the view and
+      becomes the current autosave target. */
+  loadNamed(name) {
+    try {
+      const saves = this.listNamedSaves()
+      const board = saves[name]
+      if (!board) return
+      this.presetKey = null
+      this.pause()
+      this.board.load(board)
+      this.board.select(null)
+      this.syncSelection()
+      requestAnimationFrame(() => requestAnimationFrame(() => this.invalidate()))
+      this.announce(`Loaded "${name}"`)
+    } catch (err) {
+      this.announce(`Could not load "${name}": ${err.message}`)
+    }
+  }
+
+  /** Refresh the named saves dropdown to show all currently saved boards.
+      Called whenever a save happens or the page loads. */
+  refreshNamedSavesList() {
+    if (!this.loadSavedSelect) return
+    const names = Object.keys(this.listNamedSaves()).sort()
+    // Rebuild the dropdown, keeping the "Load saved..." placeholder at index 0
+    this.loadSavedSelect.replaceChildren(new Option('Load saved…', ''))
+    for (const name of names) {
+      this.loadSavedSelect.appendChild(new Option(name, name))
+    }
+  }
+
+  /** Get the current named saves object from localStorage, or an empty object
+      if none exist. Pure - no side effects. */
+  listNamedSaves() {
+    try {
+      return JSON.parse(localStorage.getItem(NAMED_SAVES_KEY) || '{}')
+    } catch {
+      return {}
+    }
   }
 
   restore() {
