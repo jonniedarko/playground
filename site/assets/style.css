@@ -1731,8 +1731,13 @@ td code { white-space: nowrap; }
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) 10.5rem;
     grid-template-areas: 'rail main palette';
-    /* The bench fills the viewport under the top bar; the prose that explains
-       it scrolls up from underneath. */
+    /* A viewport's worth of bench. Not "the viewport": the page still opens
+       with its breadcrumbs, title and lede above the widget, the way every
+       other page here does, so this is what fits on screen once the bench is
+       scrolled to - not what sits under the top bar on load. The browser
+       sweep asserts the height, and that the bench is wholly visible after a
+       scrollIntoView; it cannot assert more than that without the page
+       pretending not to be a documentation page. */
     height: calc(100dvh - var(--topbar-h) - 3rem);
     max-height: none;
   }
@@ -1800,3 +1805,12 @@ td code { white-space: nowrap; }
 @media (max-width: 55.999rem) {
   .ide-chip-preview { display: none; }
 }
+
+/* The bench page's own content is a tool, and its three headings are all
+   below that tool - so an inline contents list at the top is 60px of link
+   between the reader and the thing they came for. `wide` pages put the TOC
+   inline (it needs the gutter `wide` removes), which is right for a long
+   prose page and wrong for this one. Scoped with :has() so no other page is
+   touched; where :has() is unsupported the list simply stays, which is the
+   behaviour every wide page already has. */
+.doc:has(.ide[data-layout='full']) > .toc { display: none; }
