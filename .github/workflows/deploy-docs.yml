@@ -6,7 +6,15 @@ on:
     paths:
       - 'site/**'
       - '.github/workflows/deploy-docs.yml'
+  # Run by hand from the Actions tab. Note that GitHub only offers the "Run
+  # workflow" button for workflows that exist on the DEFAULT branch - a copy
+  # sitting on a feature branch is never listed, however correct it is.
   workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch, tag or commit to build and publish (blank = this branch)'
+        required: false
+        default: ''
 
 # Pushing the built site to the `pages` branch needs write access to the repo.
 permissions:
@@ -27,6 +35,22 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          # A hand-run deploy can name any ref, so the site can be published
+          # from a branch before it is merged. Blank falls back to whatever
+          # ref triggered the run.
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: Check there is a site to publish
+        # The publish step replaces the branch contents wholesale. Running it
+        # against a ref with no site/ would empty the live site rather than
+        # fail, so stop here instead.
+        run: |
+          if [ ! -f site/build.mjs ]; then
+            echo "::error::No site/build.mjs on this ref - nothing to publish."
+            echo "Pick a ref that carries the site, or merge it to the default branch first."
+            exit 1
+          fi
 
       - name: Install Node.js
         uses: actions/setup-node@v4
@@ -48,6 +72,16 @@ jobs:
         env:
           BASE_PATH: ${{ steps.base.outputs.path }}
         run: node build.mjs
+
+      - name: Check the build produced something
+        # Belt and braces on the same risk: a build that silently produced no
+        # pages must not be copied over a working site.
+        run: |
+          if [ ! -f site/dist/index.html ]; then
+            echo "::error::The build produced no site/dist/index.html - refusing to publish."
+            exit 1
+          fi
+          echo "Built $(find site/dist -name '*.html' | wc -l) pages."
 
       - name: Publish to the ${{ env.PAGES_BRANCH }} branch
         run: |
