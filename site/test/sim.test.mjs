@@ -210,6 +210,102 @@ test('a chip blocked while another only sleeps is reported as stalled', () => {
   assert.match(m.stalled.join(' '), /MC4000 blocked on mov x0/)
 })
 
+// ---------------------------------------------------------- explainBlocked
+
+test('explainBlocked names an unwired pin as unwired, not as any other reason', () => {
+  const m = new Machine({
+    parts: [{ t: 'mc-4000x', x: 0, y: 0, code: '  mov x0 acc\n  slp 1' }],
+    wires: [],
+  })
+  m.advance()
+  const explained = m.explainBlocked()
+  assert.equal(explained.length, 1)
+  const [e] = explained
+  assert.equal(e.pin, 'x0', 'names the pin the instruction actually blocked on')
+  assert.equal(e.reason, 'unwired')
+  assert.equal(e.partner, null, 'nothing is wired there, so there is no other end')
+  assert.match(e.message, /\bx0\b/)
+})
+
+test('explainBlocked names each side of a mutual deadlock as blocked on the other', () => {
+  const m = new Machine({
+    parts: [
+      { t: 'mc-4000', x: 0, y: 0, code: '  mov x0 acc\n  slp 1' },
+      { t: 'mc-4000', x: 8, y: 0, code: '  mov x1 acc\n  slp 1' },
+    ],
+    wires: [['0:x0', '1:x1']],
+  })
+  m.advance()
+  assert.ok(m.deadlock, 'sanity: this rig is the existing deadlock test\'s own')
+  const [a, b] = m.explainBlocked()
+
+  assert.equal(a.pin, 'x0')
+  assert.equal(a.reason, 'blocked')
+  assert.equal(a.partner.id, 1, 'names chip 1 as the other end, not just "some chip"')
+  assert.equal(a.partner.pin, 'x1', 'names the pin on the other end, not just the chip')
+  assert.match(a.message, /\bx0\b/)
+  assert.match(a.message, /\bx1\b/)
+
+  assert.equal(b.pin, 'x1')
+  assert.equal(b.reason, 'blocked')
+  assert.equal(b.partner.id, 0)
+  assert.equal(b.partner.pin, 'x0')
+})
+
+test('explainBlocked names a partner that is only asleep, not blocked', () => {
+  const m = new Machine({
+    parts: [
+      { t: 'mc-4000', x: 0, y: 0, code: '  mov x0 acc\n  slp 1' },
+      { t: 'mc-4000', x: 8, y: 0, code: '  slp 9' },
+    ],
+    wires: [['0:x0', '1:x1']],
+  })
+  m.advance()
+  const explained = m.explainBlocked()
+  assert.equal(explained.length, 1, 'the sleeping chip is not itself blocked')
+  const [e] = explained
+  assert.equal(e.pin, 'x0')
+  assert.equal(e.reason, 'sleeping')
+  assert.equal(e.partner.id, 1)
+  assert.equal(e.partner.pin, 'x1')
+  assert.match(e.message, /\bx1\b/, 'names the sleeping partner\'s own pin, not just its label')
+})
+
+test('explainBlocked finds the pin in the second operand, not just the first', () => {
+  // mov's pin can be either side (`mov x0 acc` reads x0; `mov acc x1` writes
+  // x1) - a lookup that assumed the first token was always the pin would
+  // pass every other test here and still be wrong for exactly this shape.
+  const m = new Machine({
+    parts: [{ t: 'mc-4000x', x: 0, y: 0, code: '  mov acc x0\n  slp 1' }],
+    wires: [],
+  })
+  m.advance()
+  const [e] = m.explainBlocked()
+  assert.equal(e.pin, 'x0', 'the pin is the second token, not "acc"')
+  assert.equal(e.direction, 'write')
+  assert.equal(e.reason, 'unwired')
+})
+
+test('explainBlocked calls the board edge "waiting for input", distinct from unwired', () => {
+  // Same shape as the packet reverser's own stall: an XBus input terminal
+  // with nothing queued is wired, not absent - waitingOnEdge already treats
+  // this differently from a true deadlock, and the wording must too.
+  const m = new Machine({
+    parts: [
+      { t: 'mc-4000x', x: 0, y: 0, code: '  mov x0 acc\n  slp 1' },
+      { t: 'io-terminal', x: 8, y: 0, label: 'in', type: 'xbus', side: 'right' },
+    ],
+    wires: [['0:x0', '1:in']],
+  })
+  m.advance()
+  assert.equal(m.deadlock, null, 'an edge-waiter is stalled, not deadlocked')
+  const [e] = m.explainBlocked()
+  assert.equal(e.pin, 'x0')
+  assert.equal(e.reason, 'edge')
+  assert.equal(e.partner.label, 'in')
+  assert.match(e.message, /waiting for input/)
+})
+
 test('slx waits for data instead of spinning', () => {
   const m = new Machine(CIRCUITS['xbus-pair'])
   m.setInput('sensor', 60)

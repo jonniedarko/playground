@@ -615,9 +615,15 @@ class Ide {
 
     const power = m.snapshot().reduce((n, s) => n + (s.power || 0), 0)
     let status = `t=${m.time}   power ${power}`
+    // Deadlock and stalled differ in severity, not in what the reader needs:
+    // both mean chips are stuck, and both want to know on which pin and
+    // against what. A deadlock is the case the explainer exists for, so it
+    // would be odd for it to be the one line that still says only "blocked
+    // on mov x0 acc".
+    const why = () => m.explainBlocked().map((e) => e.message).join(' ')
     if (m.error) status = m.error
-    else if (m.deadlock) status = 'Deadlock: ' + m.deadlock.join('; ')
-    else if (m.stalled && m.stalled.length) status = 'Waiting: ' + m.stalled.join('; ')
+    else if (m.deadlock) status = 'Deadlock: ' + why()
+    else if (m.stalled && m.stalled.length) status = 'Waiting: ' + why()
     const held = this.deviceReadout(m)
     if (held) status += '   ' + held
     this.readout.textContent = status
